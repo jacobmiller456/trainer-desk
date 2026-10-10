@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trainer Desk — GO Events &amp; TCG Set Browser</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --forest-dark:#1B4332;
+  --forest:#2D6A4F;
+  --forest-light:#40916C;
+  --meadow:#74C69D;
+  --parchment:#FDF6E3;
+  --parchment-2:#F3ECD2;
+  --ink:#1B2E1F;
+  --ink-soft:rgba(27,46,31,0.62);
+  --gold:#FFC94A;
+  --gold-dark:#D89A1F;
+  --hp-green:#4CD964;
+  --hp-yellow:#FFD43B;
+  --hp-red:#FF5C5C;
+  --border:#1B4332;
+
+  --font-pixel:'Press Start 2P',monospace;
+  --font-retro:'VT323',monospace;
+  --font-body:'Inter',sans-serif;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(116,198,157,0.25), transparent 60%),
+    linear-gradient(180deg, var(--forest-dark), var(--forest) 55%, var(--forest-light));
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:var(--font-body);
+  line-height:1.5;
+  min-height:100vh;
+}
+a{color:inherit;text-decoration:none;}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(16px,4vw,36px);}
+
+/* ---- pixel box (GBA dialogue-box style: double border, hard corners) ---- */
+.pixel-box{
+  background:var(--parchment);
+  border:3px solid var(--border);
+  box-shadow: inset 0 0 0 2px var(--parchment-2), 4px 4px 0 rgba(0,0,0,0.25);
+  border-radius:4px;
+}
+
+/* ---- header ---- */
+header{
+  background:var(--forest-dark);
+  border-bottom:4px solid var(--gold-dark);
+  position:sticky; top:0; z-index:20;
+}
+header .wrap{display:flex; align-items:center; justify-content:space-between; min-height:70px; padding-top:8px; padding-bottom:8px; gap:12px; flex-wrap:wrap;}
+.logo{
+  font-family:var(--font-pixel); font-size:13px; color:var(--parchment);
+  display:flex; align-items:center; gap:10px; letter-spacing:0.5px;
+}
+.logo .mark{
+  width:30px; height:30px; background:var(--gold);
+  border:3px solid var(--parchment); border-radius:50%;
+  display:grid; place-items:center; font-size:13px; color:var(--forest-dark);
+  box-shadow: 0 0 0 3px var(--forest-dark);
+}
+.tabs{ display:flex; gap:6px; }
+.tab{
+  font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px;
+  padding:10px 14px; background:var(--forest); color:var(--meadow);
+  border:3px solid var(--forest-dark); border-radius:4px; cursor:pointer;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  transition: transform .1s;
+}
+.tab:hover{ transform: translateY(-1px); }
+.tab.active{ background:var(--gold); color:var(--forest-dark); border-color:var(--gold-dark); }
+
+/* ---- views ---- */
+.view{ display:none; padding:32px 0 70px; }
+.view.active{ display:block; }
+.view-head{ margin-bottom:24px; }
+.view-head h1{
+  font-family:var(--font-pixel); font-size:clamp(15px,2.6vw,20px); color:var(--parchment);
+  margin:0 0 12px; line-height:1.6; text-shadow: 2px 2px 0 rgba(0,0,0,0.35);
+}
+.view-head p{ margin:0; color:var(--meadow); font-size:15.5px; max-width:60ch; font-family:var(--font-retro); }
+
+.sec-label{
+  font-family:var(--font-pixel); font-size:10.5px; color:var(--gold);
+  margin:28px 0 14px; display:flex; align-items:center; gap:10px;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+}
+.sec-label::after{ content:""; flex:1; height:3px; background:var(--forest-dark); border-radius:2px; }
+
+/* ---- event cards ---- */
+.ev-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+.ev{ padding:16px; position:relative; }
+.ev-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px; }
+.ev-type{
+  font-family:var(--font-retro); font-size:13px; letter-spacing:0.04em; text-transform:uppercase;
+  padding:3px 10px; border-radius:20px; font-weight:700; border:2px solid var(--type-c,var(--forest));
+  color:var(--type-c,var(--forest)); background:var(--type-bg,transparent);
+}
+.ev-live{ font-family:var(--font-retro); font-size:14px; color:var(--hp-red); display:flex; align-items:center; gap:6px; font-weight:700; }
+.ev-live .dot{ width:8px; height:8px; border-radius:50%; background:var(--hp-red); animation:blink 1.2s infinite; }
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.ev h3{ margin:0 0 6px; font-size:17px; font-weight:800; color:var(--ink); font-family:var(--font-body); }
+.ev .desc{ color:var(--ink-soft); font-size:13.5px; margin-bottom:12px; }
+.ev .when{
+  font-family:var(--font-retro); font-size:15px; color:var(--ink-soft);
+  padding-top:10px; border-top:2px dashed var(--forest-light);
+  display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;
+}
+.ev .cd{ color:var(--forest-dark); font-weight:700; }
+
+/* ---- TCG controls ---- */
+.tcg-controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:22px; }
+select,input[type=text]{
+  background:var(--parchment); border:3px solid var(--forest-dark); color:var(--ink);
+  padding:10px 13px; border-radius:4px; font-family:var(--font-retro); font-size:16px; min-width:200px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.25);
+}
+select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
+.status{ font-family:var(--font-retro); font-size:15px; color:var(--parchment); }
+
+.card-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:16px; }
+.tcard{ padding:0; overflow:hidden; transition:.15s; }
+.tcard:hover{ transform:translateY(-3px); }
+.tcard .imgwrap{ aspect-ratio:245/342; background:var(--parchment-2); display:grid; place-items:center; overflow:hidden; border-bottom:3px solid var(--forest-dark); }
+.tcard img{ width:100%; height:100%; object-fit:contain; display:block; }
+.tcard .ph{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); padding:10px; text-align:center; }
+.tcard .meta{ padding:10px 11px; }
+.tcard .nm{ font-size:13.5px; font-weight:800; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink); }
+.tcard .sub{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); display:flex; justify-content:space-between; gap:6px; }
+
+.tourney-row{
+  display:grid; grid-template-columns:1fr auto auto auto; align-items:center; gap:14px;
+  padding:12px 16px; margin-bottom:8px;
+}
+.tourney-name{ font-weight:700; font-size:14.5px; color:var(--ink); }
+.tourney-format{
+  font-family:var(--font-retro); font-size:13px; padding:2px 10px; border-radius:20px;
+  border:2px solid var(--forest); color:var(--forest); white-space:nowrap;
+}
+.tourney-date, .tourney-players{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); white-space:nowrap; }
+.tourney-link{ font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); text-decoration:underline; white-space:nowrap; }
+@media(max-width:700px){ .tourney-row{ grid-template-columns:1fr; gap:4px; } }
+
+.region-badge{
+  font-family:var(--font-retro); font-size:13px; padding:2px 9px; border-radius:20px;
+  font-weight:700; letter-spacing:0.04em;
+}
+.region-en{ background:rgba(25,113,194,0.14); color:#1971C2; }
+.region-jp{ background:rgba(217,72,15,0.14); color:#D9480F; }
+
+.empty{ padding:44px 20px; text-align:center; color:var(--parchment); font-family:var(--font-retro); font-size:16px; border:3px dashed var(--gold); border-radius:6px; }
+
+.note{
+  padding:15px 17px; margin-top:26px; font-size:13.5px; color:var(--ink-soft);
+  border-left:5px solid var(--gold-dark);
+}
+.note b{ color:var(--ink); font-weight:700; }
+.note code{ background:var(--parchment-2); padding:1px 5px; border-radius:3px; font-family:var(--font-retro); font-size:14px; }
+
+footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); padding:22px 0; font-size:11.5px; color:var(--meadow); line-height:1.7; font-family:var(--font-retro); font-size:14px; }
+
+/* ---- Pokédex ---- */
+.dex-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; }
+.dex-tile{
+  display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 8px 10px;
+  cursor:pointer; font:inherit; color:var(--ink); text-align:center; transition:.12s;
+}
+.dex-tile:hover{ transform:translateY(-2px); border-color:var(--gold-dark); }
+.dex-tile[aria-pressed="true"]{ border-color:var(--gold-dark); background:#FFF3C4; }
+.dex-num{ font-family:var(--font-retro); font-size:15px; color:var(--ink-soft); }
+.dex-name{ font-weight:700; font-size:13px; line-height:1.25; word-break:break-word; }
+.dex-mono{
+  width:44px; height:44px; border-radius:50%; display:grid; place-items:center;
+  background:var(--forest-light); color:var(--parchment); font-family:var(--font-pixel); font-size:14px;
+  border:3px solid var(--forest-dark);
+}
+.dex-sprite{ width:64px; height:64px; image-rendering:pixelated; object-fit:contain; }
+.dex-detail{ padding:18px; margin-bottom:22px; display:none; }
+.dex-detail.open{ display:block; }
+.dex-detail-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+.dex-detail h2{ margin:0; font-size:22px; font-weight:800; }
+.dex-detail .dex-num{ font-size:18px; }
+.dex-close{
+  font-family:var(--font-pixel); font-size:10px; padding:8px 10px; background:var(--forest); color:var(--parchment);
+  border:3px solid var(--forest-dark); border-radius:4px; cursor:pointer;
+}
+.dex-types{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.dex-type{ font-family:var(--font-retro); font-size:15px; text-transform:uppercase; padding:1px 12px; border-radius:20px; letter-spacing:0.04em; }
+.dex-cols{ display:grid; grid-template-columns:1fr 1.4fr; gap:22px; }
+@media(max-width:700px){ .dex-cols{ grid-template-columns:1fr; } }
+.dex-facts{ font-family:var(--font-retro); font-size:17px; line-height:1.5; }
+.dex-facts dt{ color:var(--ink-soft); float:left; clear:left; width:110px; }
+.dex-facts dd{ margin:0 0 4px 110px; }
+.dex-ability-hidden{ color:var(--ink-soft); font-size:14px; }
+.dex-stat{ display:grid; grid-template-columns:62px 38px 1fr; align-items:center; gap:8px; font-family:var(--font-retro); font-size:17px; padding:2px 0; }
+.dex-stat-k{ color:var(--ink-soft); }
+.dex-stat-bar{ height:10px; background:var(--parchment-2); border:2px solid var(--forest-dark); border-radius:3px; overflow:hidden; }
+.dex-stat-bar div{ height:100%; }
+.dex-total{ font-family:var(--font-retro); font-size:17px; margin-top:6px; padding-top:6px; border-top:2px dashed var(--forest-light); }
+
+/* HP-style progress accents for type icons on GO cards */
+.type-raid{ --type-c:#D9480F; --type-bg:rgba(217,72,15,0.1); }
+.type-community{ --type-c:#D89A1F; --type-bg:rgba(216,154,31,0.12); }
+.type-spotlight{ --type-c:#1971C2; --type-bg:rgba(25,113,194,0.1); }
+.type-research{ --type-c:#7048E8; --type-bg:rgba(112,72,232,0.1); }
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header><div class="wrap">
+  <div class="logo"><span class="mark">✦</span> TRAINER DESK</div>
+  <div class="tabs">
+    <button class="tab active" data-view="go">GO EVENTS</button>
+    <button class="tab" data-view="tcg">TCG SETS</button>
+    <button class="tab" data-view="dex">POKÉDEX</button>
+  </div>
+</div></header>
+
+<!-- ============ GO EVENTS ============ -->
+<div class="view active" id="view-go"><div class="wrap">
+  <div class="view-head">
+    <h1>POKEMON GO<br>EVENT TRACKER</h1>
+    <p>Live countdowns for active and upcoming events. Times shown in your local timezone.</p>
+  </div>
+
+  <div class="sec-label">▸ HAPPENING NOW</div>
+  <div class="ev-grid" id="active-events"></div>
+
+  <div class="sec-label">▸ COMING UP</div>
+  <div class="ev-grid" id="upcoming-events"></div>
+
+  <div class="pixel-box note">
+    <b>Live data:</b> event titles, dates, and types are pulled automatically from the community-maintained <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> feed and refresh every 15 minutes. Each card links back to the original source for full details. If the feed can't be reached, sample data renders instead so the layout still works.
+  </div>
+</div></div>
+
+<!-- ============ TCG ============ -->
+<div class="view" id="view-tcg"><div class="wrap">
+  <div class="view-head">
+    <h1>TCG SET BROWSER</h1>
+    <p>Browse sets and cards from the community-maintained Pokémon TCG API. Card images are served directly from their CDN.</p>
+  </div>
+
+  <div class="tcg-controls">
+    <select id="set-select"><option>Loading sets…</option></select>
+    <input type="text" id="card-search" placeholder="Filter by card name…">
+    <span class="status" id="tcg-status"></span>
+  </div>
+
+  <div class="card-grid" id="card-grid"></div>
+  <div class="empty pixel-box" id="tcg-empty" style="display:none;"></div>
+
+  <div class="sec-label">▸ UPCOMING SETS</div>
+  <div class="ev-grid" id="upcoming-sets"></div>
+
+  <div class="sec-label">▸ RECENT TOURNAMENTS</div>
+  <div id="tourney-list"></div>
+
+  <div class="pixel-box note">
+    <b>Live API:</b> card data pulls from <code>api.pokemontcg.io/v2</code>; tournament results pull from Limitless TCG's public API (<code>play.limitlesstcg.com/api</code>) — the platform the competitive community uses for standings and decklists. Both work when the page is served over HTTP. <b>Upcoming sets are hand-maintained</b> — edit the <code>UPCOMING_SETS</code> array in the script whenever a new set is officially announced (via pokemon-card.com for Japan or official press for English). Sample data renders if a request is blocked (e.g. in a sandboxed preview).
+  </div>
+</div></div>
+
+<!-- ============ POKÉDEX ============ -->
+<div class="view" id="view-dex"><div class="wrap">
+  <div class="view-head">
+    <h1>POKÉDEX</h1>
+    <p>Every species, searchable by name or number. Click one for types, base stats, and abilities.</p>
+  </div>
+
+  <div class="tcg-controls">
+    <input type="text" id="dex-search" placeholder="Search name or #number…" autocomplete="off">
+    <select id="dex-gen" aria-label="Filter by generation"></select>
+    <span class="status" id="dex-status"></span>
+  </div>
+
+  <div class="dex-detail pixel-box" id="dex-detail" aria-live="polite"></div>
+
+  <div class="dex-grid" id="dex-grid"></div>
+  <div class="empty pixel-box" id="dex-empty" style="display:none;"></div>
+
+  <div class="pixel-box note">
+    <b>Live API:</b> species data pulls from <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a> (<code>pokeapi.co/api/v2</code>), a free community API that asks clients to cache responses — this page keeps the species list in session storage and each detail lookup in memory. Only factual fields are shown (names, types, base stats, abilities, size); Pokédex description text is not imported. Sample data renders if the API can't be reached.
+  </div>
+</div></div>
+
+<footer><div class="wrap">
+  Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
+  Pokémon and all related names are trademarks of their respective owners. Card data and images via the community Pokémon TCG API. GO event schedule data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.
+</div></footer>
+
+<script>
+/* ============================================================
+   Live event data, sourced from the community ScrapedDuck feed
+   (structured fields only — titles/dates/type/link; we write our
+   own short blurbs rather than importing any source page's text).
+   Falls back to sample data if the feed can't be reached.
+   ============================================================ */
+const FEED_URLS = [
+  "https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/events.json",
+  "https://cdn.jsdelivr.net/gh/bigfoott/ScrapedDuck@data/events.json"
+];
+const SAMPLE_GO_EVENTS = [
+  { title:"Community Day: Starter Spotlight", type:"community-day",
+    start:"2026-09-14T11:00:00-05:00", end:"2026-09-21T14:00:00-05:00", link:null },
+  { title:"Legendary Raid Hour", type:"raid-hour",
+    start:"2026-09-16T18:00:00-05:00", end:"2026-09-19T19:00:00-05:00", link:null },
+  { title:"Spotlight Hour", type:"spotlight-hour",
+    start:"2026-09-22T18:00:00-05:00", end:"2026-09-22T19:00:00-05:00", link:null },
+  { title:"Timed Research: Season Finale", type:"research",
+    start:"2026-09-25T10:00:00-05:00", end:"2026-10-02T20:00:00-05:00", link:null },
+  { title:"Raid Weekend", type:"raid-battles",
+    start:"2026-10-04T09:00:00-05:00", end:"2026-10-05T21:00:00-05:00", link:null }
+];
+let GO_EVENTS = SAMPLE_GO_EVENTS;
+
+/* Palette assigned dynamically per event-type slug so any category
+   the feed uses gets a consistent color without us hardcoding a list. */
+const TYPE_PALETTE = ["#D9480F","#D89A1F","#1971C2","#7048E8","#2F9E44","#C2255C","#0C8599"];
+function colorForType(slug){
+  let h=0; for(const c of slug) h=(h*31+c.charCodeAt(0))>>>0;
+  return TYPE_PALETTE[h%TYPE_PALETTE.length];
+}
+function labelForType(slug){
+  return (slug||"event").replace(/[-_]/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+}
+function styleForType(slug){
+  const c=colorForType(slug||"event");
+  return { label:labelForType(slug), cls:"", color:c, bg:c+"1A" };
+}
+
+function fetchWithTimeout(url, ms=6000){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(()=>clearTimeout(t));
+}
+async function loadGoEvents(){
+  for(const url of FEED_URLS){
+    try{
+      const r=await fetchWithTimeout(url);
+      if(!r.ok) throw new Error(r.status);
+      const j=await r.json();
+      if(Array.isArray(j)&&j.length){
+        GO_EVENTS=j.map(e=>({
+          title:e.name||e.title||"Untitled event",
+          type:e.eventType||"event",
+          start:e.start, end:e.end,
+          link:e.link||null
+        }));
+        return;
+      }
+    }catch(err){ /* try next source */ }
+  }
+  GO_EVENTS=SAMPLE_GO_EVENTS; // offline/blocked fallback
+}
+function fmtRange(s,e){
+  const o={month:'short',day:'numeric',hour:'numeric',minute:'2-digit'};
+  return s.toLocaleString(undefined,o)+" → "+e.toLocaleString(undefined,o);
+}
+function countdown(target){
+  let ms=target-new Date();
+  if(ms<=0) return "now";
+  const d=Math.floor(ms/864e5), h=Math.floor(ms/36e5)%24, m=Math.floor(ms/6e4)%60, s=Math.floor(ms/1e3)%60;
+  if(d>0) return `${d}d ${h}h ${m}m`;
+  if(h>0) return `${h}h ${m}m ${s}s`;
+  return `${m}m ${s}s`;
+}
+function evCard(ev,isActive){
+  const st=styleForType(ev.type);
+  const el=document.createElement("div");
+  el.className="ev pixel-box";
+  el.style.setProperty("--type-c",st.color);
+  el.style.setProperty("--type-bg",st.bg);
+  el.innerHTML=`
+    <div class="ev-top">
+      <span class="ev-type">${st.label}</span>
+      ${isActive?'<span class="ev-live"><span class="dot"></span>LIVE</span>':''}
+    </div>
+    <h3>${ev.title}</h3>
+    <div class="when">
+      <span>${fmtRange(ev._s,ev._e)}</span>
+      <span class="cd" data-t="${(isActive?ev._e:ev._s).toISOString()}" data-pre="${isActive?'ends in':'starts in'}"></span>
+    </div>
+    ${ev.link?`<div style="margin-top:10px;"><a href="${ev.link}" target="_blank" rel="noopener" style="font-family:var(--font-retro);font-size:14px;color:var(--forest-dark);text-decoration:underline;">Full details on source site ↗</a></div>`:''}`;
+  return el;
+}
+function renderEvents(){
+  const now=new Date();
+  const evs=GO_EVENTS
+    .filter(e=>e.start&&e.end)
+    .map(e=>({...e,_s:new Date(e.start),_e:new Date(e.end)}))
+    .filter(e=>!isNaN(e._s)&&!isNaN(e._e));
+  const active=evs.filter(e=>e._s<=now&&e._e>now).sort((a,b)=>a._e-b._e);
+  const upcoming=evs.filter(e=>e._s>now).sort((a,b)=>a._s-b._s).slice(0,24);
+  const aEl=document.getElementById("active-events");
+  const uEl=document.getElementById("upcoming-events");
+  aEl.innerHTML=""; uEl.innerHTML="";
+  if(active.length) active.forEach(e=>aEl.appendChild(evCard(e,true)));
+  else aEl.innerHTML='<div class="empty pixel-box" style="grid-column:1/-1;">Nothing running right now — check the upcoming list.</div>';
+  if(upcoming.length) upcoming.forEach(e=>uEl.appendChild(evCard(e,false)));
+  else uEl.innerHTML='<div class="empty pixel-box" style="grid-column:1/-1;">No upcoming events on the board yet.</div>';
+  tickCountdowns();
+}
+function tickCountdowns(){
+  document.querySelectorAll("[data-t]").forEach(el=>{
+    el.textContent=el.dataset.pre+" "+countdown(new Date(el.dataset.t));
+  });
+}
+setInterval(()=>{tickCountdowns();},1000);
+setInterval(()=>{renderEvents();},60000);
+
+/* Original placeholder art for offline/sample cards — abstract, type-colored,
+   monogram-based. No copyrighted card art; purely generated geometry. */
+const CARD_PALETTE = ["#D9480F","#D89A1F","#1971C2","#7048E8","#2F9E44","#C2255C","#0C8599","#9A6EFF"];
+function hashStr(s){ let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))>>>0; return h; }
+const RARITY_STARS = { "Common":1, "Uncommon":2, "Rare":3, "Rare Holo":4 };
+function placeholderCardSVG(card){
+  const h = hashStr(card.name||"card");
+  const c1 = CARD_PALETTE[h % CARD_PALETTE.length];
+  const c2 = CARD_PALETTE[(h>>3) % CARD_PALETTE.length];
+  const letter = (card.name||"?").trim().charAt(0).toUpperCase();
+  const stars = RARITY_STARS[card.rarity] || 1;
+  const starRow = Array.from({length:stars}).map((_,i)=>
+    `<circle cx="${34+i*22}" cy="196" r="5" fill="#FDF6E3" opacity="0.9"/>`
+  ).join("");
+  return `<svg viewBox="0 0 175 245" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="g${h}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+    </defs>
+    <rect width="175" height="245" fill="url(#g${h})"/>
+    <rect x="8" y="8" width="159" height="229" fill="none" stroke="#FDF6E3" stroke-width="2" stroke-opacity="0.55" rx="6"/>
+    <circle cx="87" cy="100" r="46" fill="#FDF6E3" opacity="0.14"/>
+    <text x="87" y="118" font-family="Georgia,serif" font-size="58" fill="#FDF6E3" text-anchor="middle" opacity="0.92">${letter}</text>
+    ${starRow}
+    <text x="87" y="222" font-family="monospace" font-size="10" fill="#FDF6E3" text-anchor="middle" opacity="0.75">SAMPLE CARD</text>
+  </svg>`;
+}
+
+const API="https://api.pokemontcg.io/v2";
+const SAMPLE_SETS=[{id:"sample",name:"Sample Set (offline preview)",releaseDate:"—"}];
+const SAMPLE_CARDS=Array.from({length:10},(_,i)=>({
+  id:"s"+i, name:"Sample Card "+(i+1), number:String(i+1),
+  rarity:["Common","Uncommon","Rare","Rare Holo"][i%4],
+  hp:String(60+i*10), images:null
+}));
+const setSel=document.getElementById("set-select");
+const grid=document.getElementById("card-grid");
+const statusEl=document.getElementById("tcg-status");
+const emptyEl=document.getElementById("tcg-empty");
+const searchEl=document.getElementById("card-search");
+let allCards=[];
+async function loadSets(){
+  statusEl.textContent="Loading sets…";
+  try{
+    const r=await fetchWithTimeout(`${API}/sets?orderBy=-releaseDate&pageSize=60`);
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    fillSets(j.data.map(s=>({id:s.id,name:s.name,releaseDate:s.releaseDate})));
+    statusEl.textContent="";
+  }catch(err){
+    fillSets(SAMPLE_SETS);
+    statusEl.textContent="offline — sample data";
+  }
+}
+function fillSets(sets){
+  setSel.innerHTML=sets.map(s=>`<option value="${s.id}">${s.name}${s.releaseDate!=="—"?" ("+s.releaseDate.slice(0,4)+")":""}</option>`).join("");
+  loadCards(sets[0].id);
+}
+async function loadCards(setId){
+  grid.innerHTML=""; emptyEl.style.display="none";
+  statusEl.textContent="Loading cards…";
+  if(setId==="sample"){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; return; }
+  try{
+    const r=await fetchWithTimeout(`${API}/cards?q=set.id:${setId}&orderBy=number&pageSize=250`);
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    allCards=j.data;
+    statusEl.textContent=allCards.length+" cards";
+    renderCards();
+  }catch(err){
+    allCards=SAMPLE_CARDS; renderCards();
+    statusEl.textContent="offline — sample data";
+  }
+}
+function renderCards(){
+  const q=searchEl.value.trim().toLowerCase();
+  const list=q?allCards.filter(c=>c.name.toLowerCase().includes(q)):allCards;
+  if(!list.length){ grid.innerHTML=""; emptyEl.style.display="block"; emptyEl.textContent="No cards match that filter."; return; }
+  emptyEl.style.display="none";
+  grid.innerHTML=list.map(c=>`
+    <div class="tcard pixel-box">
+      <div class="imgwrap">
+        ${c.images?`<img src="${c.images.small}" alt="${c.name}" loading="lazy">`:placeholderCardSVG(c)}
+      </div>
+      <div class="meta">
+        <div class="nm">${c.name}</div>
+        <div class="sub"><span>#${c.number}</span><span>${c.rarity||"—"}</span></div>
+      </div>
+    </div>`).join("");
+}
+setSel.addEventListener("change",e=>loadCards(e.target.value));
+searchEl.addEventListener("input",()=>renderCards());
+
+/* ---- Upcoming Sets (hand-maintained — no public API for pre-release info) ----
+   Update this whenever a new set is officially confirmed, via pokemon-card.com
+   (Japan) or official English press. Write descriptions in your own words. */
+const UPCOMING_SETS = [
+  {
+    name: "30th Celebration",
+    region: "EN",
+    date: "2026-09-16",
+    blurb: "The Pokémon TCG's 30th-anniversary set, and the first expansion ever to launch worldwide on the same day rather than staggering English behind Japan. Built around all-foil packs, roughly 150 cards, and a run of classic reprints spanning the game's history alongside dozens of newly illustrated Pikachu cards."
+  },
+  {
+    name: "Mega Evolution: Delta Reign",
+    region: "EN",
+    date: "2026-11-06",
+    blurb: "The sixth and closing set in the Mega Evolution block, headlined by Mega Rayquaza ex. This is the English adaptation of Japan's already-released Storm Emeralda, continuing the Mega Evolution mechanic introduced earlier in the year."
+  },
+  {
+    name: "Storm Emeralda",
+    region: "JP",
+    date: "2026-07-31",
+    blurb: "Already released in Japan and headlined by Mega Rayquaza ex. This is the source set for the upcoming English Delta Reign expansion — Japan traditionally releases 3–4 months ahead of the English equivalent."
+  }
+];
+function renderUpcomingSets(){
+  const el=document.getElementById("upcoming-sets");
+  const today=new Date();
+  const sorted=[...UPCOMING_SETS].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  el.innerHTML=sorted.map(s=>{
+    const d=new Date(s.date);
+    const isFuture=d>today;
+    const dateLabel=d.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'});
+    return `<div class="ev pixel-box">
+      <div class="ev-top">
+        <span class="region-badge region-${s.region.toLowerCase()}">${s.region==="JP"?"Japan":"English"}</span>
+        ${isFuture?'':'<span style="font-family:var(--font-retro);font-size:13px;color:var(--ink-soft);">already released</span>'}
+      </div>
+      <h3>${s.name}</h3>
+      <div class="desc">${s.blurb}</div>
+      <div class="when"><span>${isFuture?'Releases':'Released'} ${dateLabel}</span></div>
+    </div>`;
+  }).join("");
+}
+renderUpcomingSets();
+
+
+const TOURNEY_API="https://play.limitlesstcg.com/api/tournaments?game=PTCG&limit=12";
+const SAMPLE_TOURNEYS=[
+  { id:"sample1", name:"Sample Regional Championship", format:"STANDARD", date:new Date().toISOString(), players:412 },
+  { id:"sample2", name:"Sample Weekly Online Cup", format:"STANDARD", date:new Date(Date.now()-864e5).toISOString(), players:64 }
+];
+function fmtTDate(iso){
+  const d=new Date(iso);
+  if(isNaN(d)) return "—";
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+}
+function tourneyRow(t){
+  const link=`https://play.limitlesstcg.com/tournaments/${t.id}`;
+  return `<div class="tourney-row pixel-box">
+    <div class="tourney-name">${t.name}</div>
+    <span class="tourney-format">${(t.format||"—").replace(/_/g," ")}</span>
+    <span class="tourney-date">${fmtTDate(t.date)}</span>
+    <span class="tourney-players">${t.players!=null?t.players+" players":"—"}</span>
+    <a class="tourney-link" href="${link}" target="_blank" rel="noopener">Standings ↗</a>
+  </div>`;
+}
+async function loadTournaments(){
+  const listEl=document.getElementById("tourney-list");
+  listEl.innerHTML='<div class="empty pixel-box">Loading tournaments…</div>';
+  try{
+    const r=await fetchWithTimeout(TOURNEY_API);
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    if(!Array.isArray(j)||!j.length) throw new Error("empty");
+    listEl.innerHTML=j.slice(0,12).map(tourneyRow).join("");
+  }catch(err){
+    listEl.innerHTML=
+      '<div class="empty pixel-box" style="margin-bottom:10px;">offline — showing sample data</div>'
+      + SAMPLE_TOURNEYS.map(tourneyRow).join("");
+  }
+}
+loadTournaments();
+setInterval(loadTournaments, 15*60000);
+
+/* ============================================================
+   POKÉDEX — species data from PokéAPI (pokeapi.co, free, no key).
+   Only factual data is used: names, types, base stats, abilities,
+   height/weight. Pokédex flavor text is deliberately NOT pulled —
+   that's the games' own prose. Sprites are OFF by default (see
+   SHOW_SPRITES); tiles use an original monogram instead.
+   ============================================================ */
+const POKEAPI="https://pokeapi.co/api/v2";
+const SHOW_SPRITES=true; // true = hotlink PokéAPI's sprite repo (official game art; see README). false = original monogram tiles
+const SPRITE_URL=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+
+const GEN_RANGES=[
+  {id:"all",label:"All generations",from:1,to:Infinity},
+  {id:"1",label:"Gen 1 · Kanto",from:1,to:151},
+  {id:"2",label:"Gen 2 · Johto",from:152,to:251},
+  {id:"3",label:"Gen 3 · Hoenn",from:252,to:386},
+  {id:"4",label:"Gen 4 · Sinnoh",from:387,to:493},
+  {id:"5",label:"Gen 5 · Unova",from:494,to:649},
+  {id:"6",label:"Gen 6 · Kalos",from:650,to:721},
+  {id:"7",label:"Gen 7 · Alola",from:722,to:809},
+  {id:"8",label:"Gen 8 · Galar",from:810,to:905},
+  {id:"9",label:"Gen 9 · Paldea",from:906,to:Infinity}
+];
+const DEX_TYPE_COLORS={
+  normal:"#A8A77A",fire:"#EE8130",water:"#6390F0",electric:"#F7D02C",grass:"#7AC74C",ice:"#96D9D6",
+  fighting:"#C22E28",poison:"#A33EA1",ground:"#E2BF65",flying:"#A98FF3",psychic:"#F95587",bug:"#A6B91A",
+  rock:"#B6A136",ghost:"#735797",dragon:"#6F35FC",dark:"#705746",steel:"#B7B7CE",fairy:"#D685AD"
+};
+const DEX_NAME_OVERRIDES={
+  "mr-mime":"Mr. Mime","mime-jr":"Mime Jr.","mr-rime":"Mr. Rime","type-null":"Type: Null",
+  "farfetchd":"Farfetch'd","sirfetchd":"Sirfetch'd","flabebe":"Flabébé","nidoran-f":"Nidoran♀","nidoran-m":"Nidoran♂"
+};
+const DEX_HYPHEN_KEEP=new Set(["ho-oh","porygon-z","jangmo-o","hakamo-o","kommo-o","wo-chien","chien-pao","ting-lu","chi-yu"]);
+const DEX_STAT_LABELS={"hp":"HP","attack":"ATK","defense":"DEF","special-attack":"SP.ATK","special-defense":"SP.DEF","speed":"SPD"};
+
+/* Small factual fallback (base stats / sizes) so the tab is never blank offline. */
+const DEX_SAMPLE=[
+  {id:1,name:"bulbasaur",types:["grass","poison"],height:0.7,weight:6.9,
+   abilities:[{name:"overgrow",hidden:false},{name:"chlorophyll",hidden:true}],
+   stats:[["hp",45],["attack",49],["defense",49],["special-attack",65],["special-defense",65],["speed",45]]},
+  {id:4,name:"charmander",types:["fire"],height:0.6,weight:8.5,
+   abilities:[{name:"blaze",hidden:false},{name:"solar-power",hidden:true}],
+   stats:[["hp",39],["attack",52],["defense",43],["special-attack",60],["special-defense",50],["speed",65]]},
+  {id:7,name:"squirtle",types:["water"],height:0.5,weight:9.0,
+   abilities:[{name:"torrent",hidden:false},{name:"rain-dish",hidden:true}],
+   stats:[["hp",44],["attack",48],["defense",65],["special-attack",50],["special-defense",64],["speed",43]]},
+  {id:25,name:"pikachu",types:["electric"],height:0.4,weight:6.0,
+   abilities:[{name:"static",hidden:false},{name:"lightning-rod",hidden:true}],
+   stats:[["hp",35],["attack",55],["defense",40],["special-attack",50],["special-defense",50],["speed",90]]},
+  {id:133,name:"eevee",types:["normal"],height:0.3,weight:6.5,
+   abilities:[{name:"run-away",hidden:false},{name:"adaptability",hidden:false},{name:"anticipation",hidden:true}],
+   stats:[["hp",55],["attack",55],["defense",50],["special-attack",45],["special-defense",65],["speed",55]]}
+];
+
+const dexSearch=document.getElementById("dex-search");
+const dexGen=document.getElementById("dex-gen");
+const dexStatus=document.getElementById("dex-status");
+const dexGrid=document.getElementById("dex-grid");
+const dexEmpty=document.getElementById("dex-empty");
+const dexDetail=document.getElementById("dex-detail");
+let dexList=[], dexOffline=false, dexLoading=false, dexReady=false, dexSelected=null;
+const dexCache=new Map();
+
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function titleCase(s){ return s.split("-").map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(" "); }
+function prettyName(slug){
+  if(DEX_NAME_OVERRIDES[slug]) return DEX_NAME_OVERRIDES[slug];
+  if(DEX_HYPHEN_KEEP.has(slug)) return slug.split("-").map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join("-");
+  return titleCase(slug);
+}
+function inkFor(hex){
+  const n=parseInt(hex.slice(1),16), r=n>>16, g=(n>>8)&255, b=n&255;
+  return (0.299*r+0.587*g+0.114*b)>150 ? "#1B2E1F" : "#FDF6E3";
+}
+function pad3(n){ return String(n).padStart(3,"0"); }
+async function getJSON(url,ms=8000){
+  const r=await fetchWithTimeout(url,ms);
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function loadDexList(){
+  try{
+    const cached=sessionStorage.getItem("td-dex-list-v1");
+    if(cached){ const arr=JSON.parse(cached); if(Array.isArray(arr)&&arr.length) return arr; }
+  }catch(e){}
+  // Ask for the species count first so new generations appear without a code change.
+  const head=await getJSON(`${POKEAPI}/pokemon-species?limit=1`);
+  const count=Number(head.count);
+  if(!count||count<1) throw new Error("bad count");
+  const j=await getJSON(`${POKEAPI}/pokemon-species?limit=${count}`,15000);
+  const list=j.results.map(r=>{
+    const m=r.url.match(/\/(\d+)\/?$/);
+    return m?{id:Number(m[1]),slug:r.name}:null;
+  }).filter(Boolean).sort((a,b)=>a.id-b.id);
+  if(!list.length) throw new Error("empty");
+  try{ sessionStorage.setItem("td-dex-list-v1",JSON.stringify(list)); }catch(e){}
+  return list;
+}
+function normalizeDetail(j){
+  return {
+    id:j.id,
+    name:j.species&&j.species.name?j.species.name:j.name,
+    types:j.types.slice().sort((a,b)=>a.slot-b.slot).map(t=>t.type.name),
+    height:j.height/10,
+    weight:j.weight/10,
+    abilities:j.abilities.slice().sort((a,b)=>a.slot-b.slot).map(a=>({name:a.ability.name,hidden:a.is_hidden})),
+    stats:j.stats.map(s=>[s.stat.name,s.base_stat])
+  };
+}
+async function loadDexDetail(id){
+  if(dexCache.has(id)) return dexCache.get(id);
+  const sample=DEX_SAMPLE.find(s=>s.id===id);
+  if(dexOffline){ if(sample) return sample; throw new Error("offline"); }
+  const d=normalizeDetail(await getJSON(`${POKEAPI}/pokemon/${id}`));
+  dexCache.set(id,d);
+  return d;
+}
+
+function renderDexGrid(){
+  const q=dexSearch.value.trim().toLowerCase().replace(/^#/,"");
+  const gen=GEN_RANGES.find(g=>g.id===dexGen.value)||GEN_RANGES[0];
+  const list=dexList.filter(p=>
+    p.id>=gen.from && p.id<=gen.to &&
+    (!q || p.label.toLowerCase().includes(q) || p.slug.includes(q) || String(p.id)===q || pad3(p.id)===q)
+  );
+  if(!list.length){
+    dexGrid.innerHTML=""; dexEmpty.style.display="block"; dexEmpty.textContent="No species match that search.";
+    return;
+  }
+  dexEmpty.style.display="none";
+  dexGrid.innerHTML=list.map(p=>`
+    <button type="button" class="dex-tile pixel-box" data-id="${p.id}" aria-pressed="${p.id===dexSelected}">
+      ${SHOW_SPRITES
+        ? `<img class="dex-sprite" src="${SPRITE_URL(p.id)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;dex-mono&quot; aria-hidden=&quot;true&quot;>${esc(p.label.charAt(0))}</span>'">`
+        : `<span class="dex-mono" aria-hidden="true">${esc(p.label.charAt(0))}</span>`}
+      <span class="dex-num">#${pad3(p.id)}</span>
+      <span class="dex-name">${esc(p.label)}</span>
+    </button>`).join("");
+}
+
+function statColor(v){ return v<50?"var(--hp-red)":v<90?"var(--hp-yellow)":"var(--hp-green)"; }
+function renderDexDetail(d){
+  const total=d.stats.reduce((s,[,v])=>s+v,0);
+  dexDetail.innerHTML=`
+    <div class="dex-detail-head">
+      <div><span class="dex-num">#${pad3(d.id)}</span><h2>${esc(prettyName(d.name))}</h2></div>
+      <button type="button" class="dex-close" id="dex-close">CLOSE ✕</button>
+    </div>
+    <div class="dex-types">${d.types.map(t=>{
+      const c=DEX_TYPE_COLORS[t]||"#888888";
+      return `<span class="dex-type" style="background:${c};color:${inkFor(c)}">${esc(t)}</span>`;
+    }).join("")}</div>
+    <div class="dex-cols">
+      <dl class="dex-facts">
+        <dt>Height</dt><dd>${d.height.toFixed(1)} m</dd>
+        <dt>Weight</dt><dd>${d.weight.toFixed(1)} kg</dd>
+        <dt>Abilities</dt><dd>${d.abilities.map(a=>
+          `${esc(titleCase(a.name))}${a.hidden?' <span class="dex-ability-hidden">(hidden)</span>':''}`).join("<br>")}</dd>
+      </dl>
+      <div>
+        ${d.stats.map(([k,v])=>`
+          <div class="dex-stat">
+            <span class="dex-stat-k">${esc(DEX_STAT_LABELS[k]||k)}</span>
+            <span>${v}</span>
+            <div class="dex-stat-bar"><div style="width:${Math.min(100,v/255*100).toFixed(1)}%;background:${statColor(v)}"></div></div>
+          </div>`).join("")}
+        <div class="dex-total">Base stat total: <b>${total}</b></div>
+      </div>
+    </div>`;
+  dexDetail.classList.add("open");
+}
+function closeDexDetail(){
+  dexSelected=null; dexDetail.classList.remove("open"); dexDetail.innerHTML="";
+  dexGrid.querySelectorAll(".dex-tile[aria-pressed='true']").forEach(b=>b.setAttribute("aria-pressed","false"));
+}
+async function selectDex(id){
+  dexSelected=id;
+  dexGrid.querySelectorAll(".dex-tile").forEach(b=>b.setAttribute("aria-pressed",String(Number(b.dataset.id)===id)));
+  dexDetail.classList.add("open");
+  dexDetail.innerHTML='<div class="dex-facts">Loading…</div>';
+  dexDetail.scrollIntoView({behavior:"smooth",block:"nearest"});
+  try{
+    const d=await loadDexDetail(id);
+    if(dexSelected!==id) return; // user clicked something else while this loaded
+    renderDexDetail(d);
+  }catch(err){
+    if(dexSelected!==id) return;
+    dexDetail.innerHTML='<div class="dex-facts">Couldn\'t load that species — the API may be unreachable. Try again in a moment.</div>';
+  }
+}
+
+async function initDex(){
+  if(dexLoading || (dexReady && !dexOffline)) return;
+  dexLoading=true;
+  dexStatus.textContent="Loading Pokédex…";
+  try{
+    const list=await loadDexList();
+    dexList=list.map(p=>({id:p.id,slug:p.slug,label:prettyName(p.slug)}));
+    dexOffline=false;
+    dexStatus.textContent=dexList.length+" species";
+  }catch(err){
+    dexList=DEX_SAMPLE.map(s=>({id:s.id,slug:s.name,label:prettyName(s.name)}));
+    dexOffline=true;
+    dexStatus.textContent="offline — sample data";
+  }
+  dexReady=true; dexLoading=false;
+  renderDexGrid();
+}
+dexGen.innerHTML=GEN_RANGES.map(g=>`<option value="${g.id}">${g.label}</option>`).join("");
+dexSearch.addEventListener("input",renderDexGrid);
+dexGen.addEventListener("change",renderDexGrid);
+dexGrid.addEventListener("click",e=>{
+  const tile=e.target.closest(".dex-tile");
+  if(tile) selectDex(Number(tile.dataset.id));
+});
+dexDetail.addEventListener("click",e=>{ if(e.target.closest("#dex-close")) closeDexDetail(); });
+
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    t.classList.add("active");
+    document.getElementById("view-"+t.dataset.view).classList.add("active");
+    if(t.dataset.view==="dex") initDex(); // lazy: don't hit PokéAPI until someone opens the tab
+  });
+});
+
+(async function initGoEvents(){
+  await loadGoEvents();
+  renderEvents();
+})();
+setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // refresh feed every 15 min
+loadSets();
+</script>
+</body>
+</html>
