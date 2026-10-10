@@ -7,6 +7,9 @@
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  // Consent Mode: no analytics cookies until the visitor accepts (see cookie banner below).
+  gtag('consent', 'default', { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+  try { if (localStorage.getItem('td-cookie-consent') === 'granted') gtag('consent', 'update', { analytics_storage: 'granted' }); } catch (e) {}
   gtag('js', new Date());
 
   gtag('config', 'G-S7NHPZKHJQ');
@@ -234,6 +237,32 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .type-research{ --type-c:#7048E8; --type-bg:rgba(112,72,232,0.1); }
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important;}}
+
+/* ---- cookie banner ---- */
+.cookie-banner{
+  position:fixed; left:0; right:0; bottom:0; z-index:50;
+  background:var(--parchment); color:var(--ink);
+  border-top:4px solid var(--gold-dark); box-shadow:0 -4px 0 rgba(0,0,0,0.25);
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+}
+.cookie-banner[hidden]{ display:none; }
+.cookie-inner{ max-width:960px; margin:0 auto; display:flex; gap:12px 20px; align-items:center; flex-wrap:wrap; }
+.cookie-inner p{ margin:0; flex:1 1 280px; font-size:14px; line-height:1.45; }
+.cookie-inner a{ color:var(--forest-dark); text-decoration:underline; }
+.cookie-actions{ display:flex; gap:8px; flex:0 0 auto; }
+.cookie-btn{
+  font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px;
+  min-height:44px; min-width:44px; padding:10px 16px; cursor:pointer;
+  border:3px solid var(--forest-dark); border-radius:4px;
+  background:var(--parchment-2); color:var(--forest-dark); box-shadow:2px 2px 0 rgba(0,0,0,0.3);
+}
+.cookie-btn.primary{ background:var(--gold); border-color:var(--gold-dark); }
+.cookie-btn:focus-visible{ outline:3px solid var(--forest); outline-offset:2px; }
+.link-btn{
+  background:none; border:0; padding:0; font:inherit; color:inherit; text-decoration:underline; cursor:pointer;
+  min-height:44px; display:inline-flex; align-items:center;
+}
+@media(max-width:480px){ .cookie-actions{ width:100%; } .cookie-btn{ flex:1; } }
 </style>
 </head>
 <body>
@@ -318,8 +347,34 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <footer><div class="wrap">
   Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
   Pokémon and all related names are trademarks of their respective owners. Card data and images via the community Pokémon TCG API. GO event schedule data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
-  This site uses Google Analytics (cookies) to count visits; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>.
+  This site uses Google Analytics (cookies) to count visits, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
 </div></footer>
+
+<div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Cookie consent" hidden>
+  <div class="cookie-inner">
+    <p>We'd like to use Google Analytics cookies to count visits and see which tabs are useful. Nothing is collected unless you accept. <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Learn more</a></p>
+    <div class="cookie-actions">
+      <button type="button" class="cookie-btn" id="cookie-decline">DECLINE</button>
+      <button type="button" class="cookie-btn primary" id="cookie-accept">ACCEPT</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var KEY='td-cookie-consent', banner=document.getElementById('cookie-banner');
+  function stored(){ try{ return localStorage.getItem(KEY); }catch(e){ return null; } }
+  function save(v){ try{ localStorage.setItem(KEY,v); }catch(e){} }
+  function choose(v){
+    save(v);
+    gtag('consent','update',{ analytics_storage: v });
+    banner.hidden=true;
+  }
+  document.getElementById('cookie-accept').addEventListener('click',function(){ choose('granted'); });
+  document.getElementById('cookie-decline').addEventListener('click',function(){ choose('denied'); });
+  document.getElementById('cookie-settings').addEventListener('click',function(){ banner.hidden=false; document.getElementById('cookie-accept').focus(); });
+  if(!stored()) banner.hidden=false;
+})();
+</script>
 
 <script>
 /* ============================================================
