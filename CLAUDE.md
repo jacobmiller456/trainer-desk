@@ -6,8 +6,17 @@ Unofficial Pokémon GO + TCG + Pokédex info site, Pokémon Emerald (GBA) look.
 ## Commands
 - `npm install && npx playwright install chromium` (once)
 - `npm run dev` → http://localhost:3000
-- `npm test` → Playwright suites (network is mocked/aborted; no live calls)
+- `npm test` → Playwright suites incl. mobile layout checks (network is mocked/aborted; no live calls)
+- `npm run test:mobile` → just the mobile checks
 - Deploy = push to `main` (Vercel project `trainer-desk-4n8w`, www.trainerdesk.net; see HANDOFF.md)
+
+## Mobile-first (required on every change)
+Most visitors are on phones. `tests/mobile.test.js` (part of `npm test`, and run by GitHub Actions on every push) checks every tab at 320/375/414px. Any change must keep it passing:
+- No horizontal page scroll; nothing past the screen edge (use a deliberate `overflow-x:auto` scroller for wide content).
+- Tap targets (buttons, links outside running text, selects, inputs) at least 44×44px.
+- Text at least 12px (10px for the Press Start 2P pixel font); form fields at least 16px so iOS doesn't zoom on focus.
+- Keep `width=device-width` in the viewport meta and never disable pinch-zoom.
+- Design new UI at 375px first, then widen with `min-width` media queries.
 
 ## Architecture rules
 - All fetches go through `fetchWithTimeout()` (6s abort). Every live section MUST have an offline fallback; no section may render blank.
