@@ -5,7 +5,7 @@ GBA-era "Pokémon Emerald" color and UI treatment (forest greens, cream
 dialogue-box panels, pixel/retro typography). Single-file static site,
 currently deployed to Vercel.
 
-**Live:** https://trainerdesk-jacobmiller456-6929.vercel.app
+**Live:** https://www.trainerdesk.net
 
 ## What's in here
 
@@ -69,13 +69,7 @@ territory, similar to LeekDuck, Serebii, or PokéBeach:
 
 ## Deploying
 
-Currently deployed via Vercel. From Claude Code, the simplest path is
-the Vercel CLI:
-
-```bash
-npm i -g vercel
-vercel --prod
-```
-
-Or connect this repo to a Vercel project via their GitHub integration
-for automatic deploys on push.
+Deployed on Vercel (project `trainer-desk-4n8w`), connected to this repo
+through the GitHub integration: every push to `main` deploys to
+production at www.trainerdesk.net, and other branches get preview URLs.
+Run `npm test` before pushing.

@@ -1,22 +1,20 @@
 # Handoff — Trainer Desk
 
-**Live:** https://trainerdesk-jacobmiller456-6929.vercel.app (also trainerdesk-two.vercel.app)
-**Vercel project:** `trainerdesk` · project id `prj_FztsjZjKPl8iXieC9ItDV654BNII` · team id `team_QVendHk4NLPfiQO7RqvHVE0P` · region iad1
-**GitHub:** jacobmiller456/trainer-desk (owner may not have pushed yet)
-**Framework preset:** Other (static). No build/install/output settings.
+**Live:** https://www.trainerdesk.net (apex trainerdesk.net 308-redirects to www; also trainer-desk-4n8w.vercel.app)
+**Vercel project:** `trainer-desk-4n8w` · project id `prj_stoGEL5IYR9MSx1GPiFshTNXeO1F` · team id `team_QVendHk4NLPfiQO7RqvHVE0P`
+**GitHub:** jacobmiller456/trainer-desk — connected to the Vercel project; every push to `main` deploys to production, other branches get preview URLs.
+**Framework preset:** Other (static). No build/install/output settings. `.vercelignore` keeps tests/tooling out of the upload.
 
 ## State
 - Tabs: GO Events, TCG Sets, Pokédex. All verified with Playwright (mock + offline).
-- Last deployed version = this `index.html` (Pokédex + sprites on + `API` const restored).
+- Production = `main`. SEO/OG meta, favicon, security headers (`vercel.json`) and `robots.txt` are in place.
+- Older duplicate projects `trainerdesk` and `trainer-desk` are being retired; don't deploy to them.
 
-## First steps for Claude Code
-1. `git init && git add . && git commit -m "Initial import"`; add the GitHub remote and push `main`.
-2. `npm install && npx playwright install chromium && npm test` — expect all PASS.
-3. Link Vercel: `vercel link` (choose existing project `trainerdesk`), then `vercel --prod`.
-4. In Vercel → Settings → Git, connect the repo so pushes auto-deploy. (Optional: make a `production` branch and set it as Production Branch.)
+## Working on it
+1. `npm install && npx playwright install chromium && npm test` — expect all PASS.
+2. Commit and push to `main` to ship. No manual `vercel --prod` needed.
 
 ## Known gaps / ideas
-- Custom domain not bought yet (avoid "pokemon" in the name; e.g. trainerdesk.com/.app).
 - `UPCOMING_SETS` needs manual updates when sets are announced.
-- Possible: switch ScrapedDuck primary to the jsDelivr mirror; shared type-color config; add SEO meta/OG tags and favicon.
+- Possible: switch ScrapedDuck primary to the jsDelivr mirror; shared type-color config; a social preview image (`og:image`).
 - No secrets or env vars are used anywhere.

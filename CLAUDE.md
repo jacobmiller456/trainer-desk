@@ -7,7 +7,7 @@ Unofficial Pokémon GO + TCG + Pokédex info site, Pokémon Emerald (GBA) look.
 - `npm install && npx playwright install chromium` (once)
 - `npm run dev` → http://localhost:3000
 - `npm test` → Playwright suites (network is mocked/aborted; no live calls)
-- `vercel --prod` → deploy (see HANDOFF.md)
+- Deploy = push to `main` (Vercel project `trainer-desk-4n8w`, www.trainerdesk.net; see HANDOFF.md)
 
 ## Architecture rules
 - All fetches go through `fetchWithTimeout()` (6s abort). Every live section MUST have an offline fallback; no section may render blank.
