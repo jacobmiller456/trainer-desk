@@ -8,5 +8,10 @@
     "test": "mkdir -p tests/shots && node tests/tcg.test.js index.html && node tests/dex.test.js index.html tests/shots",
     "deploy": "vercel --prod"
   },
-  "devDependencies": { "playwright": "^1.48.0" }
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
 }
