@@ -1,0 +1,12 @@
+{
+  "name": "trainer-desk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unofficial fan site: Pokemon GO events, TCG set browser, Pokedex. Static single-file site.",
+  "scripts": {
+    "dev": "npx serve . -l 3000",
+    "test": "mkdir -p tests/shots && node tests/tcg.test.js index.html && node tests/dex.test.js index.html tests/shots",
+    "deploy": "vercel --prod"
+  },
+  "devDependencies": { "playwright": "^1.48.0" }
+}
