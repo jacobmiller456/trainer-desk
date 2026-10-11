@@ -266,6 +266,30 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   min-height:44px; display:inline-flex; align-items:center;
 }
 @media(max-width:480px){ .cookie-actions{ width:100%; } .cookie-btn{ flex:1; } }
+
+/* ---- tab labels: short on phones so four tabs fit ---- */
+.tab .short{ display:none; }
+@media(max-width:520px){ .tab .full{ display:none; } .tab .short{ display:inline; } .tab{ padding:10px 10px; min-width:44px; } }
+
+/* ---- pixel arena ---- */
+.arena-controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; }
+.arena-field{ display:flex; flex-direction:column; gap:6px; font-family:var(--font-retro); font-size:16px; color:var(--parchment); }
+.arena-field select{ min-width:0; width:100%; min-height:44px; }
+.arena-btn{
+  font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px; min-height:44px; min-width:44px; padding:10px 18px; cursor:pointer;
+  border:3px solid var(--gold-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); box-shadow:2px 2px 0 rgba(0,0,0,0.3);
+}
+.arena-btn:disabled{ opacity:.6; cursor:default; }
+.arena-btn:focus-visible{ outline:3px solid var(--parchment); outline-offset:2px; }
+.arena-wrap{ position:relative; width:100%; max-width:480px; margin:0 auto; }
+#arena-canvas{ display:block; width:100%; height:auto; aspect-ratio:1/1; image-rendering:pixelated; touch-action:none; border:4px solid var(--border); border-radius:4px; box-shadow:4px 4px 0 rgba(0,0,0,0.25); background:#2D6A4F; }
+.arena-overlay{
+  position:absolute; inset:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:20px; text-align:center;
+  background:rgba(27,67,50,0.82); color:var(--parchment); font-family:var(--font-retro); font-size:20px; line-height:1.3; border-radius:2px;
+}
+.arena-overlay[hidden]{ display:none; }
+.arena-overlay p{ margin:0; }
+.arena-hud{ max-width:480px; margin:10px auto 0; font-family:var(--font-retro); font-size:18px; color:var(--parchment); min-height:1.4em; }
 </style>
 </head>
 <body>
@@ -273,9 +297,10 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <header><div class="wrap">
   <div class="logo"><span class="mark">✦</span> TRAINER DESK</div>
   <div class="tabs">
-    <button class="tab active" data-view="go">GO EVENTS</button>
-    <button class="tab" data-view="tcg">TCG SETS</button>
-    <button class="tab" data-view="dex">POKÉDEX</button>
+    <button class="tab active" data-view="go"><span class="full">GO EVENTS</span><span class="short">GO</span></button>
+    <button class="tab" data-view="tcg"><span class="full">TCG SETS</span><span class="short">TCG</span></button>
+    <button class="tab" data-view="dex"><span class="full">POKÉDEX</span><span class="short">DEX</span></button>
+    <button class="tab" data-view="arena">ARENA</button>
   </div>
 </div></header>
 
@@ -344,6 +369,28 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
   <div class="pixel-box note">
     <b>Live API:</b> species data pulls from <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a> (<code>pokeapi.co/api/v2</code>), a free community API that asks clients to cache responses — this page keeps the species list in session storage and each detail lookup in memory. Only factual fields are shown (names, types, base stats, abilities, size); Pokédex description text is not imported. Sample data renders if the API can't be reached.
+  </div>
+</div></div>
+
+<!-- ============ PIXEL ARENA ============ -->
+<div class="view" id="view-arena"><div class="wrap">
+  <div class="view-head">
+    <h1>PIXEL ARENA</h1>
+    <p>Solo battle royale. Pick a fighter and outlast the computer-controlled rivals as the red zone closes in. Type matchups matter — water beats fire, and so on.</p>
+  </div>
+  <div class="arena-controls">
+    <label class="arena-field">YOUR FIGHTER
+      <select id="arena-fighter" aria-label="Your fighter"></select>
+    </label>
+    <button type="button" class="arena-btn" id="arena-start">START</button>
+  </div>
+  <div class="arena-wrap">
+    <canvas id="arena-canvas" width="480" height="480" role="img" aria-label="Battle arena with fighters and a shrinking red zone"></canvas>
+    <div class="arena-overlay" id="arena-overlay" role="status"><p id="arena-msg"></p><button type="button" class="arena-btn" id="arena-again" hidden>PLAY AGAIN</button></div>
+  </div>
+  <div class="arena-hud" id="arena-hud"></div>
+  <div class="pixel-box note">
+    <b>Unofficial fan minigame.</b> Fighter stats and types come from <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>; sprites are hotlinked from PokéAPI's sprite repository and belong to their respective owners. Not affiliated with or endorsed by Nintendo, Game Freak, Creatures Inc., or The Pokémon Company International. Free to play, no ads.
   </div>
 </div></div>
 
@@ -1032,6 +1079,258 @@ document.querySelectorAll(".tab").forEach(t=>{
   renderEvents();
 })();
 setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // refresh feed every 15 min
+
+/* ============================================================
+   PIXEL ARENA — solo battle-royale minigame (canvas, no backend).
+   Stats + types come from PokéAPI via loadDexDetail() (facts); sprites are
+   hotlinked from PokéAPI's sprite repo and only used when SHOW_SPRITES is true
+   (otherwise original type-colored monogram discs). Offline: the 5 DEX_SAMPLE
+   species are used so the game always works.
+   ============================================================ */
+(function(){
+  const W=480, H=480, SPR=48, RAD=17, CX=W/2, CY=H/2;
+  const ZONE_START=340, ZONE_END=38, ZONE_DELAY=6, ZONE_TIME=70;
+  const ROSTER=[[1,"bulbasaur"],[3,"venusaur"],[4,"charmander"],[6,"charizard"],[7,"squirtle"],[9,"blastoise"],[25,"pikachu"],[39,"jigglypuff"],
+    [52,"meowth"],[54,"psyduck"],[92,"gastly"],[94,"gengar"],[130,"gyarados"],[133,"eevee"],[143,"snorlax"],[149,"dragonite"],[150,"mewtwo"],
+    [248,"tyranitar"],[282,"gardevoir"],[445,"garchomp"],[448,"lucario"],[658,"greninja"],[681,"aegislash"],[700,"sylveon"]];
+  // Attacking type -> defending types it hits double / half / not at all (standard type chart).
+  const CHART={
+    normal:{half:["rock","steel"],zero:["ghost"]},
+    fire:{dbl:["grass","ice","bug","steel"],half:["fire","water","rock","dragon"]},
+    water:{dbl:["fire","ground","rock"],half:["water","grass","dragon"]},
+    electric:{dbl:["water","flying"],half:["electric","grass","dragon"],zero:["ground"]},
+    grass:{dbl:["water","ground","rock"],half:["fire","grass","poison","flying","bug","dragon","steel"]},
+    ice:{dbl:["grass","ground","flying","dragon"],half:["fire","water","ice","steel"]},
+    fighting:{dbl:["normal","ice","rock","dark","steel"],half:["poison","flying","psychic","bug","fairy"],zero:["ghost"]},
+    poison:{dbl:["grass","fairy"],half:["poison","ground","rock","ghost"],zero:["steel"]},
+    ground:{dbl:["fire","electric","poison","rock","steel"],half:["grass","bug"],zero:["flying"]},
+    flying:{dbl:["grass","fighting","bug"],half:["electric","rock","steel"]},
+    psychic:{dbl:["fighting","poison"],half:["psychic","steel"],zero:["dark"]},
+    bug:{dbl:["grass","psychic","dark"],half:["fire","fighting","poison","flying","ghost","steel","fairy"]},
+    rock:{dbl:["fire","ice","flying","bug"],half:["fighting","ground","steel"]},
+    ghost:{dbl:["psychic","ghost"],half:["dark"],zero:["normal"]},
+    dragon:{dbl:["dragon"],half:["steel"],zero:["fairy"]},
+    dark:{dbl:["psychic","ghost"],half:["fighting","dark","fairy"]},
+    steel:{dbl:["ice","rock","fairy"],half:["fire","water","electric","steel"]},
+    fairy:{dbl:["fighting","dragon","dark"],half:["fire","poison","steel"]}
+  };
+  function typeMult(atk,defTypes){
+    const c=CHART[atk]||{}; let m=1;
+    for(const t of defTypes){
+      if(c.zero&&c.zero.includes(t)) m*=0.25; // "barely affects": never fully immune, keeps fights moving
+      else if(c.dbl&&c.dbl.includes(t)) m*=2;
+      else if(c.half&&c.half.includes(t)) m*=0.5;
+    }
+    return Math.min(4,Math.max(0.25,m));
+  }
+
+  const cv=document.getElementById("arena-canvas"), ctx=cv.getContext("2d");
+  const sel=document.getElementById("arena-fighter"), startBtn=document.getElementById("arena-start");
+  const hud=document.getElementById("arena-hud"), overlay=document.getElementById("arena-overlay");
+  const msgEl=document.getElementById("arena-msg"), againBtn=document.getElementById("arena-again");
+  cv.width=W; cv.height=H;
+  sel.innerHTML=ROSTER.map(r=>`<option value="${r[0]}">${esc(prettyName(r[1]))}</option>`).join("");
+  sel.value="25";
+
+  let G=null, raf=0, last=0, hudAt=0, stick=null;
+  const keys={}, sprites=new Map();
+
+  function getSprite(id){
+    if(!SHOW_SPRITES) return null;
+    let e=sprites.get(id);
+    if(!e){ const im=new Image(); e={im,ok:false}; im.onload=()=>{ e.ok=true; }; im.src=SPRITE_URL(id); sprites.set(id,e); }
+    return e.ok?e.im:null;
+  }
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+  function makeFighter(d,isPlayer,i,n,off){
+    const s={}; d.stats.forEach(([k,v])=>{ s[k]=v; });
+    const ang=off+(i/n)*Math.PI*2;
+    const spd=s.speed||50;
+    return {
+      id:d.id, name:prettyName(d.name), types:d.types, isPlayer,
+      x:CX+Math.cos(ang)*185, y:CY+Math.sin(ang)*185,
+      maxhp:70+(s.hp||50)*0.9, hp:0,
+      dmg:7+Math.max(s.attack||50,s["special-attack"]||50)*0.12,
+      def:1/(1+(((s.defense||50)+(s["special-defense"]||50))/2)/120),
+      speed:60+Math.min(spd,130)*0.45,
+      cool:clamp(1.3-spd/200,0.6,1.2), t:Math.random()*0.8,
+      alive:true, flash:0, strafe:Math.random()<0.5?1:-1, wander:Math.random()*6.28, wt:0, place:0
+    };
+  }
+  function newGame(details){
+    const n=details.length, off=Math.random()*6.28;
+    const f=details.map((d,i)=>makeFighter(d,i===0,i,n,off));
+    f.forEach(x=>{ x.hp=x.maxhp; });
+    return {f,shots:[],orbs:[],t:0,orbT:4,over:false,win:false,place:0};
+  }
+
+  function inputVec(){
+    if(stick){ const dx=stick.x-stick.ox, dy=stick.y-stick.oy, m=Math.hypot(dx,dy); if(m>6) return [dx/Math.max(m,50)*(m>50?1:m/50), dy/Math.max(m,50)*(m>50?1:m/50)]; return [0,0]; }
+    const x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0), y=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+    const m=Math.hypot(x,y); return m?[x/m,y/m]:[0,0];
+  }
+  let testInput=null;
+
+  function zoneR(t){ return ZONE_START+(ZONE_END-ZONE_START)*clamp((t-ZONE_DELAY)/ZONE_TIME,0,1); }
+  function nearestEnemy(f,list){
+    let best=null,bd=1e9;
+    for(const o of list){ if(o===f||!o.alive) continue; const d=dist(f,o); if(d<bd){bd=d;best=o;} }
+    return best?{o:best,d:bd}:null;
+  }
+
+  function step(dt){
+    if(!G||G.over) return;
+    G.t+=dt;
+    const zr=zoneR(G.t), alive=G.f.filter(f=>f.alive);
+    for(const f of alive){
+      let vx=0,vy=0;
+      const ne=nearestEnemy(f,G.f);
+      if(f.isPlayer){ [vx,vy]=testInput||inputVec(); }
+      else{
+        const dc=Math.hypot(f.x-CX,f.y-CY);
+        f.wt-=dt; if(f.wt<=0){ f.wander+= (Math.random()-.5)*1.6; f.wt=0.8+Math.random(); if(Math.random()<.2) f.strafe*=-1; }
+        if(dc>zr-34){ vx=(CX-f.x)/dc; vy=(CY-f.y)/dc; }
+        else if(ne){
+          const dx=(ne.o.x-f.x)/ne.d, dy=(ne.o.y-f.y)/ne.d;
+          if(f.hp<f.maxhp*0.35&&ne.d<210){ vx=-dx; vy=-dy; }
+          else if(ne.d>120){ vx=dx; vy=dy; }
+          else { vx=-dy*f.strafe; vy=dx*f.strafe; }
+        }
+        vx+=Math.cos(f.wander)*0.25; vy+=Math.sin(f.wander)*0.25;
+        const m=Math.hypot(vx,vy); if(m>1){ vx/=m; vy/=m; }
+      }
+      f.x=clamp(f.x+vx*f.speed*dt,RAD,W-RAD); f.y=clamp(f.y+vy*f.speed*dt,RAD,H-RAD);
+      if(Math.hypot(f.x-CX,f.y-CY)>zr) f.hp-=(8+G.t*0.08)*dt; // outside the zone
+      f.flash=Math.max(0,f.flash-dt);
+      f.t-=dt;
+      if(f.t<=0&&ne&&ne.d<200){
+        f.t=f.cool;
+        const dx=(ne.o.x-f.x)/ne.d, dy=(ne.o.y-f.y)/ne.d;
+        G.shots.push({x:f.x,y:f.y,vx:dx*280,vy:dy*280,owner:f,type:f.types[0]||"normal",life:0.9});
+      }
+    }
+    // keep fighters from stacking
+    for(let i=0;i<alive.length;i++) for(let j=i+1;j<alive.length;j++){
+      const a=alive[i],b=alive[j],d=dist(a,b);
+      if(d>0&&d<RAD*1.6){ const p=(RAD*1.6-d)/2, ux=(a.x-b.x)/d, uy=(a.y-b.y)/d; a.x+=ux*p; a.y+=uy*p; b.x-=ux*p; b.y-=uy*p; }
+    }
+    for(const s of G.shots){
+      s.x+=s.vx*dt; s.y+=s.vy*dt; s.life-=dt;
+      for(const f of G.f){
+        if(!f.alive||f===s.owner||Math.hypot(f.x-s.x,f.y-s.y)>RAD+4) continue;
+        f.hp-=s.owner.dmg*typeMult(s.type,f.types)*f.def; f.flash=0.12; s.life=0; break;
+      }
+    }
+    G.shots=G.shots.filter(s=>s.life>0&&s.x>-10&&s.x<W+10&&s.y>-10&&s.y<H+10);
+    G.orbT-=dt;
+    if(G.orbT<=0&&G.orbs.length<3){
+      G.orbT=7; const a=Math.random()*6.28, r=Math.random()*Math.max(20,zr-40);
+      G.orbs.push({x:CX+Math.cos(a)*r,y:CY+Math.sin(a)*r});
+    }
+    for(const f of alive){
+      G.orbs=G.orbs.filter(o=>{ if(Math.hypot(f.x-o.x,f.y-o.y)<RAD+8){ f.hp=Math.min(f.maxhp,f.hp+f.maxhp*0.3); return false; } return true; });
+    }
+    const dead=alive.filter(f=>f.hp<=0);
+    if(dead.length){
+      const left=alive.length-dead.length;
+      dead.forEach(f=>{ f.alive=false; f.hp=0; f.place=left+1; });
+    }
+    const player=G.f[0], remaining=G.f.filter(f=>f.alive).length;
+    if(!player.alive){ G.over=true; G.win=false; G.place=player.place; }
+    else if(remaining<=1){ G.over=true; G.win=true; G.place=1; }
+    if(G.over) finish();
+  }
+
+  function draw(){
+    ctx.imageSmoothingEnabled=false;
+    for(let y=0;y<H;y+=40) for(let x=0;x<W;x+=40){ ctx.fillStyle=((x+y)/40)%2?"#2D6A4F":"#276049"; ctx.fillRect(x,y,40,40); }
+    if(!G) return;
+    const zr=zoneR(G.t);
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); ctx.arc(CX,CY,zr,0,Math.PI*2,true);
+    ctx.fillStyle="rgba(255,70,70,0.32)"; ctx.fill("evenodd"); ctx.restore();
+    ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(CX,CY,zr,0,Math.PI*2); ctx.stroke();
+    for(const o of G.orbs){ ctx.fillStyle="#4CD964"; ctx.beginPath(); ctx.arc(o.x,o.y,8,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#fff"; ctx.fillRect(o.x-4,o.y-1,8,2); ctx.fillRect(o.x-1,o.y-4,2,8); }
+    for(const s of G.shots){ ctx.fillStyle=DEX_TYPE_COLORS[s.type]||"#fff"; ctx.strokeStyle="#fff"; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(s.x,s.y,5,0,Math.PI*2); ctx.fill(); ctx.stroke(); }
+    for(const f of [...G.f].sort((a,b)=>a.y-b.y)){
+      if(!f.alive) continue;
+      if(f.isPlayer){ ctx.strokeStyle="#FFC94A"; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(f.x,f.y+14,20,8,0,0,Math.PI*2); ctx.stroke(); }
+      const im=getSprite(f.id);
+      if(im){ ctx.drawImage(im,f.x-SPR/2,f.y-SPR/2-8,SPR,SPR); }
+      else{
+        ctx.fillStyle=DEX_TYPE_COLORS[f.types[0]]||"#888"; ctx.beginPath(); ctx.arc(f.x,f.y,RAD,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle="#1B4332"; ctx.lineWidth=3; ctx.stroke();
+        ctx.fillStyle="#fff"; ctx.font="bold 20px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(f.name.charAt(0),f.x,f.y+1);
+      }
+      if(f.flash>0){ ctx.fillStyle="rgba(255,255,255,0.55)"; ctx.beginPath(); ctx.arc(f.x,f.y,RAD,0,Math.PI*2); ctx.fill(); }
+      const bw=34, r=f.hp/f.maxhp;
+      ctx.fillStyle="#1B2E1F"; ctx.fillRect(f.x-bw/2-1,f.y-RAD-17,bw+2,7);
+      ctx.fillStyle=r>0.5?"#4CD964":r>0.25?"#FFD43B":"#FF5C5C"; ctx.fillRect(f.x-bw/2,f.y-RAD-16,bw*r,5);
+    }
+    if(stick){ ctx.strokeStyle="rgba(255,255,255,0.5)"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(stick.ox,stick.oy,50,0,Math.PI*2); ctx.stroke();
+      const dx=stick.x-stick.ox, dy=stick.y-stick.oy, m=Math.hypot(dx,dy)||1, k=Math.min(m,50)/m;
+      ctx.fillStyle="rgba(255,255,255,0.6)"; ctx.beginPath(); ctx.arc(stick.ox+dx*k,stick.oy+dy*k,16,0,Math.PI*2); ctx.fill(); }
+  }
+  function updateHud(){
+    if(!G) return;
+    const p=G.f[0], n=G.f.filter(f=>f.alive).length, left=Math.max(0,Math.ceil(ZONE_DELAY+ZONE_TIME-G.t));
+    hud.textContent="ALIVE "+n+"/"+G.f.length+" · "+p.name+" HP "+Math.max(0,Math.ceil(p.hp))+"/"+Math.ceil(p.maxhp)+" · "+(left?"FINAL ZONE IN "+left+"s":"FINAL ZONE");
+  }
+  function frame(ts){
+    if(!G){ raf=0; return; }
+    const dt=Math.min(0.05,(ts-last)/1000||0); last=ts;
+    step(dt); draw();
+    if(ts-hudAt>250){ hudAt=ts; updateHud(); }
+    raf=G&&!G.over?requestAnimationFrame(frame):0;
+  }
+  function setOverlay(msg,again){ msgEl.textContent=msg; againBtn.hidden=!again; overlay.hidden=false; }
+  function finish(){
+    cancelAnimationFrame(raf); raf=0; draw(); updateHud();
+    setOverlay(G.win?"VICTORY! You are the last one standing.":"Knocked out — you placed #"+G.place+" of "+G.f.length+".",true);
+    startBtn.disabled=false;
+  }
+  function stop(){ cancelAnimationFrame(raf); raf=0; G=null; stick=null; for(const k in keys) keys[k]=false; startBtn.disabled=false; draw(); }
+
+  async function start(){
+    stop(); startBtn.disabled=true; setOverlay("Loading fighters…",false); hud.textContent="";
+    const pid=Number(sel.value);
+    const ids=[pid,...ROSTER.map(r=>r[0]).filter(i=>i!==pid).sort(()=>Math.random()-.5).slice(0,11)];
+    const res=await Promise.allSettled(ids.map(i=>loadDexDetail(i)));
+    let details=res.map(r=>r.status==="fulfilled"?r.value:null);
+    let note="";
+    if(!details[0]){ // no live data for the chosen fighter: play with the built-in sample species
+      const own=DEX_SAMPLE.find(s=>s.id===pid)||DEX_SAMPLE[0];
+      details=[own,...DEX_SAMPLE.filter(s=>s!==own)]; note=" (offline: sample fighters)";
+    } else {
+      details=details.filter(Boolean);
+      for(const s of DEX_SAMPLE){ if(details.length>=5) break; if(!details.some(d=>d.id===s.id)) details.push(s); }
+    }
+    G=newGame(details); overlay.hidden=true; last=performance.now(); hudAt=0;
+    hud.textContent="Fight!"+note;
+    raf=requestAnimationFrame(frame);
+  }
+
+  startBtn.addEventListener("click",start);
+  againBtn.addEventListener("click",start);
+  document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{ if(t.dataset.view!=="arena") stop(); }));
+  const arenaActive=()=>document.getElementById("view-arena").classList.contains("active");
+  window.addEventListener("keydown",e=>{
+    if(!arenaActive()) return;
+    const k=e.key.toLowerCase();
+    if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)){ keys[k]=true; if(G&&!G.over&&k.startsWith("arrow")) e.preventDefault(); }
+  });
+  window.addEventListener("keyup",e=>{ keys[e.key.toLowerCase()]=false; });
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]; };
+  cv.addEventListener("pointerdown",e=>{ const [x,y]=pos(e); stick={ox:x,oy:y,x,y}; try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
+  cv.addEventListener("pointermove",e=>{ if(stick){ const [x,y]=pos(e); stick.x=x; stick.y=y; } });
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>cv.addEventListener(ev,()=>{ stick=null; }));
+  setOverlay("Pick a fighter and press START. Drag on the arena (or use WASD / arrow keys) to move — your fighter fires on its own.",false);
+  draw();
+  // test hook (used by tests/arena.test.js)
+  window.__arena={ step, setInput:(x,y)=>{ testInput=(x==null)?null:[x,y]; }, get state(){ return G&&{over:G.over,win:G.win,place:G.place,alive:G.f.filter(f=>f.alive).length,total:G.f.length,player:{x:G.f[0].x,y:G.f[0].y,hp:G.f[0].hp}}; } };
+})();
+
 loadSets();
 </script>
 </body>

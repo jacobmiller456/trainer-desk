@@ -10,7 +10,7 @@ currently deployed to Vercel.
 ## What's in here
 
 Everything lives in `index.html` — HTML, CSS, and JS in one file, no
-build step. Three tabs:
+build step. Four tabs (GO Events, TCG Sets, Pokédex, Pixel Arena); the first three are described below:
 
 ### GO Events
 Live event calendar (raids, community days, spotlight hours, research)
@@ -44,6 +44,14 @@ Searchable species list backed by [PokéAPI](https://pokeapi.co) (`pokeapi.co/ap
 - **Offline:** if the API is unreachable, 5 hand-entered species (Bulbasaur, Charmander, Squirtle, Pikachu, Eevee) render so the tab is never blank; re-opening the tab retries the live API.
 - **Names:** display names come from slugs via `prettyName()`, with `DEX_NAME_OVERRIDES` / `DEX_HYPHEN_KEEP` for the awkward ones (Mr. Mime, Ho-Oh, Type: Null…). Add entries there if you spot a mangled name.
 - **Not imported on purpose:** Pokédex flavor-text entries (that's the games' own prose — write your own if you want descriptions) and sprites (see below).
+
+### Pixel Arena
+Solo battle-royale minigame on a `<canvas>` (single file, no backend). Pick a fighter from a 24-species roster (`ROSTER`) and outlast 11 computer-controlled rivals while a red zone shrinks; the last one standing wins.
+- **Data:** fighter stats and types come from PokéAPI through the Pokédex's `loadDexDetail()` (HP/attack/defense/speed drive the fight; the standard type chart in `CHART` drives damage multipliers, floored at 0.25x so nothing is fully immune). Offline, the 5 `DEX_SAMPLE` species are used.
+- **Sprites:** hotlinked from PokéAPI's sprite repo and drawn only when `SHOW_SPRITES` is true; otherwise fighters are original type-colored discs with a letter. Never copy sprite files into the repo.
+- **Controls:** drag on the arena (touch or mouse) or WASD / arrow keys; fighters auto-aim and auto-fire. Healing orbs spawn in the zone. Leaving the tab stops the game.
+- **Tests:** `tests/arena.test.js` (offline + mocked PokéAPI) plays to a result using a small `window.__arena` test hook. Header tab labels shorten to GO / TCG / DEX on phones so four tabs fit.
+- **Not built yet:** online multiplayer and a high-score table (would use Supabase with row-level security).
 
 ## Network resilience
 
