@@ -21,9 +21,22 @@ const path = require('path');
   const opts=await page.$$eval('#set-select option',o=>o.map(x=>x.textContent));
   const names=await page.$$eval('#card-grid .nm',n=>n.map(x=>x.textContent));
   console.log({status,opts,names,errors});
-  const prices=await page.$$eval('#card-grid .price',n=>n.map(x=>x.textContent));
-  console.log({prices});
-  const ok=prices.join('|')==='$12.50TCGplayer|€0.40Cardmarket'&&status==='2 cards'&&opts.length===2&&names[0]==='Live Card A'&&!errors.length;
+  // flip: tapping a card turns it over to show the price; tapping again flips it back
+  const first=page.locator('#card-grid .tcard').first();
+  await first.click();
+  const flippedOn=(await first.getAttribute('class')).includes('flipped')&&(await first.getAttribute('aria-pressed'))==='true';
+  await first.click();
+  const flippedOff=!(await first.getAttribute('class')).includes('flipped');
+  await first.focus(); await page.keyboard.press('Enter');
+  const keyOk=(await first.getAttribute('class')).includes('flipped');
+  await page.keyboard.press('Space');
+  await page.$$eval('#card-grid .tcard',els=>els.forEach(e=>e.classList.add('flipped')));
+  const prices=await page.$$eval('#card-grid .tb-price',n=>n.map(x=>x.textContent));
+  const srcs=await page.$$eval('#card-grid .tback .tb-src',n=>n.map(x=>x.textContent));
+  console.log({prices,srcs,flippedOn,flippedOff,keyOk});
+  console.log(flippedOn&&flippedOff&&keyOk?'PASS tcg card flips on tap, flips back, works from keyboard':'FAIL tcg card flip');
+  const flipOk=flippedOn&&flippedOff&&keyOk;
+  const ok=flipOk&&prices.join('|')==='$12.50|€0.40'&&srcs.join('|')==='TCGplayer market price|Cardmarket market price'&&status==='2 cards'&&opts.length===2&&names[0]==='Live Card A'&&!errors.length;
   console.log(ok?'PASS tcg live path':'FAIL tcg live path');
   // cache: switching sets and back, then reloading, must not refetch what was already loaded
   await page.selectOption('#set-select','liv2');

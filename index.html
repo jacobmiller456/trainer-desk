@@ -151,17 +151,26 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .status{ font-family:var(--font-retro); font-size:15px; color:var(--parchment); }
 
 .card-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:16px; }
-.tcard{ padding:0; overflow:hidden; transition:.15s; }
+.tcard{ perspective:900px; cursor:pointer; transition:.15s; -webkit-tap-highlight-color:transparent; }
 .tcard:hover{ transform:translateY(-3px); }
+.tcard:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; border-radius:4px; }
+.tflip{ position:relative; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.4,.2,.2,1); }
+.tcard.flipped .tflip{ transform:rotateY(180deg); }
+.tface{ backface-visibility:hidden; -webkit-backface-visibility:hidden; overflow:hidden; }
+.tback{ position:absolute; inset:0; transform:rotateY(180deg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center; padding:12px;
+  background:linear-gradient(160deg,var(--parchment),var(--parchment-2)); }
+.tb-name{ font-size:13.5px; font-weight:800; color:var(--ink); }
+.tb-body{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+.tb-price{ font-family:var(--font-retro); font-size:34px; line-height:1; color:var(--forest-dark); }
+.tb-src{ font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
+.tb-date{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
+.tb-hint{ font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); }
 .tcard .imgwrap{ aspect-ratio:245/342; background:var(--parchment-2); display:grid; place-items:center; overflow:hidden; border-bottom:3px solid var(--forest-dark); }
 .tcard img{ width:100%; height:100%; object-fit:contain; display:block; }
 .tcard .ph{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); padding:10px; text-align:center; }
 .tcard .meta{ padding:10px 11px; }
 .tcard .nm{ font-size:13.5px; font-weight:800; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink); }
 .tcard .sub{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); display:flex; justify-content:space-between; gap:6px; }
-.tcard .price{ margin-top:6px; font-family:var(--font-retro); font-size:16px; color:var(--forest-dark); display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
-.tcard .price b{ font-weight:400; }
-.tcard .price small{ font-size:13px; color:var(--ink-soft); }
 
 .tourney-row{
   display:grid; grid-template-columns:1fr auto auto auto; align-items:center; gap:14px;
@@ -269,7 +278,8 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
 /* ---- tab labels: short on phones so four tabs fit ---- */
 .tab .short{ display:none; }
-@media(max-width:520px){ .tab .full{ display:none; } .tab .short{ display:inline; } .tab{ padding:10px 10px; min-width:44px; } }
+@media(max-width:700px){ .tab .full{ display:none; } .tab .short{ display:inline; } .tab{ padding:10px 8px; min-width:44px; } .tabs{ gap:4px; } }
+@media(max-width:400px){ .tab{ padding:10px 4px; } }
 
 /* ---- pixel arena ---- */
 .arena-controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; }
@@ -290,6 +300,23 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .arena-overlay[hidden]{ display:none; }
 .arena-overlay p{ margin:0; }
 .arena-hud{ max-width:480px; margin:10px auto 0; font-family:var(--font-retro); font-size:18px; color:var(--parchment); min-height:1.4em; }
+
+/* ---- today ---- */
+.today-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+.today-grid .ev{ display:flex; flex-direction:column; gap:10px; }
+.today-grid .ev h3{ margin:0; }
+.today-potd{ display:flex; gap:14px; align-items:center; }
+.today-potd img{ width:96px; height:96px; image-rendering:pixelated; flex:0 0 auto; background:var(--parchment-2); border:3px solid var(--forest-dark); border-radius:4px; }
+.today-potd .mono{ width:96px; height:96px; flex:0 0 auto; display:grid; place-items:center; font-family:var(--font-pixel); font-size:28px; color:#fff; border:3px solid var(--forest-dark); border-radius:4px; }
+.today-types{ display:flex; gap:6px; flex-wrap:wrap; margin:4px 0; }
+.today-types span{ font-family:var(--font-retro); font-size:14px; color:#fff; padding:1px 9px; border-radius:3px; text-transform:capitalize; }
+.today-meta{ font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
+.today-btn{
+  align-self:flex-start; font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px; min-height:44px; min-width:44px; padding:10px 14px; cursor:pointer; margin-top:auto;
+  border:3px solid var(--forest-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); box-shadow:2px 2px 0 rgba(0,0,0,0.3);
+}
+.today-btn:focus-visible{ outline:3px solid var(--forest); outline-offset:2px; }
+.today-label{ font-family:var(--font-pixel); font-size:10px; color:var(--forest); letter-spacing:0.5px; }
 </style>
 </head>
 <body>
@@ -297,15 +324,35 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <header><div class="wrap">
   <div class="logo"><span class="mark">✦</span> TRAINER DESK</div>
   <div class="tabs">
-    <button class="tab active" data-view="go"><span class="full">GO EVENTS</span><span class="short">GO</span></button>
+    <button class="tab active" data-view="today">TODAY</button>
+    <button class="tab" data-view="go"><span class="full">GO EVENTS</span><span class="short">GO</span></button>
     <button class="tab" data-view="tcg"><span class="full">TCG SETS</span><span class="short">TCG</span></button>
     <button class="tab" data-view="dex"><span class="full">POKÉDEX</span><span class="short">DEX</span></button>
     <button class="tab" data-view="arena">ARENA</button>
   </div>
 </div></header>
 
+<!-- ============ TODAY ============ -->
+<div class="view active" id="view-today"><div class="wrap">
+  <div class="view-head">
+    <h1>TRAINER DESK<br>TODAY</h1>
+    <p id="today-date"></p>
+  </div>
+  <div class="today-grid">
+    <section class="ev pixel-box" id="today-event" aria-live="off"></section>
+    <section class="ev pixel-box" id="today-potd"></section>
+    <section class="ev pixel-box" id="today-set"></section>
+    <section class="ev pixel-box" id="today-arena">
+      <div class="today-label">▸ PIXEL ARENA</div>
+      <h3>Battle royale, solo</h3>
+      <div class="desc">Pick a fighter and outlast 11 computer-controlled rivals before the red zone closes in. A round takes about a minute.</div>
+      <button type="button" class="today-btn" data-goto="arena">PLAY NOW</button>
+    </section>
+  </div>
+</div></div>
+
 <!-- ============ GO EVENTS ============ -->
-<div class="view active" id="view-go"><div class="wrap">
+<div class="view" id="view-go"><div class="wrap">
   <div class="view-head">
     <h1>POKEMON GO<br>EVENT TRACKER</h1>
     <p>Live countdowns for active and upcoming events. Times shown in your local timezone.</p>
@@ -594,7 +641,7 @@ const SAMPLE_SETS=[{id:"sample",name:"Sample Set (offline preview)",releaseDate:
 const SAMPLE_CARDS=Array.from({length:10},(_,i)=>({
   id:"s"+i, name:"Sample Card "+(i+1), number:String(i+1),
   rarity:["Common","Uncommon","Rare","Rare Holo"][i%4],
-  hp:String(60+i*10), images:null
+  hp:String(60+i*10), images:null, sample:true
 }));
 const setSel=document.getElementById("set-select");
 const grid=document.getElementById("card-grid");
@@ -632,10 +679,7 @@ function cardPrice(c){
   return null;
 }
 function fmtPrice(p){ return (p.cur==="EUR"?"€":"$")+p.v.toFixed(2); }
-function priceHtml(p){
-  return p?`<div class="price" title="${esc(p.src)} market price${p.at?", updated "+esc(p.at):""}"><b>${esc(fmtPrice(p))}</b><small>${esc(p.src)}</small></div>`:"";
-}
-// TCGdex only lists prices on single-card requests, so in backup mode fetch them lazily as cards scroll into view.
+// TCGdex only lists prices on single-card requests, so in backup mode fetch them when a card is flipped.
 function tcgdexPrice(j){
   const pr=j&&j.pricing; if(!pr) return null;
   const tp=pr.tcgplayer;
@@ -653,7 +697,7 @@ function updatePriceStatus(){
   if(!ok&&!none&&!fail) return;
   statusEl.textContent=allCards.length+" cards · via TCGdex · prices: "+ok+" found, "+none+" not listed"+(fail?", "+fail+" failed":"");
 }
-const priceQueue=[]; let priceActive=0; let priceObserver=null;
+const priceQueue=[]; let priceActive=0;
 function queuePrice(c){ if(c.priceTried||c.price) return; c.priceTried=true; priceQueue.push(c); pumpPrices(); }
 function pumpPrices(){
   while(priceActive<4&&priceQueue.length){
@@ -670,21 +714,33 @@ async function loadTcgdexPrice(c){
       if(!r.ok) throw new Error(r.status);
       p=tcgdexPrice(await r.json())||0; // 0 = looked up, no price listed
       tcgCacheSet(key,p);
-    }catch(e){ c.priceState="fail"; updatePriceStatus(); return; } // network error: leave unpriced, don't cache
+    }catch(e){ c.priceState="fail"; updatePriceStatus(); paintBackFor(c); return; } // network error: leave unpriced, don't cache
   }
   c.price=p||null;
   c.priceState=p?"ok":"none";
   updatePriceStatus();
-  if(c.price){
-    const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
-    if(el&&!el.querySelector(".price")) el.querySelector(".meta").insertAdjacentHTML("beforeend",priceHtml(c.price));
-  }
+  paintBackFor(c);
 }
-function watchPrices(list){
-  if(priceObserver) priceObserver.disconnect();
-  if(tcgSource!=="tcgdex"||typeof IntersectionObserver==="undefined") return;
-  priceObserver=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ priceObserver.unobserve(e.target); const c=list.find(x=>x.id===e.target.dataset.id); if(c) queuePrice(c); } }),{rootMargin:"300px"});
-  grid.querySelectorAll(".tcard").forEach(el=>priceObserver.observe(el));
+// Back of a card: price (or why there isn't one). In TCGdex mode the price is looked up only when the card is flipped.
+function backInner(c){
+  if(c.sample) return `<div class="tb-src">Sample card — no price</div>`;
+  if(c.price) return `<div class="tb-price">${esc(fmtPrice(c.price))}</div><div class="tb-src">${esc(c.price.src)} market price</div>${c.price.at?`<div class="tb-date">Updated ${esc(c.price.at)}</div>`:""}`;
+  if(c.priceState==="fail") return `<div class="tb-src">Couldn't load the price</div><div class="tb-date">Flip again to retry</div>`;
+  if(tcgSource==="tcgdex"&&c.priceState===undefined) return `<div class="tb-src">Loading price…</div>`;
+  return `<div class="tb-src">No price listed</div>`;
+}
+function paintBackFor(c){
+  const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
+  const body=el&&el.querySelector(".tb-body");
+  if(body) body.innerHTML=backInner(c);
+}
+function toggleCard(el){
+  const on=el.classList.toggle("flipped");
+  el.setAttribute("aria-pressed",on?"true":"false");
+  if(!on) return;
+  const c=allCards.find(x=>x.id===el.dataset.id); if(!c) return;
+  if(tcgSource==="tcgdex"&&!c.sample){ if(c.priceState==="fail"){ c.priceTried=false; c.priceState=undefined; } queuePrice(c); }
+  paintBackFor(c);
 }
 async function fetchCards(src,setId){
   if(src==="tcgdex"){
@@ -748,18 +804,27 @@ function renderCards(){
   if(!list.length){ grid.innerHTML=""; emptyEl.style.display="block"; emptyEl.textContent="No cards match that filter."; return; }
   emptyEl.style.display="none";
   grid.innerHTML=list.map(c=>`
-    <div class="tcard pixel-box" data-id="${esc(c.id)}">
-      <div class="imgwrap">
-        ${c.images?`<img src="${c.images.small}" alt="${c.name}" loading="lazy">`:placeholderCardSVG(c)}
-      </div>
-      <div class="meta">
-        <div class="nm">${c.name}</div>
-        <div class="sub"><span>#${c.number}</span><span>${c.rarity||"—"}</span></div>
-        ${priceHtml(c.price)}
+    <div class="tcard" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(c.name)} — flip to see price" data-id="${esc(c.id)}">
+      <div class="tflip">
+        <div class="tface tfront pixel-box">
+          <div class="imgwrap">
+            ${c.images?`<img src="${c.images.small}" alt="${c.name}" loading="lazy">`:placeholderCardSVG(c)}
+          </div>
+          <div class="meta">
+            <div class="nm">${c.name}</div>
+            <div class="sub"><span>#${c.number}</span><span>${c.rarity||"—"}</span></div>
+          </div>
+        </div>
+        <div class="tface tback pixel-box">
+          <div class="tb-name">${esc(c.name)}</div>
+          <div class="tb-body">${backInner(c)}</div>
+          <div class="tb-hint">tap to flip back</div>
+        </div>
       </div>
     </div>`).join("");
-  watchPrices(list);
 }
+grid.addEventListener("click",e=>{ const el=e.target.closest(".tcard"); if(el) toggleCard(el); });
+grid.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("tcard")){ e.preventDefault(); toggleCard(e.target); } });
 setSel.addEventListener("change",e=>loadCards(e.target.value));
 searchEl.addEventListener("input",()=>renderCards());
 
@@ -1079,6 +1144,76 @@ document.querySelectorAll(".tab").forEach(t=>{
   renderEvents();
 })();
 setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // refresh feed every 15 min
+
+/* ============ TODAY — what's live right now (no extra services beyond one Pokédex lookup) ============ */
+(function(){
+  const $=id=>document.getElementById(id);
+  const goTab=v=>{ const t=document.querySelector('.tab[data-view="'+v+'"]'); if(t) t.click(); };
+  document.addEventListener("click",e=>{ const b=e.target.closest("[data-goto]"); if(b) goTab(b.dataset.goto); });
+  $("today-date").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})+" — here's what's on today.";
+
+  function renderTodayEvent(){
+    const now=new Date();
+    const evs=GO_EVENTS.filter(e=>e.start&&e.end).map(e=>({...e,_s:new Date(e.start),_e:new Date(e.end)})).filter(e=>!isNaN(e._s)&&!isNaN(e._e));
+    const live=evs.filter(e=>e._s<=now&&e._e>now).sort((a,b)=>a._e-b._e)[0];
+    const next=evs.filter(e=>e._s>now).sort((a,b)=>a._s-b._s)[0];
+    const ev=live||next, el=$("today-event");
+    if(!ev){ el.innerHTML='<div class="today-label">▸ POKÉMON GO</div><h3>No events on the board</h3><div class="desc">Check back soon.</div><button type="button" class="today-btn" data-goto="go">ALL EVENTS</button>'; return; }
+    const st=styleForType(ev.type);
+    el.innerHTML=`<div class="today-label">▸ ${live?"HAPPENING NOW":"NEXT GO EVENT"}</div>
+      <h3>${esc(ev.title)}</h3>
+      <div class="when"><span>${esc(st.label)}</span><span class="cd" data-t="${(live?ev._e:ev._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span></div>
+      <button type="button" class="today-btn" data-goto="go">ALL EVENTS</button>`;
+    tickCountdowns();
+  }
+
+  function dayIndex(){ const d=new Date(); return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5); }
+  async function renderPotd(){
+    const el=$("today-potd"), day=dayIndex();
+    el.innerHTML='<div class="today-label">▸ POKÉMON OF THE DAY</div><div class="today-meta">Loading…</div>';
+    let d;
+    try{ d=await loadDexDetail((day*7919)%1025+1); }
+    catch(e){ d=DEX_SAMPLE[day%DEX_SAMPLE.length]; } // offline: rotate through the built-in species
+    const bst=d.stats.reduce((n,s)=>n+s[1],0), name=prettyName(d.name);
+    const art=SHOW_SPRITES
+      ? `<img src="${SPRITE_URL(d.id)}" alt="${esc(name)}" onerror="this.outerHTML='<span class=&quot;mono&quot; aria-hidden=&quot;true&quot; style=&quot;background:${DEX_TYPE_COLORS[d.types[0]]||"#888"}&quot;>${esc(name.charAt(0))}</span>'">`
+      : `<span class="mono" aria-hidden="true" style="background:${DEX_TYPE_COLORS[d.types[0]]||"#888"}">${esc(name.charAt(0))}</span>`;
+    el.innerHTML=`<div class="today-label">▸ POKÉMON OF THE DAY</div>
+      <div class="today-potd">${art}<div>
+        <h3>${esc(name)}</h3>
+        <div class="today-meta">#${String(d.id).padStart(3,"0")}</div>
+        <div class="today-types">${d.types.map(t=>`<span style="background:${DEX_TYPE_COLORS[t]||"#888"}">${esc(t)}</span>`).join("")}</div>
+        <div class="today-meta">Base stat total ${bst}</div>
+      </div></div>
+      <button type="button" class="today-btn" id="today-potd-btn">VIEW IN POKÉDEX</button>`;
+    $("today-potd-btn").addEventListener("click",()=>{
+      const box=document.getElementById("dex-search");
+      box.value="#"+d.id; box.dispatchEvent(new Event("input",{bubbles:true}));
+      goTab("dex");
+    });
+  }
+
+  function renderTodaySet(){
+    const el=$("today-set"), now=new Date();
+    const sorted=[...UPCOMING_SETS].sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const next=sorted.find(s=>new Date(s.date)>now), s=next||sorted[sorted.length-1];
+    if(!s){ el.innerHTML=""; return; }
+    const d=new Date(s.date), days=Math.ceil((d-now)/864e5);
+    const when=next?(days<=1?"Releases tomorrow":"Releases in "+days+" days"):"Latest set — released";
+    const blurb=s.blurb.length>150?s.blurb.slice(0,147).replace(/\s+\S*$/,"")+"…":s.blurb;
+    el.innerHTML=`<div class="today-label">▸ ${next?"NEXT TCG SET":"LATEST TCG SET"}</div>
+      <h3>${esc(s.name)}</h3>
+      <div class="desc">${esc(blurb)}</div>
+      <div class="when"><span>${esc(when)} · ${esc(d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}))}</span></div>
+      <button type="button" class="today-btn" data-goto="tcg">BROWSE SETS</button>`;
+  }
+
+  renderTodayEvent(); renderTodaySet(); renderPotd();
+  setInterval(renderTodayEvent,60000);
+  // GO events load asynchronously; repaint the card once they arrive
+  (async function wait(){ for(let i=0;i<40;i++){ await new Promise(r=>setTimeout(r,500)); if(GO_EVENTS&&GO_EVENTS.length&&GO_EVENTS!==SAMPLE_GO_EVENTS){ renderTodayEvent(); return; } } renderTodayEvent(); })();
+})();
+
 
 /* ============================================================
    PIXEL ARENA — solo battle-royale minigame (canvas, no backend).

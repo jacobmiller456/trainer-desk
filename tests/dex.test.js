@@ -30,13 +30,13 @@ async function run(mode) {
   const errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|net::ERR/.test(m.text())) errors.push('console: ' + m.text()); });
-  let pokeapiHits = 0;
+  let pokeapiHits = 0, speciesHits = 0; // the Today tab fetches one Pokémon of the day; the species LIST stays lazy
 
   await page.route('**/*', route => {
     const u = route.request().url();
     if (u.startsWith('file://') ) return route.continue();
     if (mode === 'mock' && u.startsWith('https://pokeapi.co/api/v2/')) {
-      pokeapiHits++;
+      pokeapiHits++; if (u.includes('/pokemon-species')) speciesHits++;
       const p = u.replace('https://pokeapi.co/api/v2/', '');
       const cors = { 'access-control-allow-origin': '*' };
       if (p === 'pokemon-species?limit=1') return route.fulfill({ status:200, headers:cors, contentType:'application/json', body: JSON.stringify({count: SPECIES.length, results:[]}) });
@@ -50,13 +50,13 @@ async function run(mode) {
 
   await page.goto(url);
   await page.waitForTimeout(400);
-  const hitsBeforeTab = pokeapiHits;
+  const hitsBeforeTab = speciesHits;
   await page.click('button[data-view="dex"]');
   await page.waitForSelector('#dex-grid .dex-tile', { timeout: 10000 });
   const tiles = () => page.$$eval('#dex-grid .dex-tile', els => els.map(e => e.querySelector('.dex-name').textContent));
 
   if (mode === 'mock') {
-    check('lazy: no PokéAPI calls before the tab is opened', hitsBeforeTab === 0, `(hits=${hitsBeforeTab})`);
+    check('lazy: no Pokédex list calls before the tab is opened', hitsBeforeTab === 0, `(hits=${hitsBeforeTab})`);
     let names = await tiles();
     check('mock: 8 species rendered', names.length === 8, JSON.stringify(names));
     check('mock: Mr. Mime override applied', names.includes('Mr. Mime'));

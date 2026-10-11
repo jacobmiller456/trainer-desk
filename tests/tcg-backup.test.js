@@ -33,9 +33,14 @@ async function scenario(name, ptcg) {
   check(`${name}: falls back to TCGdex cards`, names.join() === 'Dex Card A,Dex Card B', names);
   check(`${name}: status credits TCGdex`, status.startsWith('2 cards · via TCGdex'), status);
   check(`${name}: real art URL built (low.webp), card without art gets placeholder`, srcs.length === 1 && srcs[0] === 'https://assets.tcgdex.net/en/x/new1/1/low.webp', srcs);
-  await page.waitForSelector('#card-grid .price', { timeout: 8000 });
-  const prices = await page.$$eval('#card-grid .tcard', n => n.map(x => (x.querySelector('.price') || {}).textContent || ''));
-  check(`${name}: TCGdex price shown on the card that has one, none on the other`, prices.join('|') === '$3.20TCGplayer|', prices);
+  // prices are looked up when a card is flipped, not up front
+  const tdBefore = hits.tcgdex;
+  await page.click('#card-grid .tcard[data-id="new1-1"]');
+  await page.click('#card-grid .tcard[data-id="new1-2"]');
+  await page.waitForFunction(() => /No price listed/.test(document.querySelector('#card-grid .tcard[data-id="new1-2"] .tb-body').textContent), null, { timeout: 8000 });
+  const prices = await page.$$eval('#card-grid .tcard', n => n.map(x => x.querySelector('.tb-body').textContent));
+  check(`${name}: flipping fetched exactly the two prices`, hits.tcgdex - tdBefore === 2, hits.tcgdex - tdBefore);
+  check(`${name}: back of card shows the TCGdex price, or says none is listed`, /^\$3\.20TCGplayer market priceUpdated 2026-10-10$/.test(prices[0]) && prices[1] === 'No price listed', prices);
   await page.waitForFunction(() => /1 found, 1 not listed/.test(document.querySelector('#tcg-status').textContent), null, { timeout: 8000 });
   check(`${name}: status explains prices (1 found, 1 not listed)`, true);
   check(`${name}: newest set listed first`, firstSet === 'New Set', firstSet);

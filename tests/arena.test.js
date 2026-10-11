@@ -34,8 +34,10 @@ async function run(mode) {
   check(`${mode}: game started with several fighters`, s0.total >= 5 && s0.alive === s0.total, s0);
   if (mode === 'mock') check('mock: full 12-fighter lobby', s0.total === 12, s0.total);
 
-  // canvas actually draws something (not blank)
-  const painted = await page.evaluate(() => { const c = document.getElementById('arena-canvas').getContext('2d'); const d = c.getImageData(0, 0, 480, 480).data; const seen = new Set(); for (let i = 0; i < d.length; i += 4) seen.add(d[i] + ',' + d[i + 1] + ',' + d[i + 2]); return seen.size; });
+  // canvas actually draws something (not blank); give the first animation frames a moment
+  const colours = () => page.evaluate(() => { const c = document.getElementById('arena-canvas').getContext('2d'); const d = c.getImageData(0, 0, 480, 480).data; const seen = new Set(); for (let i = 0; i < d.length; i += 4) seen.add(d[i] + ',' + d[i + 1] + ',' + d[i + 2]); return seen.size; });
+  await page.waitForFunction(() => { const c = document.getElementById('arena-canvas').getContext('2d'); const d = c.getImageData(0, 0, 480, 480).data; const seen = new Set(); for (let i = 0; i < d.length; i += 4) { seen.add(d[i] + ',' + d[i + 1] + ',' + d[i + 2]); if (seen.size > 3) return true; } return false; }, null, { timeout: 5000 }).catch(() => {});
+  const painted = await colours();
   check(`${mode}: canvas painted`, painted > 3, painted);
 
   // keyboard moves the player

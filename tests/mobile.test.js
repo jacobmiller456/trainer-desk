@@ -5,7 +5,7 @@ const path = require('path');
 
 const url = 'file://' + path.resolve(process.argv[2]);
 const WIDTHS = [320, 375, 414];
-const TABS = ['go', 'tcg', 'dex', 'arena'];
+const TABS = ['today', 'go', 'tcg', 'dex', 'arena'];
 const MIN_TAP = 44;      // px, Apple HIG / WCAG 2.5.5 target size
 const MIN_FONT = 12;     // px, smallest readable body text
 const MIN_PIXEL_FONT = 10; // px, Press Start 2P glyphs fill the whole em, so 10px reads like ~14px Inter
