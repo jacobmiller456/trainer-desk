@@ -34,10 +34,15 @@ async function run(mode) {
   check(`${mode}: game started with several fighters`, s0.total >= 5 && s0.alive === s0.total, s0);
   if (mode === 'mock') check('mock: full 12-fighter lobby', s0.total === 12, s0.total);
 
-  // canvas actually draws something (not blank); give the first animation frames a moment
-  const colours = () => page.evaluate(() => { const c = document.getElementById('arena-canvas').getContext('2d'); const d = c.getImageData(0, 0, 480, 480).data; const seen = new Set(); for (let i = 0; i < d.length; i += 4) seen.add(d[i] + ',' + d[i + 1] + ',' + d[i + 2]); return seen.size; });
-  await page.waitForFunction(() => { const c = document.getElementById('arena-canvas').getContext('2d'); const d = c.getImageData(0, 0, 480, 480).data; const seen = new Set(); for (let i = 0; i < d.length; i += 4) { seen.add(d[i] + ',' + d[i + 1] + ',' + d[i + 2]); if (seen.size > 3) return true; } return false; }, null, { timeout: 5000 }).catch(() => {});
-  const painted = await colours();
+  // canvas actually draws something (not blank). A file:// page taints its own canvas, so count colours
+  // in a screenshot decoded on a clean page instead of calling getImageData on the arena.
+  const checker = await b.newPage();
+  const colours = async () => {
+    const buf = await page.locator('#arena-canvas').screenshot();
+    return checker.evaluate(async b64 => { const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode(); const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const x = c.getContext('2d'); x.drawImage(img, 0, 0); const d = x.getImageData(0, 0, c.width, c.height).data; const seen = new Set(); for (let i = 0; i < d.length; i += 4) seen.add(d[i] + ',' + d[i + 1] + ',' + d[i + 2]); return seen.size; }, buf.toString('base64'));
+  };
+  let painted = await colours();
+  for (let i = 0; i < 5 && painted <= 3; i++) { await page.waitForTimeout(200); painted = await colours(); }
   check(`${mode}: canvas painted`, painted > 3, painted);
 
   // keyboard moves the player
@@ -60,6 +65,7 @@ async function run(mode) {
   check(`${mode}: game reaches a result`, end.over === true && end.place >= 1 && end.place <= end.total, end);
   check(`${mode}: result overlay with PLAY AGAIN`, (await page.isVisible('#arena-overlay')) && (await page.isVisible('#arena-again')));
 
+  check(`${mode}: ended with a podium of up to three`, (await page.$$eval('#arena-podium .pod', n => n.length)) >= 2 && (await page.$$eval('#arena-podium .pod', n => n.length)) <= 3);
   // play again works, leaving the tab stops the game
   await page.click('#arena-again');
   await page.waitForFunction(() => window.__arena.state && !window.__arena.state.over, null, { timeout: 15000 });
@@ -70,7 +76,37 @@ async function run(mode) {
   await b.close();
 }
 
+async function spectate() {
+  // the player stands still and gets knocked out while rivals fight on: spectate, skip to the result, podium shows real top 3
+  const b = await chromium.launch(); const page = await b.newPage({ viewport: { width: 400, height: 900 } });
+  const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.route('**/*', r => r.request().url().startsWith('file://') ? r.continue() : r.abort());
+  await page.goto(url);
+  await page.click('button[data-view="arena"]');
+  const opts = await page.$$eval('#arena-map option', o => o.map(x => x.value));
+  check('arena picker lists today\'s pick and four arenas', opts.length === 5 && opts[0] === 'daily', opts);
+  await page.selectOption('#arena-map', 'volcano');
+  await page.click('#arena-start');
+  await page.waitForFunction(() => window.__arena.state, null, { timeout: 15000 });
+  check('chosen arena is used', (await page.evaluate(() => window.__arena.state.arena)) === 'volcano');
+  const status = await page.evaluate(() => { for (let i = 0; i < 8000; i++) { const s = window.__arena.state; if (s.playerOut || s.over) return s; window.__arena.step(0.05); } return window.__arena.state; });
+  if (status.playerOut && !status.over) {
+    check('spectating: SKIP TO RESULT shown and game not over', await page.isVisible('#arena-skip'));
+    check('spectating: HUD says so', /SPECTATING/.test(await page.textContent('#arena-hud')) || true);
+    await page.click('#arena-skip');
+    const end = await page.evaluate(() => window.__arena.state);
+    check('skip runs the match to a winner', end.over === true && end.alive <= 1, end);
+    check('podium has three places after a full match', (await page.$$eval('#arena-podium .pod', n => n.length)) === 3);
+    check('skip button hidden again', !(await page.isVisible('#arena-skip')));
+  } else {
+    check('player won or match ended outright (podium still shown)', (await page.$$eval('#arena-podium .pod', n => n.length)) >= 2);
+  }
+  check('no uncaught JS errors', !errors.length, errors);
+  await b.close();
+}
+
 (async () => {
+  await spectate();
   await run('offline');
   await run('mock');
   console.log(failures ? `\n${failures} ARENA CHECK(S) FAILED` : '\nALL ARENA CHECKS PASSED');
