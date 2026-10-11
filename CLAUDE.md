@@ -19,14 +19,14 @@ Most visitors are on phones. `tests/mobile.test.js` (part of `npm test`, and run
 - Design new UI at 375px first, then widen with `min-width` media queries.
 
 ## Architecture rules
-- All fetches go through `fetchWithTimeout()` (6s abort by default; TCG calls use `TCG_TIMEOUT`, 25s). Every live section MUST have an offline fallback; no section may render blank.
-- Data: ScrapedDuck (GO events), pokemontcg.io `API` const (cards/sets), Limitless TCG (tournaments), PokéAPI (`POKEAPI`, Pokédex, lazy-loaded on first tab open).
+- All fetches go through `fetchWithTimeout()` (6s abort by default; TCG calls use `TCG_TIMEOUT` 12s / `TCGDEX_TIMEOUT` 15s). Every live section MUST have an offline fallback; no section may render blank.
+- Data: ScrapedDuck (GO events), pokemontcg.io `API` const (cards/sets; automatic failover to TCGdex `TCGDEX`), Limitless TCG (tournaments), PokéAPI (`POKEAPI`, Pokédex, lazy-loaded on first tab open).
 - `UPCOMING_SETS` is hand-maintained; write blurbs in our own words.
 - Escape dynamic text with `esc()` in new code.
 - Do not remove `const API=...` (it was once dropped by a bad edit; `tests/tcg.test.js` guards it). After any edit run `npm test`.
 
 ## Legal guardrails (do not relax without asking the owner)
 - Facts only. No Pokédex flavor text, no copied descriptions.
-- Card images are hotlinked from pokemontcg.io, never rehosted. Sprites are hotlinked from PokéAPI's sprite repo (`SHOW_SPRITES=true`, owner's decision); never copy sprite files into the repo.
+- Card images are hotlinked from pokemontcg.io (or TCGdex's `assets.tcgdex.net` in backup mode), never rehosted. Sprites are hotlinked from PokéAPI's sprite repo (`SHOW_SPRITES=true`, owner's decision); never copy sprite files into the repo.
 - Keep the "unofficial fan project" footer and attributions.
 - No ads, merch, paywalls, or "Pokémon" in domain/business names.

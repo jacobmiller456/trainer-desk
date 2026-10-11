@@ -317,7 +317,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   <div id="tourney-list"></div>
 
   <div class="pixel-box note">
-    <b>Live API:</b> card data pulls from <code>api.pokemontcg.io/v2</code>; tournament results pull from Limitless TCG's public API (<code>play.limitlesstcg.com/api</code>) — the platform the competitive community uses for standings and decklists. Both work when the page is served over HTTP. <b>Upcoming sets are hand-maintained</b> — edit the <code>UPCOMING_SETS</code> array in the script whenever a new set is officially announced (via pokemon-card.com for Japan or official press for English). Sample data renders if a request is blocked (e.g. in a sandboxed preview).
+    <b>Live API:</b> card data pulls from <code>api.pokemontcg.io/v2</code> (with <code>api.tcgdex.net</code> as an automatic backup); tournament results pull from Limitless TCG's public API (<code>play.limitlesstcg.com/api</code>) — the platform the competitive community uses for standings and decklists. Both work when the page is served over HTTP. <b>Upcoming sets are hand-maintained</b> — edit the <code>UPCOMING_SETS</code> array in the script whenever a new set is officially announced (via pokemon-card.com for Japan or official press for English). Sample data renders if a request is blocked (e.g. in a sandboxed preview).
   </div>
 </div></div>
 
@@ -346,7 +346,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
 <footer><div class="wrap">
   Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
-  Pokémon and all related names are trademarks of their respective owners. Card data and images via the community Pokémon TCG API. GO event schedule data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
+  Pokémon and all related names are trademarks of their respective owners. Card data and images via the community Pokémon TCG API, with <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> as a backup source. GO event schedule data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
   This site uses Google Analytics (cookies) to count visits, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
 </div></footer>
 
@@ -527,7 +527,9 @@ function placeholderCardSVG(card){
 }
 
 const API="https://api.pokemontcg.io/v2";
-const TCG_TIMEOUT=25000; // pokemontcg.io is often slow (10-30s on big sets); the default 6s dropped users to sample cards
+const TCG_TIMEOUT=12000; // pokemontcg.io is often slow; give it 12s, then switch to the backup source
+const TCGDEX="https://api.tcgdex.net/v2/en"; // backup card source (TCGdex): sets + cards, images hotlinked from assets.tcgdex.net
+const TCGDEX_TIMEOUT=15000;
 const tcgMem=new Map(); // in-memory fallback if sessionStorage is unavailable
 function tcgCacheGet(key){
   if(tcgMem.has(key)) return tcgMem.get(key);
@@ -550,44 +552,75 @@ const statusEl=document.getElementById("tcg-status");
 const emptyEl=document.getElementById("tcg-empty");
 const searchEl=document.getElementById("card-search");
 let allCards=[];
+let tcgSource=tcgCacheGet("source")||"ptcg"; // "ptcg" = pokemontcg.io, "tcgdex" = backup; sticks for the session once the primary fails
+async function fetchSets(src){
+  if(src==="tcgdex"){
+    const r=await fetchWithTimeout(`${TCGDEX}/sets`,TCGDEX_TIMEOUT);
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    if(!Array.isArray(j)||!j.length) throw new Error("no sets");
+    // TCGdex's list has no release date; it lists oldest first, so reverse to put newer sets on top
+    return j.map(x=>({id:x.id,name:x.name,releaseDate:"—"})).reverse();
+  }
+  const r=await fetchWithTimeout(`${API}/sets?orderBy=-releaseDate&pageSize=60`,TCG_TIMEOUT);
+  if(!r.ok) throw new Error(r.status);
+  const j=await r.json();
+  return j.data.map(x=>({id:x.id,name:x.name,releaseDate:x.releaseDate}));
+}
+async function fetchCards(src,setId){
+  if(src==="tcgdex"){
+    const r=await fetchWithTimeout(`${TCGDEX}/sets/${encodeURIComponent(setId)}`,TCGDEX_TIMEOUT);
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    if(!Array.isArray(j.cards)) throw new Error("no cards");
+    return j.cards.map(c=>({id:c.id,name:c.name,number:c.localId,rarity:null,hp:null,images:c.image?{small:c.image+"/low.webp"}:null}));
+  }
+  const r=await fetchWithTimeout(`${API}/cards?q=set.id:${setId}&orderBy=number&pageSize=250`,TCG_TIMEOUT);
+  if(!r.ok) throw new Error(r.status);
+  const j=await r.json();
+  return j.data.map(c=>({id:c.id,name:c.name,number:c.number,rarity:c.rarity,hp:c.hp,images:c.images?{small:c.images.small}:null}));
+}
+async function switchToBackup(){
+  tcgSource="tcgdex"; tcgCacheSet("source","tcgdex");
+  statusEl.textContent="Main card source is down — trying backup…";
+  await loadSets();
+}
+function showOffline(){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; }
 async function loadSets(){
-  const cachedSets=tcgCacheGet("sets-v1");
+  const src=tcgSource;
+  const cachedSets=tcgCacheGet("sets-v2-"+src);
   if(cachedSets){ fillSets(cachedSets); return; }
   statusEl.textContent="Loading sets…";
   try{
-    const r=await fetchWithTimeout(`${API}/sets?orderBy=-releaseDate&pageSize=60`,TCG_TIMEOUT);
-    if(!r.ok) throw new Error(r.status);
-    const j=await r.json();
-    const sets=j.data.map(s=>({id:s.id,name:s.name,releaseDate:s.releaseDate}));
-    tcgCacheSet("sets-v1",sets);
+    const sets=await fetchSets(src);
+    tcgCacheSet("sets-v2-"+src,sets);
     fillSets(sets);
     statusEl.textContent="";
   }catch(err){
+    if(src==="ptcg") return switchToBackup();
     fillSets(SAMPLE_SETS);
     statusEl.textContent="offline — sample data";
   }
 }
 function fillSets(sets){
-  setSel.innerHTML=sets.map(s=>`<option value="${s.id}">${s.name}${s.releaseDate!=="—"?" ("+s.releaseDate.slice(0,4)+")":""}</option>`).join("");
+  setSel.innerHTML=sets.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.releaseDate!=="—"?" ("+esc(s.releaseDate.slice(0,4))+")":""}</option>`).join("");
   loadCards(sets[0].id);
 }
 async function loadCards(setId){
   grid.innerHTML=""; emptyEl.style.display="none";
   if(setId==="sample"){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; return; }
-  const cachedCards=tcgCacheGet("cards-v1-"+setId);
-  if(cachedCards){ allCards=cachedCards; statusEl.textContent=allCards.length+" cards"; renderCards(); return; }
+  const src=tcgSource, tag=src==="tcgdex"?" · via TCGdex":"";
+  const cachedCards=tcgCacheGet("cards-v2-"+src+"-"+setId);
+  if(cachedCards){ allCards=cachedCards; statusEl.textContent=allCards.length+" cards"+tag; renderCards(); return; }
   statusEl.textContent="Loading cards…";
   try{
-    const r=await fetchWithTimeout(`${API}/cards?q=set.id:${setId}&orderBy=number&pageSize=250`,TCG_TIMEOUT);
-    if(!r.ok) throw new Error(r.status);
-    const j=await r.json();
-    allCards=j.data.map(c=>({id:c.id,name:c.name,number:c.number,rarity:c.rarity,hp:c.hp,images:c.images?{small:c.images.small}:null}));
-    tcgCacheSet("cards-v1-"+setId,allCards);
-    statusEl.textContent=allCards.length+" cards";
+    allCards=await fetchCards(src,setId);
+    tcgCacheSet("cards-v2-"+src+"-"+setId,allCards);
+    statusEl.textContent=allCards.length+" cards"+tag;
     renderCards();
   }catch(err){
-    allCards=SAMPLE_CARDS; renderCards();
-    statusEl.textContent="offline — sample data";
+    if(src==="ptcg") return switchToBackup();
+    showOffline();
   }
 }
 function renderCards(){

@@ -28,6 +28,7 @@ original source for full details.
 ### TCG Sets
 - **Set/card browser** — live against the [pokemontcg.io](https://pokemontcg.io) API (`api.pokemontcg.io/v2`). Card images hotlink from their CDN (no rehosting).
   The sets list and each set's cards are cached in `sessionStorage` (keys `td-tcg-sets-v1`, `td-tcg-cards-v1-<setId>`; only the fields the page uses are stored), so each is fetched at most once per browser session. Bump the `-v1` suffix if the stored shape changes.
+  **Backup source:** if pokemontcg.io fails or times out (12s), the tab switches to [TCGdex](https://tcgdex.dev) (`api.tcgdex.net/v2/en`; images hotlinked from `assets.tcgdex.net`, never rehosted) and stays on it for the session (`td-tcg-source`). TCGdex's set list has no release dates, so it is shown in reverse API order and the status line reads "N cards · via TCGdex". Its card list has no rarity/HP. Sample placeholder cards only appear if both sources fail. `tests/tcg-backup.test.js` covers the failover.
 - **Upcoming Sets** — hand-maintained array (`UPCOMING_SETS` in the script). No public API exists for pre-release set announcements; update this manually from pokemon-card.com (Japan) or official English press when a new set is confirmed. Write descriptions in your own words.
 - **Recent Tournaments** — live against [Limitless TCG's](https://limitlesstcg.com) public API (`play.limitlesstcg.com/api/tournaments`), the platform the competitive community uses for standings/decklists.
 - **Offline placeholder art** — when the live card API is unreachable, sample cards render original generated SVG placeholders (gradient + monogram + rarity dots), not real card art.
@@ -45,7 +46,7 @@ Searchable species list backed by [PokéAPI](https://pokeapi.co) (`pokeapi.co/ap
 
 ## Network resilience
 
-All `fetch()` calls go through `fetchWithTimeout()` (6s default AbortController; the TCG calls use 25s because pokemontcg.io is slow
+All `fetch()` calls go through `fetchWithTimeout()` (6s default AbortController; the TCG calls use 12s/15s because pokemontcg.io is slow
 timeout) so a silently-hung request — not just an outright failure —
 can't block the fallback data from rendering. Every live section has a
 synchronous or timed-out fallback; nothing should ever render fully blank.
