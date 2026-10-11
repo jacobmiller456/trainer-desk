@@ -44,7 +44,7 @@ Searchable species list backed by [PokéAPI](https://pokeapi.co) (`pokeapi.co/ap
 
 ## Network resilience
 
-All `fetch()` calls go through `fetchWithTimeout()` (6s AbortController
+All `fetch()` calls go through `fetchWithTimeout()` (6s default AbortController; the TCG calls use 25s because pokemontcg.io is slow
 timeout) so a silently-hung request — not just an outright failure —
 can't block the fallback data from rendering. Every live section has a
 synchronous or timed-out fallback; nothing should ever render fully blank.

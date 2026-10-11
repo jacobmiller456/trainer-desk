@@ -19,7 +19,7 @@ Most visitors are on phones. `tests/mobile.test.js` (part of `npm test`, and run
 - Design new UI at 375px first, then widen with `min-width` media queries.
 
 ## Architecture rules
-- All fetches go through `fetchWithTimeout()` (6s abort). Every live section MUST have an offline fallback; no section may render blank.
+- All fetches go through `fetchWithTimeout()` (6s abort by default; TCG calls use `TCG_TIMEOUT`, 25s). Every live section MUST have an offline fallback; no section may render blank.
 - Data: ScrapedDuck (GO events), pokemontcg.io `API` const (cards/sets), Limitless TCG (tournaments), PokéAPI (`POKEAPI`, Pokédex, lazy-loaded on first tab open).
 - `UPCOMING_SETS` is hand-maintained; write blurbs in our own words.
 - Escape dynamic text with `esc()` in new code.
