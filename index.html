@@ -349,7 +349,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
 <footer><div class="wrap">
   Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
-  Pokémon and all related names are trademarks of their respective owners. Card data, images and prices via the community Pokémon TCG API. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (no prices). GO event schedule data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
+  Pokémon and all related names are trademarks of their respective owners. Card data, images and prices via the community Pokémon TCG API. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (it also lists TCGplayer and Cardmarket prices). GO event schedule data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
   This site uses Google Analytics (cookies) to count visits, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
 </div></footer>
 
@@ -585,6 +585,51 @@ function cardPrice(c){
   return null;
 }
 function fmtPrice(p){ return (p.cur==="EUR"?"€":"$")+p.v.toFixed(2); }
+function priceHtml(p){
+  return p?`<div class="price" title="${esc(p.src)} market price${p.at?", updated "+esc(p.at):""}"><b>${esc(fmtPrice(p))}</b><small>${esc(p.src)}</small></div>`:"";
+}
+// TCGdex only lists prices on single-card requests, so in backup mode fetch them lazily as cards scroll into view.
+function tcgdexPrice(j){
+  const pr=j&&j.pricing; if(!pr) return null;
+  const tp=pr.tcgplayer;
+  if(tp&&typeof tp==="object"){
+    for(const k of Object.keys(tp)){ const v=tp[k]; const n=v&&typeof v==="object"&&(v.marketPrice??v.midPrice); if(typeof n==="number") return {v:n,cur:"USD",src:"TCGplayer",at:(typeof tp.updated==="string"?tp.updated.slice(0,10):"")}; }
+  }
+  const cm=pr.cardmarket;
+  if(cm&&typeof cm==="object"){ const n=cm.trend??cm.avg; if(typeof n==="number") return {v:n,cur:"EUR",src:"Cardmarket",at:(typeof cm.updated==="string"?cm.updated.slice(0,10):"")}; }
+  return null;
+}
+const priceQueue=[]; let priceActive=0; let priceObserver=null;
+function queuePrice(c){ if(c.priceTried||c.price) return; c.priceTried=true; priceQueue.push(c); pumpPrices(); }
+function pumpPrices(){
+  while(priceActive<4&&priceQueue.length){
+    const c=priceQueue.shift(); priceActive++;
+    loadTcgdexPrice(c).finally(()=>{ priceActive--; pumpPrices(); });
+  }
+}
+async function loadTcgdexPrice(c){
+  const key="price-v1-"+c.id;
+  let p=tcgCacheGet(key);
+  if(p===null){
+    try{
+      const r=await fetchWithTimeout(`${TCGDEX}/cards/${encodeURIComponent(c.id)}`,TCGDEX_TIMEOUT);
+      if(!r.ok) throw new Error(r.status);
+      p=tcgdexPrice(await r.json())||0; // 0 = looked up, no price listed
+      tcgCacheSet(key,p);
+    }catch(e){ return; } // network error: leave unpriced, don't cache
+  }
+  c.price=p||null;
+  if(c.price){
+    const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
+    if(el&&!el.querySelector(".price")) el.querySelector(".meta").insertAdjacentHTML("beforeend",priceHtml(c.price));
+  }
+}
+function watchPrices(list){
+  if(priceObserver) priceObserver.disconnect();
+  if(tcgSource!=="tcgdex"||typeof IntersectionObserver==="undefined") return;
+  priceObserver=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ priceObserver.unobserve(e.target); const c=list.find(x=>x.id===e.target.dataset.id); if(c) queuePrice(c); } }),{rootMargin:"300px"});
+  grid.querySelectorAll(".tcard").forEach(el=>priceObserver.observe(el));
+}
 async function fetchCards(src,setId){
   if(src==="tcgdex"){
     const r=await fetchWithTimeout(`${TCGDEX}/sets/${encodeURIComponent(setId)}`,TCGDEX_TIMEOUT);
@@ -647,16 +692,17 @@ function renderCards(){
   if(!list.length){ grid.innerHTML=""; emptyEl.style.display="block"; emptyEl.textContent="No cards match that filter."; return; }
   emptyEl.style.display="none";
   grid.innerHTML=list.map(c=>`
-    <div class="tcard pixel-box">
+    <div class="tcard pixel-box" data-id="${esc(c.id)}">
       <div class="imgwrap">
         ${c.images?`<img src="${c.images.small}" alt="${c.name}" loading="lazy">`:placeholderCardSVG(c)}
       </div>
       <div class="meta">
         <div class="nm">${c.name}</div>
         <div class="sub"><span>#${c.number}</span><span>${c.rarity||"—"}</span></div>
-        ${c.price?`<div class="price" title="${esc(c.price.src)} market price${c.price.at?", updated "+esc(c.price.at):""}"><b>${esc(fmtPrice(c.price))}</b><small>${esc(c.price.src)}</small></div>`:""}
+        ${priceHtml(c.price)}
       </div>
     </div>`).join("");
+  watchPrices(list);
 }
 setSel.addEventListener("change",e=>loadCards(e.target.value));
 searchEl.addEventListener("input",()=>renderCards());

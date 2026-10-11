@@ -18,6 +18,8 @@ async function scenario(name, ptcg) {
     if (u.startsWith('https://api.pokemontcg.io/')) { hits.ptcg++; return ptcg(r, u); }
     if (u === 'https://api.tcgdex.net/v2/en/sets') { hits.tcgdex++; return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify([{ id: 'old1', name: 'Old Set', cardCount: { total: 2 } }, { id: 'new1', name: 'New Set', cardCount: { total: 3 } }]) }); }
     if (u === 'https://api.tcgdex.net/v2/en/sets/new1') { hits.tcgdex++; return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ id: 'new1', name: 'New Set', cards: [{ id: 'new1-1', localId: '1', name: 'Dex Card A', image: 'https://assets.tcgdex.net/en/x/new1/1' }, { id: 'new1-2', localId: '2', name: 'Dex Card B' }] }) }); }
+    if (u === 'https://api.tcgdex.net/v2/en/cards/new1-1') { hits.tcgdex++; return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ id: 'new1-1', pricing: { tcgplayer: { updated: '2026-10-10T00:00:00Z', unit: 'USD', 'reverse-holofoil': { lowPrice: 1, marketPrice: 3.2 } }, cardmarket: { trend: 2 } } }) }); }
+    if (u === 'https://api.tcgdex.net/v2/en/cards/new1-2') { hits.tcgdex++; return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ id: 'new1-2' }) }); }
     if (u.startsWith('https://assets.tcgdex.net/')) { imgs.push(u); return r.fulfill({ status: 200, contentType: 'image/gif', body: Buffer.from('R0lGODlhAQABAAAAACw=', 'base64') }); }
     return r.abort();
   });
@@ -31,6 +33,9 @@ async function scenario(name, ptcg) {
   check(`${name}: falls back to TCGdex cards`, names.join() === 'Dex Card A,Dex Card B', names);
   check(`${name}: status credits TCGdex`, status === '2 cards · via TCGdex', status);
   check(`${name}: real art URL built (low.webp), card without art gets placeholder`, srcs.length === 1 && srcs[0] === 'https://assets.tcgdex.net/en/x/new1/1/low.webp', srcs);
+  await page.waitForSelector('#card-grid .price', { timeout: 8000 });
+  const prices = await page.$$eval('#card-grid .tcard', n => n.map(x => (x.querySelector('.price') || {}).textContent || ''));
+  check(`${name}: TCGdex price shown on the card that has one, none on the other`, prices.join('|') === '$3.20TCGplayer|', prices);
   check(`${name}: newest set listed first`, firstSet === 'New Set', firstSet);
   check(`${name}: no uncaught JS errors`, !errors.length, errors);
   // the choice sticks for the session: a reload goes straight to the backup, no second wait on the dead primary
