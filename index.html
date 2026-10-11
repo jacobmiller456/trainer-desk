@@ -159,6 +159,9 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .tcard .meta{ padding:10px 11px; }
 .tcard .nm{ font-size:13.5px; font-weight:800; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink); }
 .tcard .sub{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); display:flex; justify-content:space-between; gap:6px; }
+.tcard .price{ margin-top:6px; font-family:var(--font-retro); font-size:16px; color:var(--forest-dark); display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
+.tcard .price b{ font-weight:400; }
+.tcard .price small{ font-size:13px; color:var(--ink-soft); }
 
 .tourney-row{
   display:grid; grid-template-columns:1fr auto auto auto; align-items:center; gap:14px;
@@ -346,7 +349,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
 <footer><div class="wrap">
   Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
-  Pokémon and all related names are trademarks of their respective owners. Card data and images via the community Pokémon TCG API, with <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> as a backup source. GO event schedule data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
+  Pokémon and all related names are trademarks of their respective owners. Card data, images and prices via the community Pokémon TCG API. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (no prices). GO event schedule data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
   This site uses Google Analytics (cookies) to count visits, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
 </div></footer>
 
@@ -567,6 +570,21 @@ async function fetchSets(src){
   const j=await r.json();
   return j.data.map(x=>({id:x.id,name:x.name,releaseDate:x.releaseDate}));
 }
+// Market price per card from pokemontcg.io's bundled TCGplayer (USD) / Cardmarket (EUR) data. Returns null if none.
+function cardPrice(c){
+  const tp=c.tcgplayer&&c.tcgplayer.prices;
+  if(tp){
+    for(const v of Object.keys(tp)){ // first variant with a market (or mid) price: normal, holofoil, reverse, ...
+      const n=tp[v]&&(tp[v].market??tp[v].mid);
+      if(typeof n==="number") return {v:n,cur:"USD",src:"TCGplayer",at:c.tcgplayer.updatedAt||""};
+    }
+  }
+  const cm=c.cardmarket&&c.cardmarket.prices;
+  const n=cm&&(cm.trendPrice??cm.averageSellPrice);
+  if(typeof n==="number") return {v:n,cur:"EUR",src:"Cardmarket",at:c.cardmarket.updatedAt||""};
+  return null;
+}
+function fmtPrice(p){ return (p.cur==="EUR"?"€":"$")+p.v.toFixed(2); }
 async function fetchCards(src,setId){
   if(src==="tcgdex"){
     const r=await fetchWithTimeout(`${TCGDEX}/sets/${encodeURIComponent(setId)}`,TCGDEX_TIMEOUT);
@@ -578,7 +596,7 @@ async function fetchCards(src,setId){
   const r=await fetchWithTimeout(`${API}/cards?q=set.id:${setId}&orderBy=number&pageSize=250`,TCG_TIMEOUT);
   if(!r.ok) throw new Error(r.status);
   const j=await r.json();
-  return j.data.map(c=>({id:c.id,name:c.name,number:c.number,rarity:c.rarity,hp:c.hp,images:c.images?{small:c.images.small}:null}));
+  return j.data.map(c=>({id:c.id,name:c.name,number:c.number,rarity:c.rarity,hp:c.hp,images:c.images?{small:c.images.small}:null,price:cardPrice(c)}));
 }
 async function switchToBackup(){
   tcgSource="tcgdex"; tcgCacheSet("source","tcgdex");
@@ -610,12 +628,12 @@ async function loadCards(setId){
   grid.innerHTML=""; emptyEl.style.display="none";
   if(setId==="sample"){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; return; }
   const src=tcgSource, tag=src==="tcgdex"?" · via TCGdex":"";
-  const cachedCards=tcgCacheGet("cards-v2-"+src+"-"+setId);
+  const cachedCards=tcgCacheGet("cards-v3-"+src+"-"+setId);
   if(cachedCards){ allCards=cachedCards; statusEl.textContent=allCards.length+" cards"+tag; renderCards(); return; }
   statusEl.textContent="Loading cards…";
   try{
     allCards=await fetchCards(src,setId);
-    tcgCacheSet("cards-v2-"+src+"-"+setId,allCards);
+    tcgCacheSet("cards-v3-"+src+"-"+setId,allCards);
     statusEl.textContent=allCards.length+" cards"+tag;
     renderCards();
   }catch(err){
@@ -636,6 +654,7 @@ function renderCards(){
       <div class="meta">
         <div class="nm">${c.name}</div>
         <div class="sub"><span>#${c.number}</span><span>${c.rarity||"—"}</span></div>
+        ${c.price?`<div class="price" title="${esc(c.price.src)} market price${c.price.at?", updated "+esc(c.price.at):""}"><b>${esc(fmtPrice(c.price))}</b><small>${esc(c.price.src)}</small></div>`:""}
       </div>
     </div>`).join("");
 }
