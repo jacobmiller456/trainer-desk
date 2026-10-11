@@ -27,6 +27,7 @@ original source for full details.
 
 ### TCG Sets
 - **Set/card browser** — live against the [pokemontcg.io](https://pokemontcg.io) API (`api.pokemontcg.io/v2`). Card images hotlink from their CDN (no rehosting).
+  The sets list and each set's cards are cached in `sessionStorage` (keys `td-tcg-sets-v1`, `td-tcg-cards-v1-<setId>`; only the fields the page uses are stored), so each is fetched at most once per browser session. Bump the `-v1` suffix if the stored shape changes.
 - **Upcoming Sets** — hand-maintained array (`UPCOMING_SETS` in the script). No public API exists for pre-release set announcements; update this manually from pokemon-card.com (Japan) or official English press when a new set is confirmed. Write descriptions in your own words.
 - **Recent Tournaments** — live against [Limitless TCG's](https://limitlesstcg.com) public API (`play.limitlesstcg.com/api/tournaments`), the platform the competitive community uses for standings/decklists.
 - **Offline placeholder art** — when the live card API is unreachable, sample cards render original generated SVG placeholders (gradient + monogram + rarity dots), not real card art.
