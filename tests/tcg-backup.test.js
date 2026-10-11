@@ -31,11 +31,13 @@ async function scenario(name, ptcg) {
   const srcs = await page.$$eval('#card-grid img', n => n.map(x => x.src));
   const firstSet = await page.$eval('#set-select', s => s.options[0].textContent);
   check(`${name}: falls back to TCGdex cards`, names.join() === 'Dex Card A,Dex Card B', names);
-  check(`${name}: status credits TCGdex`, status === '2 cards · via TCGdex', status);
+  check(`${name}: status credits TCGdex`, status.startsWith('2 cards · via TCGdex'), status);
   check(`${name}: real art URL built (low.webp), card without art gets placeholder`, srcs.length === 1 && srcs[0] === 'https://assets.tcgdex.net/en/x/new1/1/low.webp', srcs);
   await page.waitForSelector('#card-grid .price', { timeout: 8000 });
   const prices = await page.$$eval('#card-grid .tcard', n => n.map(x => (x.querySelector('.price') || {}).textContent || ''));
   check(`${name}: TCGdex price shown on the card that has one, none on the other`, prices.join('|') === '$3.20TCGplayer|', prices);
+  await page.waitForFunction(() => /1 found, 1 not listed/.test(document.querySelector('#tcg-status').textContent), null, { timeout: 8000 });
+  check(`${name}: status explains prices (1 found, 1 not listed)`, true);
   check(`${name}: newest set listed first`, firstSet === 'New Set', firstSet);
   check(`${name}: no uncaught JS errors`, !errors.length, errors);
   // the choice sticks for the session: a reload goes straight to the backup, no second wait on the dead primary

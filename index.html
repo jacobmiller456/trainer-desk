@@ -599,6 +599,13 @@ function tcgdexPrice(j){
   if(cm&&typeof cm==="object"){ const n=cm.trend??cm.avg; if(typeof n==="number") return {v:n,cur:"EUR",src:"Cardmarket",at:(typeof cm.updated==="string"?cm.updated.slice(0,10):"")}; }
   return null;
 }
+// Backup-mode status line: "N cards · via TCGdex · prices: X found, Y not listed, Z failed" so a blank price is explainable.
+function updatePriceStatus(){
+  if(tcgSource!=="tcgdex"||!allCards.length) return;
+  const n=st=>allCards.filter(c=>c.priceState===st).length, ok=n("ok"), none=n("none"), fail=n("fail");
+  if(!ok&&!none&&!fail) return;
+  statusEl.textContent=allCards.length+" cards · via TCGdex · prices: "+ok+" found, "+none+" not listed"+(fail?", "+fail+" failed":"");
+}
 const priceQueue=[]; let priceActive=0; let priceObserver=null;
 function queuePrice(c){ if(c.priceTried||c.price) return; c.priceTried=true; priceQueue.push(c); pumpPrices(); }
 function pumpPrices(){
@@ -616,9 +623,11 @@ async function loadTcgdexPrice(c){
       if(!r.ok) throw new Error(r.status);
       p=tcgdexPrice(await r.json())||0; // 0 = looked up, no price listed
       tcgCacheSet(key,p);
-    }catch(e){ return; } // network error: leave unpriced, don't cache
+    }catch(e){ c.priceState="fail"; updatePriceStatus(); return; } // network error: leave unpriced, don't cache
   }
   c.price=p||null;
+  c.priceState=p?"ok":"none";
+  updatePriceStatus();
   if(c.price){
     const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
     if(el&&!el.querySelector(".price")) el.querySelector(".meta").insertAdjacentHTML("beforeend",priceHtml(c.price));
