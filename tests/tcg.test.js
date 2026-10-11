@@ -36,7 +36,19 @@ const path = require('path');
   console.log({prices,srcs,flippedOn,flippedOff,keyOk});
   console.log(flippedOn&&flippedOff&&keyOk?'PASS tcg card flips on tap, flips back, works from keyboard':'FAIL tcg card flip');
   const flipOk=flippedOn&&flippedOff&&keyOk;
-  const ok=flipOk&&prices.join('|')==='$12.50|€0.40'&&srcs.join('|')==='TCGplayer market price|Cardmarket market price'&&status==='2 cards'&&opts.length===2&&names[0]==='Live Card A'&&!errors.length;
+  // set value summary + sort by price (A = $12.50, B = €0.40)
+  const value=await page.textContent('#set-value');
+  const valueOk=/Set value: \$12\.50 \+ €0\.40 · 2 of 2 cards priced/.test(value);
+  await page.selectOption('#card-sort','price-desc');
+  const desc=await page.$$eval('#card-grid .nm',n=>n.map(x=>x.textContent));
+  await page.selectOption('#card-sort','price-asc');
+  const asc=await page.$$eval('#card-grid .nm',n=>n.map(x=>x.textContent));
+  await page.selectOption('#card-sort','number');
+  const sortOk=desc.join()==='Live Card A,Live Card B'&&asc.join()==='Live Card B,Live Card A';
+  const btnHidden=await page.$eval('#load-prices',b=>b.hidden);
+  console.log({value,desc,asc,btnHidden});
+  console.log(valueOk&&sortOk&&btnHidden?'PASS tcg set value, price sort, no bulk button on main source':'FAIL tcg set value / sort');
+  const ok=flipOk&&valueOk&&sortOk&&btnHidden&&prices.join('|')==='$12.50|€0.40'&&srcs.join('|')==='TCGplayer market price|Cardmarket market price'&&status==='2 cards'&&opts.length===2&&names[0]==='Live Card A'&&!errors.length;
   console.log(ok?'PASS tcg live path':'FAIL tcg live path');
   // cache: switching sets and back, then reloading, must not refetch what was already loaded
   await page.selectOption('#set-select','liv2');

@@ -141,6 +141,7 @@ header .wrap{display:flex; align-items:center; justify-content:space-between; mi
 .ev .cd{ color:var(--forest-dark); font-weight:700; }
 
 /* ---- TCG controls ---- */
+.set-value{ font-family:var(--font-retro); font-size:18px; color:var(--gold); margin:-8px 0 18px; min-height:1.3em; }
 .tcg-controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:22px; }
 select,input[type=text]{
   background:var(--parchment); border:3px solid var(--forest-dark); color:var(--ink);
@@ -379,8 +380,15 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   <div class="tcg-controls">
     <select id="set-select"><option>Loading sets…</option></select>
     <input type="text" id="card-search" placeholder="Filter by card name…">
+    <select id="card-sort" aria-label="Sort cards">
+      <option value="number">Sort: card number</option>
+      <option value="price-desc">Sort: price, high to low</option>
+      <option value="price-asc">Sort: price, low to high</option>
+    </select>
+    <button type="button" class="arena-btn" id="load-prices" hidden>LOAD ALL PRICES</button>
     <span class="status" id="tcg-status"></span>
   </div>
+  <div class="set-value" id="set-value" aria-live="polite"></div>
 
   <div class="card-grid" id="card-grid"></div>
   <div class="empty pixel-box" id="tcg-empty" style="display:none;"></div>
@@ -665,29 +673,36 @@ async function fetchSets(src){
   return j.data.map(x=>({id:x.id,name:x.name,releaseDate:x.releaseDate}));
 }
 // Market price per card from pokemontcg.io's bundled TCGplayer (USD) / Cardmarket (EUR) data. Returns null if none.
+// Only positive numbers count: sources use null/0 for "no data", and a "$0.00" price would mislead.
+const pos=n=>typeof n==="number"&&isFinite(n)&&n>0?n:null;
 function cardPrice(c){
   const tp=c.tcgplayer&&c.tcgplayer.prices;
   if(tp){
-    for(const v of Object.keys(tp)){ // first variant with a market (or mid) price: normal, holofoil, reverse, ...
-      const n=tp[v]&&(tp[v].market??tp[v].mid);
-      if(typeof n==="number") return {v:n,cur:"USD",src:"TCGplayer",at:c.tcgplayer.updatedAt||""};
+    for(const v of Object.keys(tp)){ // first variant with a market (else mid) price: normal, holofoil, reverse, ...
+      const n=tp[v]&&(pos(tp[v].market)??pos(tp[v].mid));
+      if(n!=null) return {v:n,cur:"USD",src:"TCGplayer",at:c.tcgplayer.updatedAt||""};
     }
   }
   const cm=c.cardmarket&&c.cardmarket.prices;
-  const n=cm&&(cm.trendPrice??cm.averageSellPrice);
-  if(typeof n==="number") return {v:n,cur:"EUR",src:"Cardmarket",at:c.cardmarket.updatedAt||""};
+  const n=cm&&(pos(cm.trendPrice)??pos(cm.averageSellPrice));
+  if(n!=null) return {v:n,cur:"EUR",src:"Cardmarket",at:c.cardmarket.updatedAt||""};
   return null;
 }
 function fmtPrice(p){ return (p.cur==="EUR"?"€":"$")+p.v.toFixed(2); }
 // TCGdex only lists prices on single-card requests, so in backup mode fetch them when a card is flipped.
 function tcgdexPrice(j){
+  // Shape (from TCGdex's own data): pricing.tcgplayer = {updated, unit:"USD", <variant>:{lowPrice,midPrice,highPrice,marketPrice,...}}
+  // and pricing.cardmarket = {updated, unit:"EUR", avg, low, trend, avg30, "trend-holo", ...}; unknown values are null or 0.
   const pr=j&&j.pricing; if(!pr) return null;
   const tp=pr.tcgplayer;
   if(tp&&typeof tp==="object"){
-    for(const k of Object.keys(tp)){ const v=tp[k]; const n=v&&typeof v==="object"&&(v.marketPrice??v.midPrice); if(typeof n==="number") return {v:n,cur:"USD",src:"TCGplayer",at:(typeof tp.updated==="string"?tp.updated.slice(0,10):"")}; }
+    for(const k of Object.keys(tp)){ const v=tp[k]; const n=v&&typeof v==="object"?(pos(v.marketPrice)??pos(v.midPrice)):null; if(n!=null) return {v:n,cur:"USD",src:"TCGplayer",at:(typeof tp.updated==="string"?tp.updated.slice(0,10):"")}; }
   }
   const cm=pr.cardmarket;
-  if(cm&&typeof cm==="object"){ const n=cm.trend??cm.avg; if(typeof n==="number") return {v:n,cur:"EUR",src:"Cardmarket",at:(typeof cm.updated==="string"?cm.updated.slice(0,10):"")}; }
+  if(cm&&typeof cm==="object"){
+    const n=pos(cm.trend)??pos(cm.avg30)??pos(cm.avg)??pos(cm["trend-holo"])??pos(cm["avg30-holo"])??pos(cm["avg-holo"])??pos(cm.low);
+    if(n!=null) return {v:n,cur:"EUR",src:"Cardmarket",at:(typeof cm.updated==="string"?cm.updated.slice(0,10):"")};
+  }
   return null;
 }
 // Backup-mode status line: "N cards · via TCGdex · prices: X found, Y not listed, Z failed" so a blank price is explainable.
@@ -705,21 +720,37 @@ function pumpPrices(){
     loadTcgdexPrice(c).finally(()=>{ priceActive--; pumpPrices(); });
   }
 }
+function applyCachedPrice(c){ // re-apply prices looked up in the last 6h to a card restored from the session cache
+  const p=priceGet(c.id); return {...c,price:p||null,priceState:p===null?undefined:(p?"ok":"none")};
+}
+const PRICE_TTL=6*3600e3; // card prices move slowly; keep lookups for 6h across visits
+function priceGet(id){
+  const m=tcgMem.get("p-"+id); if(m!==undefined) return m;
+  try{ const v=JSON.parse(localStorage.getItem("td-pc1-"+id)||"null"); if(v&&Date.now()-v.t<PRICE_TTL){ tcgMem.set("p-"+id,v.p); return v.p; } }catch(e){}
+  return null; // null = never looked up; 0 = looked up, no price listed
+}
+function priceSet(id,p){
+  tcgMem.set("p-"+id,p);
+  try{ localStorage.setItem("td-pc1-"+id,JSON.stringify({t:Date.now(),p})); }
+  catch(e){ // storage full: drop expired entries once, memory copy still works
+    try{ for(let i=localStorage.length-1;i>=0;i--){ const k=localStorage.key(i); if(k&&k.startsWith("td-pc1-")){ const v=JSON.parse(localStorage.getItem(k)||"null"); if(!v||Date.now()-v.t>=PRICE_TTL) localStorage.removeItem(k); } } }catch(_){}
+  }
+}
 async function loadTcgdexPrice(c){
-  const key="price-v1-"+c.id;
-  let p=tcgCacheGet(key);
-  if(p===null){
+  let p=priceGet(c.id);
+  for(let a=0;p===null&&a<3;a++){ // retry transient failures with a short backoff
     try{
       const r=await fetchWithTimeout(`${TCGDEX}/cards/${encodeURIComponent(c.id)}`,TCGDEX_TIMEOUT);
+      if(r.status===404){ p=0; break; }
       if(!r.ok) throw new Error(r.status);
-      p=tcgdexPrice(await r.json())||0; // 0 = looked up, no price listed
-      tcgCacheSet(key,p);
-    }catch(e){ c.priceState="fail"; updatePriceStatus(); paintBackFor(c); return; } // network error: leave unpriced, don't cache
+      p=tcgdexPrice(await r.json())||0;
+    }catch(e){ if(a<2) await new Promise(res=>setTimeout(res,500*(a+1))); }
   }
+  if(p===null){ c.priceState="fail"; updatePriceStatus(); paintBackFor(c); bulkCheck(); return; } // leave unpriced, don't cache
+  priceSet(c.id,p);
   c.price=p||null;
   c.priceState=p?"ok":"none";
-  updatePriceStatus();
-  paintBackFor(c);
+  updatePriceStatus(); updateSetValue(); paintBackFor(c); bulkCheck();
 }
 // Back of a card: price (or why there isn't one). In TCGdex mode the price is looked up only when the card is flipped.
 function backInner(c){
@@ -748,7 +779,10 @@ async function fetchCards(src,setId){
     if(!r.ok) throw new Error(r.status);
     const j=await r.json();
     if(!Array.isArray(j.cards)) throw new Error("no cards");
-    return j.cards.map(c=>({id:c.id,name:c.name,number:c.localId,rarity:null,hp:null,images:c.image?{small:c.image+"/low.webp"}:null}));
+    return j.cards.map(c=>{
+      const p=priceGet(c.id); // prices looked up in the last 6h are applied immediately
+      return {id:c.id,name:c.name,number:c.localId,rarity:null,hp:null,images:c.image?{small:c.image+"/low.webp"}:null,price:p||null,priceState:p===null?undefined:(p?"ok":"none")};
+    });
   }
   const r=await fetchWithTimeout(`${API}/cards?q=set.id:${setId}&orderBy=number&pageSize=250`,TCG_TIMEOUT);
   if(!r.ok) throw new Error(r.status);
@@ -783,24 +817,58 @@ function fillSets(sets){
 }
 async function loadCards(setId){
   grid.innerHTML=""; emptyEl.style.display="none";
+  bulk=false; loadBtn.hidden=true; valueEl.textContent="";
   if(setId==="sample"){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; return; }
+  const showBulk=()=>{ loadBtn.hidden=tcgSource!=="tcgdex"; };
   const src=tcgSource, tag=src==="tcgdex"?" · via TCGdex":"";
   const cachedCards=tcgCacheGet("cards-v3-"+src+"-"+setId);
-  if(cachedCards){ allCards=cachedCards; statusEl.textContent=allCards.length+" cards"+tag; renderCards(); return; }
+  if(cachedCards){ allCards=cachedCards.map(c=>src==="tcgdex"?applyCachedPrice(c):c); statusEl.textContent=allCards.length+" cards"+tag; showBulk(); renderCards(); return; }
   statusEl.textContent="Loading cards…";
   try{
     allCards=await fetchCards(src,setId);
     tcgCacheSet("cards-v3-"+src+"-"+setId,allCards);
     statusEl.textContent=allCards.length+" cards"+tag;
+    showBulk();
     renderCards();
   }catch(err){
     if(src==="ptcg") return switchToBackup();
     showOffline();
   }
 }
+const sortEl=document.getElementById("card-sort"), loadBtn=document.getElementById("load-prices"), valueEl=document.getElementById("set-value");
+let bulk=false;
+const usdEq=p=>p.cur==="EUR"?p.v*1.08:p.v; // rough EUR→USD, only used to order mixed-currency cards
+function sortedCards(list){
+  const m=sortEl.value;
+  if(m==="number") return list;
+  const hi=m==="price-desc";
+  return [...list].sort((a,b)=>{ // unpriced cards always last
+    if(!a.price&&!b.price) return 0; if(!a.price) return 1; if(!b.price) return -1;
+    return hi?usdEq(b.price)-usdEq(a.price):usdEq(a.price)-usdEq(b.price);
+  });
+}
+function updateSetValue(){
+  const real=allCards.filter(c=>!c.sample);
+  if(!real.length){ valueEl.textContent=""; return; }
+  if(bulk){ const done=real.filter(c=>c.priceState).length; valueEl.textContent="Loading prices… "+done+"/"+real.length; return; }
+  let usd=0,eur=0,n=0;
+  real.forEach(c=>{ if(!c.price) return; n++; if(c.price.cur==="EUR") eur+=c.price.v; else usd+=c.price.v; });
+  if(!n){ valueEl.textContent=tcgSource==="tcgdex"?"Prices load when you flip a card, or press LOAD ALL PRICES.":""; return; }
+  const parts=[]; if(usd) parts.push("$"+usd.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})); if(eur) parts.push("€"+eur.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
+  const all=tcgSource!=="tcgdex"||real.every(c=>c.priceState);
+  valueEl.textContent="Set value"+(all?"":" so far")+": "+parts.join(" + ")+" · "+n+" of "+real.length+" cards priced";
+}
+function bulkCheck(){ if(bulk&&allCards.every(c=>c.sample||c.priceState)){ bulk=false; renderCards(); } else if(bulk) updateSetValue(); }
+loadBtn.addEventListener("click",()=>{
+  if(tcgSource!=="tcgdex") return;
+  bulk=true;
+  allCards.forEach(c=>{ if(c.sample) return; if(c.priceState==="fail"){ c.priceTried=false; c.priceState=undefined; } if(c.priceState===undefined) queuePrice(c); });
+  updateSetValue(); bulkCheck();
+});
+sortEl.addEventListener("change",()=>renderCards());
 function renderCards(){
   const q=searchEl.value.trim().toLowerCase();
-  const list=q?allCards.filter(c=>c.name.toLowerCase().includes(q)):allCards;
+  const list=sortedCards(q?allCards.filter(c=>c.name.toLowerCase().includes(q)):allCards);
   if(!list.length){ grid.innerHTML=""; emptyEl.style.display="block"; emptyEl.textContent="No cards match that filter."; return; }
   emptyEl.style.display="none";
   grid.innerHTML=list.map(c=>`
@@ -822,6 +890,7 @@ function renderCards(){
         </div>
       </div>
     </div>`).join("");
+  updateSetValue();
 }
 grid.addEventListener("click",e=>{ const el=e.target.closest(".tcard"); if(el) toggleCard(el); });
 grid.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("tcard")){ e.preventDefault(); toggleCard(e.target); } });

@@ -43,12 +43,23 @@ async function scenario(name, ptcg) {
   check(`${name}: back of card shows the TCGdex price, or says none is listed`, /^\$3\.20TCGplayer market priceUpdated 2026-10-10$/.test(prices[0]) && prices[1] === 'No price listed', prices);
   await page.waitForFunction(() => /1 found, 1 not listed/.test(document.querySelector('#tcg-status').textContent), null, { timeout: 8000 });
   check(`${name}: status explains prices (1 found, 1 not listed)`, true);
+  // bulk loader: one press prices the whole set; sort + set value then work; prices persist across reloads
+  check(`${name}: LOAD ALL PRICES visible in backup mode`, await page.isVisible('#load-prices'));
+  await page.click('#load-prices');
+  await page.waitForFunction(() => /Set value: \$3\.20 · 1 of 2 cards priced/.test(document.getElementById('set-value').textContent), null, { timeout: 8000 });
+  check(`${name}: set value shown after bulk load`, true);
+  await page.selectOption('#card-sort', 'price-desc');
+  const order = await page.$$eval('#card-grid .nm', n => n.map(x => x.textContent));
+  check(`${name}: priced card sorts first`, order[0] === 'Dex Card A', order);
+  const priceHitsBefore = hits.tcgdex;
   check(`${name}: newest set listed first`, firstSet === 'New Set', firstSet);
   check(`${name}: no uncaught JS errors`, !errors.length, errors);
   // the choice sticks for the session: a reload goes straight to the backup, no second wait on the dead primary
   const before = hits.ptcg;
   await page.reload(); await page.click('button[data-view="tcg"]');
   await page.waitForFunction(() => document.querySelectorAll('#card-grid .tcard').length === 2, null, { timeout: 15000 });
+  await page.waitForFunction(() => /Set value: \$3\.20/.test(document.getElementById('set-value').textContent), null, { timeout: 8000 });
+  check(`${name}: prices remembered across reload (no new lookups)`, hits.tcgdex === priceHitsBefore, { before: priceHitsBefore, after: hits.tcgdex });
   check(`${name}: reload skips the failed primary`, hits.ptcg === before, { before, after: hits.ptcg });
   await b.close();
 }
