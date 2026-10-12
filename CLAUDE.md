@@ -1,7 +1,7 @@
 # Trainer Desk — instructions for Claude Code
 
 Unofficial Pokémon GO + TCG + Pokédex info site, Pokémon Emerald (GBA) look.
-**Single static file: `index.html`** (HTML+CSS+JS inline) for the app. No framework, no backend, no Vercel build step. Owner-approved (Oct 2026): generated static pages committed to the repo — per-tab copies (`npm run pages`) and per-Pokémon pages (`npm run dex-pages`) — produced by the scripts in `scripts/`, checked by `npm test`.
+**Single static file: `index.html`** (HTML+CSS+JS inline) for the app. No framework, no backend, no Vercel build step. Owner-approved (Oct 2026): generated static pages committed to the repo — per-tab copies (`npm run pages`) and per-Pokémon and per-set pages (`npm run static-pages`) — produced by the scripts in `scripts/`, checked by `npm test`.
 
 ## Commands
 - `npm install && npx playwright install chromium` (once)
@@ -9,7 +9,7 @@ Unofficial Pokémon GO + TCG + Pokédex info site, Pokémon Emerald (GBA) look.
 - `npm test` → Playwright suites incl. mobile layout checks (network is mocked/aborted; no live calls)
 - `npm run test:mobile` → just the mobile checks
 - `npm run pages` → after ANY edit to `index.html`, regenerate `go.html`, `tcg.html`, `pokedex.html`, `arena.html` (copies with per-tab title/description/social card; `npm test` fails if they're stale). Never edit those four files by hand. Social card images: `python3 scripts/make-og-images.py`.
-- `npm run dex-pages` → regenerate the 1,025 static Pokémon pages (`pokedex/<slug>.html`) and `sitemap.xml` from `data/pokedex.json` after changing `scripts/build-pokedex-pages.mjs`, `assets/dex-page.css`, `ROUTES` or `SHOW_SPRITES`. Never edit `pokedex/*.html` or `sitemap.xml` by hand; `npm test` fails if they're stale. `npm run data` re-downloads PokéAPI's open CSV data first (a GitHub Action does this weekly and commits the result).
+- `npm run static-pages` → regenerate the static pages — 1,025 Pokémon pages (`pokedex/<slug>.html`), 176 TCG set pages (`tcg/<slug>.html`), the set index (`tcg/sets.html`) and `sitemap.xml` — from `data/pokedex.json` + `data/tcg.json` (`scripts/build-pages.mjs`, styles in `assets/dex-page.css`). Rerun after changing the builder, the CSS, `ROUTES` or `SHOW_SPRITES`. Never edit generated files by hand; `npm test` fails if they're stale. `npm run data` re-downloads both open datasets first (a GitHub Action does this weekly and commits the result).
 - Deploy = push to `main` (Vercel project `trainer-desk-4n8w`, www.trainerdesk.net; see HANDOFF.md)
 
 ## Mobile-first (required on every change)
@@ -29,6 +29,6 @@ Most visitors are on phones. `tests/mobile.test.js` (part of `npm test`, and run
 
 ## Legal guardrails (do not relax without asking the owner)
 - Facts only; no copied descriptions. One owner-approved exception (Oct 2026): the Today tab's Pokémon of the day shows the game's own Pokédex entry, fetched live from PokéAPI at view time (`SHOW_FLAVOR_TEXT`), credited, never stored in the repo. Do not extend flavor text to other places without asking the owner.
-- Card images are hotlinked from pokemontcg.io (or TCGdex's `assets.tcgdex.net` in backup mode), never rehosted. Sprites are hotlinked from PokéAPI's sprite repo (`SHOW_SPRITES=true`, owner's decision) in both the Pokédex and the Pixel Arena minigame, which respects the same flag; never copy sprite files into the repo. The Arena stays free: no ads, no purchases, no prizes. `assets/arena` (generated backgrounds, CC0 effect images) may live in the repo; Pokémon sprites and card art may not.
+- Card images are hotlinked from pokemontcg.io and its image CDN (`images.pokemontcg.io`, `images.scrydex.com`), or TCGdex's `assets.tcgdex.net` in backup mode, never rehosted. The TCG dataset includes flavor and attack text: never store or show it. Sprites are hotlinked from PokéAPI's sprite repo (`SHOW_SPRITES=true`, owner's decision) in both the Pokédex and the Pixel Arena minigame, which respects the same flag; never copy sprite files into the repo. The Arena stays free: no ads, no purchases, no prizes. `assets/arena` (generated backgrounds, CC0 effect images) may live in the repo; Pokémon sprites and card art may not.
 - Keep the "unofficial fan project" footer and attributions.
 - No ads, merch, paywalls, or "Pokémon" in domain/business names.

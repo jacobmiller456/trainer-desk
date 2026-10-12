@@ -38,10 +38,29 @@ ul{ margin:0; padding-left:20px; }
 .evo li+li::before{ content:"→"; color:var(--ink-soft); margin-right:4px; }
 .evo b{ padding:0 4px; }
 .box a, footer a{ color:var(--forest-dark); }
-.evo a, .related a{ display:inline-flex; align-items:center; min-height:44px; padding:0 4px; }
+.evo a, .related a{ display:inline-flex; align-items:center; justify-content:center; min-height:44px; min-width:44px; padding:0 4px; }
 .related{ display:flex; flex-wrap:wrap; gap:4px 14px; }
 .pager{ display:flex; justify-content:space-between; gap:10px; margin:0 0 16px; }
 .pager a, .btn{ display:inline-flex; align-items:center; min-height:44px; padding:0 14px; background:var(--gold); color:var(--forest-dark); border:3px solid var(--forest-dark); border-radius:4px; font-weight:700; text-decoration:none; box-shadow:2px 2px 0 rgba(0,0,0,.3); }
-.cta{ display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 0; }
+.cta{ display:flex; flex-wrap:wrap; gap:10px; margin:8px 0 16px; }
 footer{ color:var(--parchment); font-size:13px; padding-top:16px; padding-bottom:32px; opacity:.9; }
 footer a{ color:var(--gold); }
+
+/* TCG set pages */
+.logo-img{ max-width:240px; width:100%; height:auto; max-height:110px; object-fit:contain; }
+.type.legal{ background:var(--forest-light); }
+.page-h1{ color:var(--parchment); margin:4px 0 8px; }
+.intro a{ color:var(--gold); }
+.cards{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+@media(min-width:560px){ .cards{ grid-template-columns:repeat(3,1fr); } }
+@media(min-width:800px){ .cards{ grid-template-columns:repeat(4,1fr); } }
+.cards li{ font-size:14px; line-height:1.3; }
+.cards img, .cards .noimg{ display:block; width:100%; height:auto; aspect-ratio:245/342; border-radius:6px; background:var(--parchment-2); margin-bottom:6px; }
+.cards .cn{ color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+.cards a{ display:inline; min-height:0; padding:0; }
+.cards small{ display:block; margin:2px 0 0; }
+.setlist{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr; gap:2px 16px; }
+@media(min-width:600px){ .setlist{ grid-template-columns:1fr 1fr; } }
+.setlist li{ display:flex; flex-wrap:wrap; align-items:center; gap:0 8px; min-height:44px; }
+.setlist a{ display:inline-flex; align-items:center; min-height:44px; min-width:44px; }
+.setlist small{ color:var(--ink-soft); font-size:13px; margin:0; }

@@ -11,8 +11,8 @@ let failures = 0;
 const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (ok || x === undefined ? '' : '  ' + JSON.stringify(x))); if (!ok) failures++; };
 const read = f => fs.readFileSync(path.join(root, f), 'utf8');
 
-let fresh = true; try { execFileSync('node', [path.join(root, 'scripts/build-pokedex-pages.mjs'), '--check'], { stdio: 'pipe' }); } catch (e) { fresh = false; }
-check('pages and sitemap are up to date with data/pokedex.json', fresh);
+let fresh = true; try { execFileSync('node', [path.join(root, 'scripts/build-pages.mjs'), '--check'], { stdio: 'pipe' }); } catch (e) { fresh = false; }
+check('static pages and sitemap are up to date with data/', fresh);
 const dex = JSON.parse(read('data/pokedex.json'));
 check('one page per species', fs.readdirSync(path.join(root, 'pokedex')).length === dex.length && dex.length >= 1025, dex.length);
 
@@ -27,6 +27,7 @@ check('x4 weakness marked (Venusaur: Fire, Ice, Flying, Psychic)', /Weak to:.*Fi
 check('immunities listed (Gengar immune to Normal and Fighting)', /Immune to:.*Normal.*Fighting/.test(read('pokedex/gengar.html')));
 check('special names kept (Mr. Mime, Nidoran♀)', read('pokedex/mr-mime.html').includes('<h1>Mr. Mime</h1>') && read('pokedex/nidoran-f.html').includes('<h1>Nidoran♀</h1>'));
 check('no Pokédex flavor text on generated pages', !/flavor/i.test(pika));
+check('Pokémon page lists its TCG cards with set links', /Pikachu Pokémon TCG cards<\/h2>/.test(pika) && /appears on \d+ English cards across \d+ sets/.test(pika) && /href="\/tcg\/[a-z0-9-]+"/.test(pika));
 
 // limits + links across all pages
 const titles = new Set(); let badTitle = [], badDesc = [], badLinks = [];

@@ -479,7 +479,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <div class="view" id="view-tcg"><div class="wrap">
   <div class="view-head">
     <h1>TCG SET BROWSER</h1>
-    <p>Browse sets and cards from the community-maintained Pokémon TCG API. Card images are served directly from their CDN.</p>
+    <p>Browse sets and cards from the community-maintained Pokémon TCG API. Card images are served directly from their CDN. Looking for a checklist? See the <a href="/tcg/sets" style="color:var(--gold);text-decoration:underline;">full list of every set</a>.</p>
   </div>
 
   <div class="seg" role="group" aria-label="TCG view">
@@ -882,7 +882,7 @@ async function fetchSets(src){
     // TCGdex's list has no release date; it lists oldest first, so reverse to put newer sets on top
     return j.map(x=>({id:x.id,name:x.name,releaseDate:"—"})).reverse();
   }
-  const r=await fetchWithTimeout(`${API}/sets?orderBy=-releaseDate&pageSize=60`,TCG_TIMEOUT);
+  const r=await fetchWithTimeout(`${API}/sets?orderBy=-releaseDate&pageSize=250`,TCG_TIMEOUT);
   if(!r.ok) throw new Error(r.status);
   const j=await r.json();
   return j.data.map(x=>({id:x.id,name:x.name,releaseDate:x.releaseDate}));
@@ -1028,7 +1028,10 @@ async function loadSets(){
 }
 function fillSets(sets){
   setSel.innerHTML=sets.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.releaseDate!=="—"?" ("+esc(s.releaseDate.slice(0,4))+")":""}</option>`).join("");
-  loadCards(sets[0].id);
+  // deep link from the static set pages: /tcg?set=<id> opens that set (if the current card source knows it)
+  let want=null; try{ want=new URLSearchParams(location.search).get("set"); }catch(e){}
+  const pick=want&&sets.some(s=>s.id===want)?want:sets[0].id;
+  setSel.value=pick; loadCards(pick);
 }
 async function loadCards(setId){
   grid.innerHTML=""; emptyEl.style.display="none";
