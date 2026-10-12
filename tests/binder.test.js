@@ -4,7 +4,8 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
-const url = 'file://' + path.resolve(process.argv[2]);
+const { serve } = require('./serve'); // over http: file:// pages can lose just-written localStorage on reload
+let base;
 const cors = { 'access-control-allow-origin': '*' };
 const GIF = Buffer.from('R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==', 'base64');
 let failures = 0;
@@ -17,7 +18,7 @@ async function setup(ctx) {
   page.errors = []; page.on('pageerror', e => page.errors.push(e.message));
   await page.route('**/*', r => {
     const u = r.request().url();
-    if (u.startsWith('file://')) return r.continue();
+    if (u.startsWith(base)) return r.continue();
     if (u.startsWith('https://api.pokemontcg.io/v2/sets')) return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ data: [{ id: 's1', name: 'Live Set One', releaseDate: '2025/01/01' }] }) });
     if (u.startsWith('https://api.pokemontcg.io/v2/cards')) return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ data: CARDS }) });
     if (u.startsWith('https://img.test/')) return r.fulfill({ status: 200, contentType: 'image/gif', body: GIF });
@@ -27,11 +28,12 @@ async function setup(ctx) {
 }
 
 (async () => {
+  const srv = await serve(); base = srv.base;
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 375, height: 900 }, acceptDownloads: true });
   await ctx.addInitScript(() => { try { localStorage.setItem('td-cookie-consent', 'denied'); } catch (e) {} });
   let page = await setup(ctx);
-  await page.goto(url);
+  await page.goto(base + '/');
   await page.click('button[data-view="tcg"]');
   await page.waitForFunction(() => document.querySelectorAll('#card-grid .tcard').length === 12, null, { timeout: 10000 });
 
@@ -79,7 +81,8 @@ async function setup(ctx) {
   // persistence
   await page.reload();
   await page.click('button[data-view="tcg"]'); await page.click('[data-tcgview="binder"]');
-  check('binders survive a reload', (await page.$$eval('#binder-select option', o => o.map(x => x.textContent).join('|'))) === 'My Binder (9)|Trades (1)');
+  const opts = await page.$$eval('#binder-select option', o => o.map(x => x.textContent).join('|'));
+  check('binders survive a reload', opts === 'My Binder (9)|Trades (1)', opts);
 
   // export / import
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#binder-export')]);
@@ -123,7 +126,7 @@ async function setup(ctx) {
   });
   check('320px: no horizontal scroll, all binder controls >= 44px', lay.overflow <= 0 && !lay.small.length, lay);
   check('no uncaught JS errors', !page.errors.length && !viewer.errors.length, page.errors.concat(viewer.errors));
-  await b.close();
+  await b.close(); srv.close();
   console.log(failures ? `\n${failures} BINDER CHECK(S) FAILED` : '\nALL BINDER CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 })();

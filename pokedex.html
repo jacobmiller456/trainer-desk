@@ -479,10 +479,14 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .today-grid .puzzle-card{ grid-column:1/-1; }
 .whos{ display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; }
 .whos-art{ flex:0 0 auto; }
-.whos-img{ display:block; width:160px; height:160px; image-rendering:pixelated; background:radial-gradient(circle,#fff6d6,#f3ecd2 70%); border:3px solid var(--forest-dark); border-radius:6px;
-  filter:brightness(0); transition:filter .8s ease; }
+.whos-frame{ display:grid; place-items:center; width:160px; height:160px; overflow:hidden; background:radial-gradient(circle,#fff6d6,#f3ecd2 70%); border:3px solid var(--forest-dark); border-radius:6px; }
+/* Only the sprite is darkened, so its transparent background stays light and the shape reads as a silhouette. */
+.whos-img{ display:block; width:100%; height:100%; image-rendering:pixelated; filter:brightness(0); transition:filter .8s ease; }
 .whos-img.shown{ filter:none; }
-.whos-q{ display:grid; place-items:center; filter:none; font-family:var(--font-pixel); font-size:48px; color:var(--forest-dark); }
+.whos-q{ font-family:var(--font-pixel); font-size:48px; color:var(--forest-dark); }
+.whos-hints{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:4px; }
+.whos-hints li{ font-size:15px; }
+.whos-hint-btn{ align-self:flex-start; margin-top:0; }
 .whos-main{ flex:1 1 240px; min-width:0; display:flex; flex-direction:column; gap:8px; }
 .whos-main h3{ margin:0; }
 .whos-form{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -1657,30 +1661,36 @@ function confetti(host){
     const no=g[0]===answer[0]?"=":g[0]<answer[0]?"↑":"↓";
     return {gen,type,no};
   }
+  const REGIONS=["","Kanto","Johto","Hoenn","Sinnoh","Unova","Kalos","Alola","Galar","Paldea"], HINTS=3;
+  const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+  const hintList=()=>[`Generation ${answer[3]}${REGIONS[answer[3]]?` (${REGIONS[answer[3]]})`:""}`,`Type: ${answer[2].map(cap).join(" / ")}`,`Name starts with “${answer[1].charAt(0)}”`];
+  // Hints shown = what the player asked for, or what misses unlock (2 misses → 1, 3 → 2, 4 → 3), whichever is more.
+  const hintsShown=wrong=>Math.min(HINTS,Math.max(state.hints||0,wrong>=2?wrong-1:0));
   const chip=(label,v)=>`<span class="whos-chip ${v==="="?"ok":v==="~"?"part":"no"}">${label} ${v==="="?"✓":v==="~"?"~":v==="x"?"✗":v}</span>`;
 
   function render(){
     const done=state.done, won=state.won;
-    const art=SHOW_SPRITES?`<img class="whos-img${done?" shown":""}" src="${SPRITE_URL(answer[0])}" alt="${done?esc(answer[1]):"Mystery Pokémon silhouette"}" width="160" height="160">`:`<span class="whos-img whos-q" aria-hidden="true">?</span>`;
+    const art=`<div class="whos-frame">${SHOW_SPRITES?`<img class="whos-img${done?" shown":""}" src="${SPRITE_URL(answer[0])}" alt="${done?esc(answer[1]):"Mystery Pokémon silhouette"}" width="160" height="160">`:`<span class="whos-q" aria-hidden="true">?</span>`}</div>`;
     const rows=state.guesses.map(id=>{ const g=byId(id); if(!g) return ""; const f=feedback(g); return `<li><b>${esc(g[1])}</b> ${chip("Gen",f.gen)} ${chip("Type",f.type)} ${chip("#",f.no)}</li>`; }).join("");
-    const left=MAX-state.guesses.length, wrong=state.guesses.length-(won?1:0);
+    const left=MAX-state.guesses.length, wrong=state.guesses.length-(won?1:0), shown=done?0:hintsShown(wrong);
     const s=load(STATS,{played:0,won:0,streak:0,max:0,last:-1});
     el.innerHTML=`<div class="today-label">▸ WHO'S THAT POKÉMON? #${num}</div>
       <div class="whos">
         <div class="whos-art">${art}</div>
         <div class="whos-main">
           ${done?`<h3>${won?"You got it!":"It's"} ${esc(answer[1])}${won?"":"!"}</h3><p class="today-meta">${won?`Solved in ${state.guesses.length}/${MAX}.`:"Better luck tomorrow."} Streak: ${s.streak} · Best: ${s.max} · Solved ${s.won}/${s.played}</p>
-            <div class="binder-actions"><button type="button" class="today-btn" id="whos-share">SHARE RESULT</button><a class="today-btn whos-link" href="/pokedex/${esc(answer[4]||"")}"NFD").replace(/[̀-ͯ]/g,"").replace(/♀/g,"-f").replace(/♂/g,"-m").replace(/['’.:]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""))}">SEE ITS PAGE</a></div>
+            <div class="binder-actions"><button type="button" class="today-btn" id="whos-share">SHARE RESULT</button><a class="today-btn whos-link" href="/pokedex/${esc(answer[4]||"")}">SEE ITS PAGE</a></div>
             <p class="today-meta">Next Pokémon <span class="cd" data-t="${new Date((day+1)*864e5).toISOString()}" data-pre="in"></span></p>`
-          :`<p class="today-meta">Guess today's Pokémon from its silhouette. ${left} guess${left===1?"":"es"} left.</p>
+          :`<p class="today-meta">Guess today's Pokémon from its silhouette. Stuck? Tap HINT. ${left} guess${left===1?"":"es"} left.</p>
             <form class="whos-form" id="whos-form" autocomplete="off"><input type="text" id="whos-input" list="whos-names" placeholder="Type a Pokémon…" aria-label="Your guess" enterkeyhint="go"><button type="submit" class="today-btn">GUESS</button></form>
-            ${wrong>=2?`<p class="today-meta">Hint: it's ${answer[2].length>1?"a dual-type":"a single-type"} Pokémon from Generation ${answer[3]}.</p>`:""}
-            ${wrong>=4?`<p class="today-meta">Last hint: its name starts with “${esc(answer[1].charAt(0))}”.</p>`:""}`}
+            ${shown?`<ul class="whos-hints">${hintList().slice(0,shown).map(h=>`<li>💡 ${esc(h)}</li>`).join("")}</ul>`:""}
+            ${shown<HINTS?`<button type="button" class="today-btn whos-hint-btn" id="whos-hint">HINT (${HINTS-shown} left)</button>`:""}`}
           ${rows?`<ol class="whos-guesses">${rows}</ol>`:""}
           ${!done&&!rows?`<p class="today-meta whos-legend">After each guess: Gen ↑/↓ = later/earlier generation, Type ~ = one type matches, # ↑/↓ = higher/lower Pokédex number.</p>`:""}
         </div>
       </div>`;
-    const img=el.querySelector("img.whos-img"); if(img) img.addEventListener("error",()=>{ img.outerHTML='<span class="whos-img whos-q" aria-hidden="true">?</span>'; },{once:true}); // sprite unreachable: hints still work
+    const img=el.querySelector("img.whos-img"); if(img) img.addEventListener("error",()=>{ img.outerHTML='<span class="whos-q" aria-hidden="true">?</span>'; },{once:true}); // sprite unreachable: hints still work
+    const hb=document.getElementById("whos-hint"); if(hb) hb.addEventListener("click",()=>{ state.hints=hintsShown(wrong)+1; save(KEY,state); render(); });
     if(!done) document.getElementById("whos-form").addEventListener("submit",onGuess);
     else document.getElementById("whos-share").addEventListener("click",share);
     if(typeof tickCountdowns==="function") tickCountdowns();
@@ -1704,7 +1714,7 @@ function confetti(host){
   }
   function shareText(){
     const lines=state.guesses.map(id=>{ const f=feedback(byId(id)); return [f.gen,f.type,f.no].map(v=>v==="="?"🟩":v==="~"?"🟨":"⬛").join(""); });
-    return `Who's That Pokémon? #${num} ${state.won?state.guesses.length:"X"}/${MAX}\n${lines.join("\n")}\nhttps://www.trainerdesk.net`;
+    return `Who's That Pokémon? #${num} ${state.won?state.guesses.length:"X"}/${MAX}${state.hints?` 💡${state.hints}`:""}\n${lines.join("\n")}\nhttps://www.trainerdesk.net`;
   }
   async function share(){
     const text=shareText();
@@ -1719,7 +1729,7 @@ function confetti(host){
       names=await r.json(); if(!Array.isArray(names)||names.length<100) throw new Error("bad list");
     }catch(e){ el.innerHTML='<div class="today-label">▸ WHO\'S THAT POKÉMON?</div><div class="today-meta">Today\'s puzzle couldn\'t load. Check your connection and refresh.</div>'; return; }
     answer=names[(((day*48271)+12345)%names.length+names.length)%names.length];
-    state=load(KEY,null); if(!state||state.day!==day) state={day,guesses:[],done:false,won:false};
+    state=load(KEY,null); if(!state||state.day!==day) state={day,guesses:[],done:false,won:false,hints:0};
     if(!document.getElementById("whos-names")){ const dl=document.createElement("datalist"); dl.id="whos-names"; dl.innerHTML=names.map(n=>`<option value="${esc(n[1])}">`).join(""); document.body.appendChild(dl); }
     render();
     window.__whos={ get answer(){ return answer; }, get state(){ return state; }, shareText };
