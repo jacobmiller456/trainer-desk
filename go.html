@@ -247,6 +247,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .dex-detail-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
 .dex-detail h2{ margin:0; font-size:22px; font-weight:800; }
 .dex-detail .dex-num{ font-size:18px; }
+.dex-full{ display:inline-flex; align-items:center; min-height:44px; margin-top:12px; padding:0 14px; font-family:var(--font-retro); font-size:17px; color:var(--forest-dark); background:var(--gold); border:3px solid var(--forest-dark); border-radius:4px; text-decoration:none; }
 .dex-close{
   font-family:var(--font-pixel); font-size:10px; padding:8px 10px; background:var(--forest); color:var(--parchment);
   border:3px solid var(--forest-dark); border-radius:4px; cursor:pointer;
@@ -1633,7 +1634,8 @@ function renderDexDetail(d){
           </div>`).join("")}
         <div class="dex-total">Base stat total: <b>${total}</b></div>
       </div>
-    </div>`;
+    </div>
+    ${d.id<=1025?`<a class="dex-full" href="/pokedex/${encodeURIComponent(d.name)}">Full page: weaknesses, evolutions &amp; more →</a>`:""}`;
   dexDetail.classList.add("open");
 }
 function closeDexDetail(){

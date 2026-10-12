@@ -1,7 +1,7 @@
 # Trainer Desk — instructions for Claude Code
 
 Unofficial Pokémon GO + TCG + Pokédex info site, Pokémon Emerald (GBA) look.
-**Single static file: `index.html`** (HTML+CSS+JS inline). No build step, no framework, no backend. Keep it that way unless asked.
+**Single static file: `index.html`** (HTML+CSS+JS inline) for the app. No framework, no backend, no Vercel build step. Owner-approved (Oct 2026): generated static pages committed to the repo — per-tab copies (`npm run pages`) and per-Pokémon pages (`npm run dex-pages`) — produced by the scripts in `scripts/`, checked by `npm test`.
 
 ## Commands
 - `npm install && npx playwright install chromium` (once)
@@ -9,6 +9,7 @@ Unofficial Pokémon GO + TCG + Pokédex info site, Pokémon Emerald (GBA) look.
 - `npm test` → Playwright suites incl. mobile layout checks (network is mocked/aborted; no live calls)
 - `npm run test:mobile` → just the mobile checks
 - `npm run pages` → after ANY edit to `index.html`, regenerate `go.html`, `tcg.html`, `pokedex.html`, `arena.html` (copies with per-tab title/description/social card; `npm test` fails if they're stale). Never edit those four files by hand. Social card images: `python3 scripts/make-og-images.py`.
+- `npm run dex-pages` → regenerate the 1,025 static Pokémon pages (`pokedex/<slug>.html`) and `sitemap.xml` from `data/pokedex.json` after changing `scripts/build-pokedex-pages.mjs`, `assets/dex-page.css`, `ROUTES` or `SHOW_SPRITES`. Never edit `pokedex/*.html` or `sitemap.xml` by hand; `npm test` fails if they're stale. `npm run data` re-downloads PokéAPI's open CSV data first (a GitHub Action does this weekly and commits the result).
 - Deploy = push to `main` (Vercel project `trainer-desk-4n8w`, www.trainerdesk.net; see HANDOFF.md)
 
 ## Mobile-first (required on every change)

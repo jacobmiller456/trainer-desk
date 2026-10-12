@@ -69,6 +69,11 @@ Solo battle-royale minigame on a `<canvas>` (single page, no backend). Pick a fi
 - **Files:** `sitemap.xml` (all five routes), `robots.txt` (points at the sitemap), `404.html` (noindex, links back to each tab).
 - **After deploy:** add the site in Google Search Console (and Bing Webmaster Tools), verify the domain, and submit `https://www.trainerdesk.net/sitemap.xml`. Keep `ROUTES` titles ≤ 65 characters and descriptions 70–165; `tests/seo.test.js` enforces this and serves the site over HTTP with the same rewrites.
 
+## Static Pokédex pages
+- **What:** one plain-HTML page per Pokémon at `/pokedex/<slug>` (1,025 pages, e.g. `/pokedex/pikachu`), readable without JavaScript, with its own title, description, canonical, breadcrumb structured data and the Pokédex social card. Content is facts only: number, category, types, region/generation, base stats with total, type matchups (weak/resist/immune incl. ×4/×¼), abilities (hidden flagged), size, habitat, catch rate, evolution chain, previous/next, more Pokémon of the same type, a generated summary sentence, and links back into the app. Sprites are hotlinked (respects `SHOW_SPRITES`); no flavor text. Analytics only for visitors who already accepted cookies on the main site.
+- **How:** `scripts/fetch-pokedex-data.mjs` downloads PokéAPI's open CSV data (github.com/PokeAPI/pokeapi) into `data/pokedex.json`; `scripts/build-pokedex-pages.mjs` writes `pokedex/*.html` + `sitemap.xml` (styles in `assets/dex-page.css`). Generated files are committed; Vercel just serves them (`cleanUrls`). `.github/workflows/refresh-data.yml` refreshes the data weekly (Mondays) and commits changes, which redeploys. The interactive Pokédex detail panel links to each full page.
+- **Tests:** `tests/pokedex-pages.test.js` (up to date, facts, links, title/description limits, 320px layout).
+
 ## Network resilience
 
 All `fetch()` calls go through `fetchWithTimeout()` (6s default AbortController; the TCG calls use 12s/15s because pokemontcg.io is slow

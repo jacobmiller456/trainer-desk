@@ -1,0 +1,31 @@
+name: Refresh Pokédex data
+
+# Weekly: re-download PokéAPI's open data, regenerate the static Pokédex pages + sitemap, and commit if anything
+# changed (the push to main redeploys the site). Can also be run by hand from the Actions tab.
+on:
+  schedule:
+    - cron: '17 6 * * 1'   # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/fetch-pokedex-data.mjs
+      - run: node scripts/build-pokedex-pages.mjs
+      - name: Commit changes
+        run: |
+          if git diff --quiet; then echo "No changes"; exit 0; fi
+          git config user.name "trainer-desk-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/pokedex.json pokedex sitemap.xml
+          git commit -m "Refresh Pokédex data from PokéAPI"
+          git push

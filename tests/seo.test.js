@@ -23,7 +23,7 @@ for (const [k, r] of Object.entries(routes)) {
 }
 const sitemap = read('sitemap.xml');
 const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
-check('sitemap lists every route', JSON.stringify(locs) === JSON.stringify(Object.values(routes).map(r => 'https://www.trainerdesk.net' + r.path)), locs);
+check('sitemap lists every tab route', Object.values(routes).every(r => locs.includes('https://www.trainerdesk.net' + r.path)), locs.slice(0, 6));
 check('robots.txt points at the sitemap', /Sitemap: https:\/\/www\.trainerdesk\.net\/sitemap\.xml/.test(read('robots.txt')));
 const vercel = JSON.parse(read('vercel.json'));
 check('cleanUrls on, so /tcg is served from tcg.html', vercel.cleanUrls === true);
