@@ -357,6 +357,47 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .cd-link{ align-self:flex-start; display:inline-flex; align-items:center; min-height:44px; padding:0 14px; font-family:var(--font-pixel); font-size:10px; color:var(--forest-dark); background:var(--gold); border:3px solid var(--forest-dark); border-radius:4px; text-decoration:none; box-shadow:2px 2px 0 rgba(0,0,0,0.3); }
 .cd-next{ margin-top:12px; font-family:var(--font-retro); font-size:17px; color:var(--parchment); }
 .cd-next ul{ margin:4px 0 0; padding-left:20px; }
+
+/* ---- tcg view toggle + binder ---- */
+.seg{ display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
+.seg-btn{ font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px; min-height:44px; padding:10px 14px; cursor:pointer; border:3px solid var(--forest-dark); border-radius:4px; background:var(--forest); color:var(--meadow); box-shadow:2px 2px 0 rgba(0,0,0,0.3); }
+.seg-btn[aria-pressed="true"]{ background:var(--gold); color:var(--forest-dark); border-color:var(--gold-dark); }
+.arena-btn.alt{ background:var(--parchment); border-color:var(--forest-dark); }
+.tb-add{ font-family:var(--font-pixel); font-size:10px; min-height:44px; padding:8px 10px; cursor:pointer; border:3px solid var(--forest-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); }
+.tb-add.in{ background:var(--meadow); }
+.binder-bar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:12px; }
+.binder-bar select{ flex:1 1 200px; min-height:44px; }
+.binder-actions{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.binder-name-form{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.binder-name-form input{ flex:1 1 180px; min-height:44px; min-width:0; }
+.binder-stats{ font-family:var(--font-retro); font-size:18px; color:var(--gold); margin-bottom:6px; }
+.binder-sets{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.binder-set{ font-family:var(--font-retro); font-size:15px; color:var(--parchment); background:rgba(0,0,0,0.25); padding:2px 8px; border-radius:3px; }
+.binder-book{ background:linear-gradient(135deg,#243b2f,#1b2e24); border:4px solid var(--border); border-radius:8px; box-shadow:4px 4px 0 rgba(0,0,0,0.3), inset 6px 0 0 rgba(0,0,0,0.25); padding:10px; touch-action:pan-y; perspective:1200px; max-width:560px; margin:0 auto; }
+.binder-page{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; transform-origin:left center; }
+.binder-page.turn-next{ animation:pageNext .35s ease-out; } .binder-page.turn-prev{ animation:pagePrev .35s ease-out; }
+@keyframes pageNext{ from{ transform:rotateY(-35deg); opacity:.3; } to{ transform:none; opacity:1; } }
+@keyframes pagePrev{ from{ transform:rotateY(35deg); opacity:.3; } to{ transform:none; opacity:1; } }
+.pocket{ position:relative; aspect-ratio:245/342; border:2px solid rgba(255,255,255,0.35); border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden; padding:0; cursor:pointer; min-height:44px; }
+.pocket::after{ content:""; position:absolute; inset:0; background:linear-gradient(120deg,rgba(255,255,255,0.18),rgba(255,255,255,0) 40%); pointer-events:none; }
+.pocket.empty{ border-style:dashed; border-color:rgba(255,255,255,0.18); cursor:default; }
+.pocket.picked{ outline:3px solid var(--gold); outline-offset:1px; }
+.pocket img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.pocket-ph{ position:absolute; inset:0; display:grid; place-items:center; font-family:var(--font-pixel); font-size:18px; color:var(--parchment); background:var(--forest); }
+.pocket-name{ position:absolute; left:0; right:0; bottom:0; padding:2px 4px; font-family:var(--font-retro); font-size:13px; color:#fff; background:rgba(0,0,0,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; }
+@supports not (aspect-ratio:1/1){ .pocket{ height:0; padding-top:139.6%; } }
+.binder-pager{ display:flex; justify-content:center; align-items:center; gap:14px; margin:12px 0; font-family:var(--font-pixel); font-size:10px; color:var(--parchment); }
+.binder-detail{ padding:14px; margin-bottom:12px; display:flex; flex-direction:column; gap:8px; }
+.binder-detail h3{ margin:0; font-size:17px; }
+.binder-detail select{ min-height:44px; min-width:0; }
+.binder-io{ margin-top:6px; }
+#binder-share-url{ width:100%; margin-top:10px; min-height:44px; }
+.binder-shared{ padding:12px 14px; margin-bottom:12px; display:flex; flex-direction:column; gap:10px; }
+#tcg-binder.readonly .edit-only{ display:none; }
+#tcg-binder [hidden]{ display:none !important; } /* flex rules above must not override the hidden attribute */
+.toast{ position:fixed; left:50%; bottom:calc(90px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); opacity:0; pointer-events:none; z-index:60; max-width:calc(100% - 32px);
+  background:var(--forest-dark); color:var(--parchment); border:3px solid var(--gold); border-radius:6px; padding:10px 14px; font-family:var(--font-retro); font-size:17px; transition:opacity .2s, transform .2s; }
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -420,6 +461,12 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <p>Browse sets and cards from the community-maintained Pokémon TCG API. Card images are served directly from their CDN.</p>
   </div>
 
+  <div class="seg" role="group" aria-label="TCG view">
+    <button type="button" class="seg-btn" data-tcgview="browse" aria-pressed="true">BROWSE SETS</button>
+    <button type="button" class="seg-btn" data-tcgview="binder" aria-pressed="false">MY BINDER<span id="binder-count"></span></button>
+  </div>
+
+  <div id="tcg-browse">
   <div class="tcg-controls">
     <select id="set-select"><option>Loading sets…</option></select>
     <input type="text" id="card-search" placeholder="Filter by card name…">
@@ -435,6 +482,44 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
   <div class="card-grid" id="card-grid"></div>
   <div class="empty pixel-box" id="tcg-empty" style="display:none;"></div>
+  </div>
+
+  <div id="tcg-binder" hidden>
+    <div class="binder-shared pixel-box" id="binder-shared" hidden>
+      <b>Viewing a shared binder (read-only).</b>
+      <div class="binder-actions"><button type="button" class="arena-btn" id="binder-save-copy">SAVE A COPY</button><button type="button" class="arena-btn alt" id="binder-close-shared">CLOSE</button></div>
+    </div>
+    <div class="binder-bar">
+      <select id="binder-select" aria-label="Binder"></select>
+      <div class="binder-actions edit-only">
+        <button type="button" class="arena-btn alt" id="binder-new">NEW</button>
+        <button type="button" class="arena-btn alt" id="binder-rename">RENAME</button>
+        <button type="button" class="arena-btn alt" id="binder-delete">DELETE</button>
+      </div>
+    </div>
+    <form class="binder-name-form edit-only" id="binder-name-form" hidden>
+      <input type="text" id="binder-name" maxlength="40" placeholder="Binder name" aria-label="Binder name">
+      <button type="submit" class="arena-btn">SAVE</button>
+      <button type="button" class="arena-btn alt" id="binder-name-cancel">CANCEL</button>
+    </form>
+    <div class="binder-stats" id="binder-stats"></div>
+    <div class="binder-sets" id="binder-sets"></div>
+    <div class="binder-book" id="binder-book"><div class="binder-page" id="binder-page"></div></div>
+    <div class="binder-pager">
+      <button type="button" class="arena-btn alt" id="binder-prev" aria-label="Previous page">◀</button>
+      <span id="binder-pageno"></span>
+      <button type="button" class="arena-btn alt" id="binder-next" aria-label="Next page">▶</button>
+    </div>
+    <div class="binder-detail pixel-box" id="binder-detail" hidden></div>
+    <div class="binder-actions binder-io edit-only">
+      <button type="button" class="arena-btn alt" id="binder-export">EXPORT</button>
+      <button type="button" class="arena-btn alt" id="binder-import-btn">IMPORT</button>
+      <input type="file" id="binder-import" accept="application/json,.json" hidden>
+      <button type="button" class="arena-btn alt" id="binder-share">SHARE LINK</button>
+    </div>
+    <input type="text" id="binder-share-url" readonly hidden aria-label="Share link">
+    <div class="pixel-box note"><b>Saved in this browser only.</b> Binders live on this device — use EXPORT to back up or move them, and IMPORT on the other device. Card images stay linked from the card databases; prices are the market estimate from when you added each card.<span id="binder-warn" hidden> <b>This browser isn't saving data (private mode?), so export before you leave.</b></span></div>
+  </div>
 
   <div class="sec-label">▸ UPCOMING SETS</div>
   <div class="ev-grid" id="upcoming-sets"></div>
@@ -995,6 +1080,7 @@ function renderCards(){
         <div class="tface tback pixel-box">
           <div class="tb-name">${esc(c.name)}</div>
           <div class="tb-body">${backInner(c)}</div>
+          ${c.sample?"":`<button type="button" class="tb-add${typeof binderHas==="function"&&binderHas(c.id)?" in":""}" data-add="${esc(c.id)}">${typeof binderHas==="function"&&binderHas(c.id)?"✓ IN BINDER":"+ ADD TO BINDER"}</button>`}
           <div class="tb-hint">tap to flip back</div>
         </div>
       </div>
@@ -1025,6 +1111,254 @@ grid.addEventListener("click",e=>{ const el=e.target.closest(".tcard"); if(el) t
 grid.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("tcard")){ e.preventDefault(); toggleCard(e.target); } });
 setSel.addEventListener("change",e=>loadCards(e.target.value));
 searchEl.addEventListener("input",()=>renderCards());
+
+/* ============================================================
+   BINDER (stage 1) — digital binders saved in this browser (localStorage), no accounts.
+   Cards are stored as small snapshots (id, name, set, image URL, price when added); images stay
+   hotlinked from the card APIs, never copied. Export/import as JSON; small binders can be shared
+   as a read-only link (#binder=...).
+   ============================================================ */
+const BINDER_KEY="td-binders-v1", POCKETS=9, SHARE_MAX=40;
+let binderStore={v:1,active:null,binders:[]}, binderPersist=true;
+(function(){ try{ localStorage.setItem("td-binder-test","1"); localStorage.removeItem("td-binder-test"); }catch(e){ binderPersist=false; } })();
+
+function sanitizeBinderCard(c){
+  if(!c||typeof c!=="object"||typeof c.id!=="string"||!c.id) return null;
+  const str=(v,n)=>typeof v==="string"?v.slice(0,n):"";
+  const p=c.price&&typeof c.price==="object"&&typeof c.price.v==="number"&&isFinite(c.price.v)&&c.price.v>0
+    ?{v:c.price.v,cur:c.price.cur==="EUR"?"EUR":"USD",src:c.price.src==="Cardmarket"?"Cardmarket":"TCGplayer",at:str(c.price.at,20)}:null;
+  return {id:c.id.slice(0,80),name:str(c.name,80)||"Card",number:str(c.number,12),rarity:str(c.rarity,40),set:str(c.set,80),setId:str(c.setId,40),
+    setTotal:Number.isFinite(c.setTotal)?Math.max(0,Math.min(2000,c.setTotal|0)):0,
+    img:typeof c.img==="string"&&/^https:\/\//.test(c.img)?c.img.slice(0,300):null,price:p};
+}
+function sanitizeBinder(b){
+  if(!b||typeof b!=="object") return null;
+  const cards=(Array.isArray(b.cards)?b.cards:[]).slice(0,1000).map(sanitizeBinderCard).filter(Boolean);
+  return {id:typeof b.id==="string"&&b.id?b.id.slice(0,40):"b"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    name:(typeof b.name==="string"&&b.name.trim()?b.name.trim():"My Binder").slice(0,40),cards};
+}
+function binderLoad(){
+  if(!binderPersist) return;
+  try{
+    const j=JSON.parse(localStorage.getItem(BINDER_KEY)||"null");
+    if(j&&Array.isArray(j.binders)){
+      const bs=j.binders.map(sanitizeBinder).filter(Boolean);
+      binderStore={v:1,active:bs.some(b=>b.id===j.active)?j.active:(bs[0]&&bs[0].id)||null,binders:bs};
+    }
+  }catch(e){}
+}
+function binderSave(){
+  if(!binderPersist) return true;
+  try{ localStorage.setItem(BINDER_KEY,JSON.stringify(binderStore)); return true; }
+  catch(e){ toast("Couldn't save — your browser's storage is full. Export your binder to keep it."); return false; }
+}
+function binderActive(){
+  let b=binderStore.binders.find(x=>x.id===binderStore.active);
+  if(!b){ b=binderStore.binders[0]; if(!b){ b=sanitizeBinder({name:"My Binder"}); binderStore.binders.push(b); } binderStore.active=b.id; }
+  return b;
+}
+function binderHas(id){ const b=binderStore.binders.find(x=>x.id===binderStore.active); return !!(b&&b.cards.some(c=>c.id===id)); }
+
+let toastTimer=0;
+function toast(msg){
+  let el=document.getElementById("toast");
+  if(!el){ el=document.createElement("div"); el.id="toast"; el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el); }
+  el.textContent=msg; el.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("show"),2600);
+}
+
+(function(){
+  binderLoad();
+  const $=id=>document.getElementById(id);
+  const browse=$("tcg-browse"), view=$("tcg-binder"), countEl=$("binder-count");
+  const sel=$("binder-select"), page=$("binder-page"), book=$("binder-book"), detail=$("binder-detail");
+  const nameForm=$("binder-name-form"), nameInput=$("binder-name"), shareUrl=$("binder-share-url"), sharedBar=$("binder-shared");
+  let pageNo=0, picked=-1, nameMode="", shared=null, delArmed=false;
+
+  const current=()=>shared||binderActive();
+  const fmtMoney=(v,cur)=>(cur==="EUR"?"€":"$")+v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  const addBtnLabel=id=>binderHas(id)?"✓ IN BINDER":"+ ADD TO BINDER";
+
+  // ---- card back button (TCG browse) ----
+  function snapshot(c){
+    const opt=document.getElementById("set-select"), o=opt&&opt.options[opt.selectedIndex];
+    return sanitizeBinderCard({id:c.id,name:c.name,number:c.number,rarity:c.rarity||"",set:o?o.textContent.replace(/\s*\(\d{4}\)$/,""):"",setId:opt?opt.value:"",
+      setTotal:allCards.filter(x=>!x.sample).length,img:c.images&&c.images.small,price:c.price});
+  }
+  grid.addEventListener("click",e=>{
+    const btn=e.target.closest("[data-add]"); if(!btn) return;
+    e.stopPropagation();
+    const c=allCards.find(x=>x.id===btn.dataset.add); if(!c) return;
+    const b=binderActive(), i=b.cards.findIndex(x=>x.id===c.id);
+    if(i>=0){ b.cards.splice(i,1); toast("Removed from "+b.name); }
+    else{ const s=snapshot(c); if(!s) return; b.cards.push(s); toast("Added to "+b.name+" ("+b.cards.length+")"); }
+    binderSave(); btn.textContent=addBtnLabel(c.id); btn.classList.toggle("in",binderHas(c.id)); updateCount();
+  },true);
+
+  // ---- view switch ----
+  function showView(which){
+    const binder=which==="binder";
+    browse.hidden=binder; view.hidden=!binder;
+    document.querySelectorAll("[data-tcgview]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.tcgview===which)));
+    if(binder) render(); else if(typeof renderCards==="function"&&allCards.length) renderCards(); // refresh "in binder" labels
+  }
+  document.querySelectorAll("[data-tcgview]").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.tcgview)));
+  function updateCount(){ const n=binderStore.binders.reduce((s,b)=>s+b.cards.length,0); countEl.textContent=n?" ("+n+")":""; }
+
+  // ---- render ----
+  function render(){
+    const b=current(), editable=!shared;
+    view.classList.toggle("readonly",!editable);
+    sharedBar.hidden=!shared;
+    sel.innerHTML=(shared?[shared]:binderStore.binders).map(x=>`<option value="${esc(x.id)}">${esc(x.name)} (${x.cards.length})</option>`).join("");
+    sel.value=b.id; sel.disabled=!!shared;
+    const pages=Math.max(1,Math.ceil(b.cards.length/POCKETS));
+    pageNo=Math.min(Math.max(0,pageNo),pages-1);
+    // stats
+    let usd=0,eur=0,priced=0; b.cards.forEach(c=>{ if(c.price){ priced++; if(c.price.cur==="EUR") eur+=c.price.v; else usd+=c.price.v; } });
+    const val=[usd?fmtMoney(usd,"USD"):"",eur?fmtMoney(eur,"EUR"):""].filter(Boolean).join(" + ");
+    $("binder-stats").textContent=b.cards.length
+      ? b.cards.length+" card"+(b.cards.length===1?"":"s")+" · "+pages+" page"+(pages===1?"":"s")+(val?" · value "+val+" ("+priced+" priced, prices from when added)":"")
+      : (shared?"This shared binder is empty.":"Empty binder. Flip a card in BROWSE SETS and tap + ADD TO BINDER.");
+    // set completion
+    const sets=new Map(); b.cards.forEach(c=>{ const k=c.setId||c.set; if(!k) return; const s=sets.get(k)||{name:c.set||k,n:0,total:c.setTotal}; s.n++; s.total=Math.max(s.total,c.setTotal); sets.set(k,s); });
+    $("binder-sets").innerHTML=[...sets.values()].sort((a,c)=>c.n-a.n).slice(0,6).map(s=>`<span class="binder-set">${esc(s.name)}: ${s.n}${s.total?" / "+s.total:""}</span>`).join("");
+    // page of 9 pockets
+    let html="";
+    for(let i=pageNo*POCKETS;i<pageNo*POCKETS+POCKETS;i++){
+      const c=b.cards[i];
+      if(!c){ html+='<div class="pocket empty" aria-hidden="true"></div>'; continue; }
+      const img=c.img?`<img src="${esc(c.img)}"${/\.webp$/.test(c.img)?` data-alt="${esc(c.img.replace(/\.webp$/,".png"))}"`:""} alt="" decoding="async">`:`<span class="pocket-ph">${esc(c.name.charAt(0))}</span>`;
+      html+=`<button type="button" class="pocket${i===picked?" picked":""}" data-i="${i}" aria-label="${esc(c.name)}${c.number?" #"+esc(c.number):""}">${img}<span class="pocket-name">${esc(c.name)}</span></button>`;
+    }
+    page.innerHTML=html;
+    $("binder-pageno").textContent="PAGE "+(pageNo+1)+" / "+pages;
+    $("binder-prev").disabled=pageNo===0; $("binder-next").disabled=pageNo>=pages-1;
+    renderDetail();
+    updateCount();
+  }
+  function renderDetail(){
+    const b=current(), c=b.cards[picked];
+    if(!c){ detail.hidden=true; picked=-1; return; }
+    const others=shared?[]:binderStore.binders.filter(x=>x.id!==b.id);
+    detail.hidden=false;
+    detail.innerHTML=`<h3>${esc(c.name)}</h3>
+      <div class="cd-meta">${esc([c.set,c.number?"#"+c.number:"",c.rarity].filter(Boolean).join(" · "))}</div>
+      <div class="cd-meta">${c.price?esc(fmtMoney(c.price.v,c.price.cur)+" "+c.price.src+" market price"+(c.price.at?" (as of "+c.price.at+")":"")):"No price saved"}</div>
+      ${shared?"":`<div class="binder-actions">
+        <button type="button" class="arena-btn alt" data-act="left" ${picked===0?"disabled":""}>◀ MOVE</button>
+        <button type="button" class="arena-btn alt" data-act="right" ${picked>=b.cards.length-1?"disabled":""}>MOVE ▶</button>
+        <button type="button" class="arena-btn alt" data-act="remove">REMOVE</button>
+        ${others.length?`<select id="binder-move-to" aria-label="Move to binder">${others.map(o=>`<option value="${esc(o.id)}">Move to ${esc(o.name)}</option>`).join("")}</select><button type="button" class="arena-btn alt" data-act="moveto">MOVE</button>`:""}
+      </div>`}`;
+  }
+  page.addEventListener("click",e=>{ const p=e.target.closest(".pocket[data-i]"); if(!p) return; const i=+p.dataset.i; picked=picked===i?-1:i; render(); });
+  page.addEventListener("error",e=>{ const im=e.target; if(!im||im.tagName!=="IMG") return; if(im.dataset.alt&&!im.dataset.tried){ im.dataset.tried="1"; im.src=im.dataset.alt; } else im.replaceWith(Object.assign(document.createElement("span"),{className:"pocket-ph",textContent:(im.closest(".pocket").getAttribute("aria-label")||"?").charAt(0)})); },true);
+  detail.addEventListener("click",e=>{
+    const a=e.target.closest("[data-act]"); if(!a||shared) return;
+    const b=binderActive(), i=picked; if(i<0||!b.cards[i]) return;
+    if(a.dataset.act==="left"&&i>0){ [b.cards[i-1],b.cards[i]]=[b.cards[i],b.cards[i-1]]; picked=i-1; }
+    else if(a.dataset.act==="right"&&i<b.cards.length-1){ [b.cards[i+1],b.cards[i]]=[b.cards[i],b.cards[i+1]]; picked=i+1; }
+    else if(a.dataset.act==="remove"){ const [c]=b.cards.splice(i,1); picked=-1; toast("Removed "+c.name); }
+    else if(a.dataset.act==="moveto"){ const t=binderStore.binders.find(x=>x.id===$("binder-move-to").value); if(t){ const [c]=b.cards.splice(i,1); t.cards.push(c); picked=-1; toast("Moved "+c.name+" to "+t.name); } }
+    pageNo=picked>=0?Math.floor(picked/POCKETS):pageNo;
+    binderSave(); render();
+  });
+
+  // ---- paging: buttons + swipe ----
+  function turn(dir){
+    const b=current(), pages=Math.max(1,Math.ceil(b.cards.length/POCKETS)), next=pageNo+dir;
+    if(next<0||next>=pages) return;
+    pageNo=next; picked=-1; render();
+    page.classList.remove("turn-next","turn-prev"); void page.offsetWidth; page.classList.add(dir>0?"turn-next":"turn-prev");
+  }
+  $("binder-prev").addEventListener("click",()=>turn(-1));
+  $("binder-next").addEventListener("click",()=>turn(1));
+  let sx=null,sy=0;
+  book.addEventListener("pointerdown",e=>{ sx=e.clientX; sy=e.clientY; });
+  book.addEventListener("pointerup",e=>{ if(sx===null) return; const dx=e.clientX-sx, dy=e.clientY-sy; sx=null; if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) turn(dx<0?1:-1); });
+
+  // ---- binder management ----
+  sel.addEventListener("change",()=>{ binderStore.active=sel.value; pageNo=0; picked=-1; binderSave(); render(); });
+  function openName(mode){ nameMode=mode; nameForm.hidden=false; nameInput.value=mode==="rename"?binderActive().name:""; nameInput.focus(); }
+  $("binder-new").addEventListener("click",()=>openName("new"));
+  $("binder-rename").addEventListener("click",()=>openName("rename"));
+  $("binder-name-cancel").addEventListener("click",()=>{ nameForm.hidden=true; });
+  nameForm.addEventListener("submit",e=>{
+    e.preventDefault();
+    const n=nameInput.value.trim().slice(0,40); if(!n) return;
+    if(nameMode==="new"){ const b=sanitizeBinder({name:n}); binderStore.binders.push(b); binderStore.active=b.id; pageNo=0; toast("Created "+n); }
+    else { binderActive().name=n; toast("Renamed to "+n); }
+    nameForm.hidden=true; picked=-1; binderSave(); render();
+  });
+  $("binder-delete").addEventListener("click",e=>{
+    const btn=e.currentTarget, b=binderActive();
+    if(!delArmed){ delArmed=true; btn.textContent="TAP AGAIN TO DELETE"; setTimeout(()=>{ delArmed=false; btn.textContent="DELETE"; },3000); return; }
+    delArmed=false; btn.textContent="DELETE";
+    binderStore.binders=binderStore.binders.filter(x=>x.id!==b.id); binderStore.active=null; binderActive();
+    pageNo=0; picked=-1; binderSave(); render(); toast("Deleted "+b.name);
+  });
+
+  // ---- export / import ----
+  $("binder-export").addEventListener("click",()=>{
+    const b=binderActive();
+    const blob=new Blob([JSON.stringify({app:"trainer-desk",type:"binder",v:1,binders:[b]},null,1)],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+    a.download=(b.name.replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()||"binder")+".json";
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+  });
+  $("binder-import-btn").addEventListener("click",()=>$("binder-import").click());
+  $("binder-import").addEventListener("change",async e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value=""; if(!f) return;
+    try{
+      if(f.size>2e6) throw new Error("too big");
+      const j=JSON.parse(await f.text());
+      const list=(Array.isArray(j&&j.binders)?j.binders:[j]).map(sanitizeBinder).filter(b=>b&&b.cards.length);
+      if(!list.length) throw new Error("empty");
+      list.forEach(b=>{ b.id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); if(binderStore.binders.some(x=>x.name===b.name)) b.name=(b.name+" (imported)").slice(0,40); binderStore.binders.push(b); });
+      binderStore.active=list[0].id; pageNo=0; picked=-1; binderSave(); render(); toast("Imported "+list.length+" binder"+(list.length===1?"":"s"));
+    }catch(err){ toast("That file isn't a Trainer Desk binder export."); }
+  });
+
+  // ---- share link (read-only, small binders) ----
+  const b64u={
+    enc:s=>btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""),
+    dec:s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0)))
+  };
+  $("binder-share").addEventListener("click",async()=>{
+    const b=binderActive();
+    if(!b.cards.length){ toast("Add some cards first."); return; }
+    if(b.cards.length>SHARE_MAX){ toast("Links work for up to "+SHARE_MAX+" cards — use EXPORT for bigger binders."); return; }
+    const code=b64u.enc(JSON.stringify({n:b.name,c:b.cards.map(c=>[c.id,c.name,c.number,c.img||"",c.set])}));
+    const link=location.href.split("#")[0]+"#binder="+code;
+    shareUrl.hidden=false; shareUrl.value=link; shareUrl.select();
+    try{ await navigator.clipboard.writeText(link); toast("Share link copied"); }catch(e){ toast("Copy the link below to share"); }
+  });
+  function openShared(){
+    const m=location.hash.match(/^#binder=([A-Za-z0-9_-]+)$/); if(!m) return false;
+    try{
+      const j=JSON.parse(b64u.dec(m[1]));
+      const b=sanitizeBinder({id:"shared",name:j.n,cards:(Array.isArray(j.c)?j.c:[]).slice(0,SHARE_MAX).map(a=>Array.isArray(a)?{id:a[0],name:a[1],number:a[2],img:a[3],set:a[4]}:null)});
+      if(!b||!b.cards.length) return false;
+      shared=b; return true;
+    }catch(e){ return false; }
+  }
+  $("binder-save-copy").addEventListener("click",()=>{
+    if(!shared) return;
+    const b=sanitizeBinder({name:shared.name,cards:shared.cards}); b.id="b"+Date.now().toString(36);
+    if(binderStore.binders.some(x=>x.name===b.name)) b.name=(b.name+" (copy)").slice(0,40);
+    binderStore.binders.push(b); binderStore.active=b.id; shared=null; binderSave();
+    history.replaceState(null,"",location.href.split("#")[0]); pageNo=0; render(); toast("Saved a copy as "+b.name);
+  });
+  $("binder-close-shared").addEventListener("click",()=>{ shared=null; history.replaceState(null,"",location.href.split("#")[0]); pageNo=0; picked=-1; render(); });
+
+  if(!binderPersist) $("binder-warn").hidden=false;
+  updateCount();
+  // tab click handlers are attached later in the script, so open the shared binder once everything is wired up
+  if(openShared()) setTimeout(()=>{ const t=document.querySelector('.tab[data-view="tcg"]'); if(t) t.click(); showView("binder"); },0);
+  // test hook
+  window.__binder={ get store(){ return binderStore; }, get shared(){ return shared; } };
+})();
+
 
 /* ---- Upcoming Sets (hand-maintained — no public API for pre-release info) ----
    Update this whenever a new set is officially confirmed, via pokemon-card.com
