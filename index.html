@@ -340,6 +340,23 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .today-flavor{ margin:0; padding:10px 12px; border-left:4px solid var(--gold-dark); background:var(--parchment-2); font-family:var(--font-retro); font-size:18px; line-height:1.25; color:var(--ink); }
 .today-flavor cite{ display:block; margin-top:6px; font-size:14px; font-style:normal; color:var(--ink-soft); }
 .today-label{ font-family:var(--font-pixel); font-size:10px; color:var(--forest); letter-spacing:0.5px; }
+
+/* ---- community day ---- */
+.cd-card{ display:flex; flex-direction:column; gap:12px; }
+.cd-card h3{ margin:0; }
+.cd-mons{ display:flex; flex-wrap:wrap; gap:10px; }
+.cd-mon{ display:flex; align-items:center; gap:8px; background:var(--parchment-2); border:3px solid var(--forest-dark); border-radius:4px; padding:4px 10px 4px 4px; }
+.cd-mon img, .cd-mon .mono{ width:48px; height:48px; image-rendering:pixelated; flex:0 0 auto; }
+.cd-mon .mono{ display:grid; place-items:center; font-family:var(--font-pixel); font-size:16px; color:#fff; background:var(--forest); border-radius:3px; }
+.cd-mon b{ font-family:var(--font-body); font-size:15px; color:var(--ink); }
+.cd-mon small{ display:block; font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); }
+.cd-sub{ font-family:var(--font-pixel); font-size:10px; color:var(--forest); letter-spacing:0.5px; }
+.cd-bonuses{ margin:0; padding-left:20px; columns:2 220px; column-gap:20px; font-size:14px; color:var(--ink); }
+.cd-bonuses li{ margin:0 0 4px; break-inside:avoid; }
+.cd-note, .cd-meta{ margin:0; font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
+.cd-link{ align-self:flex-start; display:inline-flex; align-items:center; min-height:44px; padding:0 14px; font-family:var(--font-pixel); font-size:10px; color:var(--forest-dark); background:var(--gold); border:3px solid var(--forest-dark); border-radius:4px; text-decoration:none; box-shadow:2px 2px 0 rgba(0,0,0,0.3); }
+.cd-next{ margin-top:12px; font-family:var(--font-retro); font-size:17px; color:var(--parchment); }
+.cd-next ul{ margin:4px 0 0; padding-left:20px; }
 </style>
 </head>
 <body>
@@ -380,6 +397,9 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <h1>POKEMON GO<br>EVENT TRACKER</h1>
     <p>Live countdowns for active and upcoming events. Times shown in your local timezone.</p>
   </div>
+
+  <div class="sec-label">▸ COMMUNITY DAY</div>
+  <div id="cd-box"></div>
 
   <div class="sec-label">▸ HAPPENING NOW</div>
   <div class="ev-grid" id="active-events"></div>
@@ -477,7 +497,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
 <footer><div class="wrap">
   Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
-  Pokémon and all related names are trademarks of their respective owners. Card data, images and prices via the community Pokémon TCG API. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (it also lists TCGplayer and Cardmarket prices). GO event schedule data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
+  Pokémon and all related names are trademarks of their respective owners. Card data, images and prices via the community Pokémon TCG API. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (it also lists TCGplayer and Cardmarket prices). GO event schedule and Community Day data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed, sourced from <a href="https://leekduck.com" target="_blank" rel="noopener" style="text-decoration:underline;">LeekDuck</a>. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
   This site uses Google Analytics (cookies) to count visits, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
 </div></footer>
 
@@ -552,6 +572,17 @@ function fetchWithTimeout(url, ms=6000){
   const t = setTimeout(()=>ctrl.abort(), ms);
   return fetch(url, { signal: ctrl.signal }).finally(()=>clearTimeout(t));
 }
+// Community Day details from the feed: featured/shiny Pokémon names, the short bonus lines and Special Research
+// names. Research task text, disclaimers and LeekDuck's images are deliberately not imported (we link out instead).
+function cdData(x){
+  if(!x||typeof x!=="object") return null;
+  const names=a=>(Array.isArray(a)?a:[]).map(o=>o&&typeof o.name==="string"?o.name.trim():"").filter(Boolean);
+  return {
+    spawns:names(x.spawns), shinies:names(x.shinies),
+    bonuses:(Array.isArray(x.bonuses)?x.bonuses:[]).map(o=>o&&typeof o.text==="string"?o.text.trim():"").filter(Boolean).slice(0,12),
+    research:[...new Set(names(x.specialresearch))]
+  };
+}
 async function loadGoEvents(){
   for(const url of FEED_URLS){
     try{
@@ -563,7 +594,8 @@ async function loadGoEvents(){
           title:e.name||e.title||"Untitled event",
           type:e.eventType||"event",
           start:e.start, end:e.end,
-          link:e.link||null
+          link:e.link||null,
+          cd:cdData(e.extraData&&e.extraData.communityday)
         }));
         return;
       }
@@ -617,7 +649,57 @@ function renderEvents(){
   else aEl.innerHTML='<div class="empty pixel-box" style="grid-column:1/-1;">Nothing running right now — check the upcoming list.</div>';
   if(upcoming.length) upcoming.forEach(e=>uEl.appendChild(evCard(e,false)));
   else uEl.innerHTML='<div class="empty pixel-box" style="grid-column:1/-1;">No upcoming events on the board yet.</div>';
+  renderCommunityDay(evs);
   tickCountdowns();
+}
+const cdIds=new Map(); // Pokémon name -> PokéAPI id (or 0 when it can't be matched)
+async function cdMonId(name){
+  if(cdIds.has(name)) return cdIds.get(name);
+  const slug=t=>t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/♀/g,"-f").replace(/♂/g,"-m").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  let id=0;
+  for(const tryName of [name,name.split(/\s+/).pop()]){ // "Alolan Vulpix" -> try the full name, then "vulpix"
+    try{ const j=await getJSON(`${POKEAPI}/pokemon/${slug(tryName)}`); if(j&&j.id){ id=j.id; break; } }catch(e){}
+  }
+  cdIds.set(name,id); return id;
+}
+function cdArt(name){
+  const id=cdIds.get(name);
+  return SHOW_SPRITES&&id?`<img src="${SPRITE_URL(id)}" alt="" loading="lazy">`:`<span class="mono" aria-hidden="true">${esc(name.charAt(0))}</span>`;
+}
+function renderCommunityDay(evs){
+  const box=document.getElementById("cd-box"); if(!box) return;
+  if(GO_EVENTS===SAMPLE_GO_EVENTS){ box.innerHTML='<div class="empty pixel-box">Community Day details come from the live event feed, which can\'t be reached right now.</div>'; return; }
+  const now=new Date();
+  const cds=evs.filter(e=>/community-day/.test(e.type)).sort((a,b)=>a._s-b._s);
+  const live=cds.find(e=>e._s<=now&&e._e>now), upcoming=cds.filter(e=>e._s>now);
+  const f=live||upcoming[0]||cds.filter(e=>e._e<=now).pop();
+  if(!f){ box.innerHTML='<div class="empty pixel-box">No Community Day is on the schedule yet — they are usually announced a few weeks ahead.</div>'; return; }
+  const ended=f._e<=now, cd=f.cd||{spawns:[],shinies:[],bonuses:[],research:[]};
+  const day=f._s.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  const t=d=>d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+  const shiny=new Set(cd.shinies);
+  const extraShiny=cd.shinies.filter(n=>!cd.spawns.includes(n));
+  const mons=cd.spawns.length
+    ? `<div class="cd-sub">FEATURED POKÉMON</div><div class="cd-mons">${cd.spawns.map(n=>`<div class="cd-mon">${cdArt(n)}<div><b>${esc(n)}</b>${shiny.has(n)?"<small>✦ shiny available</small>":""}</div></div>`).join("")}</div>${extraShiny.length?`<p class="cd-meta">Shiny also available: ${esc(extraShiny.join(", "))}</p>`:""}`
+    : '<p class="cd-meta">Featured Pokémon not announced yet.</p>';
+  const bonuses=cd.bonuses.length
+    ? `<div class="cd-sub">EVENT BONUSES</div><ul class="cd-bonuses">${cd.bonuses.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>${cd.bonuses.some(b=>b.includes("*"))?'<p class="cd-note">* Starred bonuses run longer than the event itself — see the full details for times.</p>':""}`
+    : "";
+  const others=upcoming.filter(e=>e!==f).slice(0,3);
+  box.innerHTML=`<div class="ev pixel-box cd-card">
+      <div class="ev-top"><span class="ev-type">COMMUNITY DAY</span>${live?'<span class="ev-live"><span class="dot"></span>LIVE</span>':ended?'<span class="cd-meta">ended</span>':""}</div>
+      <h3>${esc(f.title)}</h3>
+      <div class="when"><span>${esc(day)} · ${esc(t(f._s))}–${esc(t(f._e))} local time</span>${ended?"":`<span class="cd" data-t="${(live?f._e:f._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span>`}</div>
+      ${mons}
+      ${bonuses}
+      ${cd.research.length?`<p class="cd-meta">Special Research: ${esc(cd.research.join(", "))}</p>`:""}
+      ${f.link?`<a class="cd-link" href="${esc(f.link)}" target="_blank" rel="noopener">FULL DETAILS ON LEEKDUCK ↗</a>`:""}
+    </div>
+    ${others.length?`<div class="cd-next">Also scheduled:<ul>${others.map(e=>`<li>${esc(e._s.toLocaleDateString(undefined,{month:"short",day:"numeric"}))} — ${esc(e.title)}${e.cd&&e.cd.spawns.length?" ("+esc(e.cd.spawns.join(", "))+")":" (Pokémon TBA)"}</li>`).join("")}</ul></div>`:""}`;
+  tickCountdowns();
+  // fill in sprites once names are matched to Pokédex numbers (cached for the session)
+  const missing=cd.spawns.filter(n=>!cdIds.has(n));
+  if(SHOW_SPRITES&&missing.length) Promise.all(missing.map(cdMonId)).then(()=>renderCommunityDay(evs));
 }
 function tickCountdowns(){
   document.querySelectorAll("[data-t]").forEach(el=>{
