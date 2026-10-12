@@ -4,7 +4,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const url = 'file://' + path.resolve(process.argv[2]);
 const cors = { 'access-control-allow-origin': '*' };
-const GIF = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
+const GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
 let failures = 0;
 const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (ok || x === undefined ? '' : '  ' + JSON.stringify(x))); if (!ok) failures++; };
 
@@ -20,7 +20,7 @@ async function scenario(name, ptcg) {
     if (u === 'https://api.tcgdex.net/v2/en/sets/new1') { hits.tcgdex++; return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ id: 'new1', name: 'New Set', cards: [{ id: 'new1-1', localId: '1', name: 'Dex Card A', image: 'https://assets.tcgdex.net/en/x/new1/1' }, { id: 'new1-2', localId: '2', name: 'Dex Card B' }] }) }); }
     if (u === 'https://api.tcgdex.net/v2/en/cards/new1-1') { hits.tcgdex++; return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ id: 'new1-1', pricing: { tcgplayer: { updated: '2026-10-10T00:00:00Z', unit: 'USD', 'reverse-holofoil': { lowPrice: 1, marketPrice: 3.2 } }, cardmarket: { trend: 2 } } }) }); }
     if (u === 'https://api.tcgdex.net/v2/en/cards/new1-2') { hits.tcgdex++; return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ id: 'new1-2' }) }); }
-    if (u.startsWith('https://assets.tcgdex.net/')) { imgs.push(u); return r.fulfill({ status: 200, contentType: 'image/gif', body: Buffer.from('R0lGODlhAQABAAAAACw=', 'base64') }); }
+    if (u.startsWith('https://assets.tcgdex.net/')) { imgs.push(u); return r.fulfill({ status: 200, contentType: 'image/gif', body: Buffer.from('R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==', 'base64') }); }
     return r.abort();
   });
   await page.goto(url);

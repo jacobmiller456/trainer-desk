@@ -155,9 +155,10 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .tcard{ perspective:900px; cursor:pointer; transition:.15s; -webkit-tap-highlight-color:transparent; }
 .tcard:hover{ transform:translateY(-3px); }
 .tcard:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; border-radius:4px; }
-.tflip{ position:relative; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.4,.2,.2,1); }
+.tflip{ position:relative; -webkit-transform-style:preserve-3d; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.4,.2,.2,1); }
 .tcard.flipped .tflip{ transform:rotateY(180deg); }
 .tface{ backface-visibility:hidden; -webkit-backface-visibility:hidden; overflow:hidden; }
+.tfront{ -webkit-transform:rotateY(0deg); transform:rotateY(0deg); } /* iOS Safari: a hidden-backface face needs its own transform or it may not paint */
 .tback{ position:absolute; inset:0; transform:rotateY(180deg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center; padding:12px;
   background:linear-gradient(160deg,var(--parchment),var(--parchment-2)); }
 .tb-name{ font-size:13.5px; font-weight:800; color:var(--ink); }
@@ -166,8 +167,12 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .tb-src{ font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
 .tb-date{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
 .tb-hint{ font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); }
-.tcard .imgwrap{ aspect-ratio:245/342; background:var(--parchment-2); display:grid; place-items:center; overflow:hidden; border-bottom:3px solid var(--forest-dark); }
-.tcard img{ width:100%; height:100%; object-fit:contain; display:block; }
+.tcard .imgwrap{ position:relative; aspect-ratio:245/342; background:var(--parchment-2); display:grid; place-items:center; overflow:hidden; border-bottom:3px solid var(--forest-dark); }
+.tcard .imgwrap img{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; }
+@supports not (aspect-ratio:1/1){ /* older iPhones: keep the card shape with the padding trick */
+  .tcard .imgwrap{ height:0; padding-top:139.6%; }
+  .tcard .imgwrap > svg{ position:absolute; inset:0; width:100%; height:100%; }
+}
 .tcard .ph{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); padding:10px; text-align:center; }
 .tcard .meta{ padding:10px 11px; }
 .tcard .nm{ font-size:13.5px; font-weight:800; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink); }
@@ -897,7 +902,7 @@ function renderCards(){
       <div class="tflip">
         <div class="tface tfront pixel-box">
           <div class="imgwrap">
-            ${c.images?`<img src="${c.images.small}" alt="${c.name}" loading="lazy">`:placeholderCardSVG(c)}
+            ${c.images?`<img class="card-img" data-src="${esc(c.images.small)}"${/\.webp$/.test(c.images.small)?` data-alt="${esc(c.images.small.replace(/\.webp$/,".png"))}"`:""} alt="${esc(c.name)}" decoding="async">`:placeholderCardSVG(c)}
           </div>
           <div class="meta">
             <div class="nm">${c.name}</div>
@@ -911,8 +916,28 @@ function renderCards(){
         </div>
       </div>
     </div>`).join("");
+  startCardImages();
   updateSetValue();
 }
+// Card images: the page starts each download itself. Native loading="lazy" can fail to fire for images inside
+// 3D-transformed elements (the flip card) on iPhone Safari, so we observe the outer card instead.
+let imgObserver=null;
+function loadCardImg(card){ const im=card.querySelector("img.card-img[data-src]"); if(im&&!im.getAttribute("src")) im.src=im.dataset.src; }
+function startCardImages(){
+  if(imgObserver) imgObserver.disconnect();
+  const cards=[...grid.querySelectorAll(".tcard")];
+  cards.slice(0,12).forEach(loadCardImg); // first rows right away, whatever the browser supports
+  if(typeof IntersectionObserver==="undefined"){ cards.forEach(loadCardImg); return; }
+  imgObserver=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ loadCardImg(e.target); imgObserver.unobserve(e.target); } }),{rootMargin:"600px 0px"});
+  cards.slice(12).forEach(c=>imgObserver.observe(c));
+}
+// Broken image: try TCGdex's PNG (older iPhones lack WebP), then fall back to the original placeholder art.
+grid.addEventListener("error",e=>{
+  const im=e.target; if(!im||im.tagName!=="IMG"||!im.classList.contains("card-img")) return;
+  if(im.dataset.alt&&!im.dataset.tried){ im.dataset.tried="1"; im.src=im.dataset.alt; return; }
+  const card=im.closest(".tcard"), c=card&&allCards.find(x=>x.id===card.dataset.id);
+  const wrap=im.closest(".imgwrap"); if(wrap) wrap.innerHTML=placeholderCardSVG(c||{name:im.alt||"?"});
+},true);
 grid.addEventListener("click",e=>{ const el=e.target.closest(".tcard"); if(el) toggleCard(el); });
 grid.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("tcard")){ e.preventDefault(); toggleCard(e.target); } });
 setSel.addEventListener("change",e=>loadCards(e.target.value));

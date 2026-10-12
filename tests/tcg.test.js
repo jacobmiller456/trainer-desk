@@ -11,7 +11,7 @@ const path = require('path');
     if(u.startsWith('https://api.pokemontcg.io/v2/cards')) cardReqs++;
     if(u.startsWith('file://')) return r.continue();
     if(u.startsWith('https://api.pokemontcg.io/v2/sets')) return r.fulfill({status:200,headers:cors,contentType:'application/json',body:JSON.stringify({data:[{id:'liv1',name:'Live Set One',releaseDate:'2025/01/01'},{id:'liv2',name:'Live Set Two',releaseDate:'2024/01/01'}]})});
-    if(u.startsWith('https://api.pokemontcg.io/v2/cards')) return r.fulfill({status:200,headers:cors,contentType:'application/json',body:JSON.stringify({data:[{id:'a',name:'Live Card A',number:'1',rarity:'Rare',tcgplayer:{updatedAt:'2026/10/10',prices:{normal:{low:1},holofoil:{market:12.5}}},images:{small:'data:image/gif;base64,R0lGODlhAQABAAAAACw='}},{id:'b',name:'Live Card B',number:'2',rarity:'Common',cardmarket:{updatedAt:'2026/10/10',prices:{trendPrice:0.4}},images:{small:'data:image/gif;base64,R0lGODlhAQABAAAAACw='}}]})});
+    if(u.startsWith('https://api.pokemontcg.io/v2/cards')) return r.fulfill({status:200,headers:cors,contentType:'application/json',body:JSON.stringify({data:[{id:'a',name:'Live Card A',number:'1',rarity:'Rare',tcgplayer:{updatedAt:'2026/10/10',prices:{normal:{low:1},holofoil:{market:12.5}}},images:{small:'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=='}},{id:'b',name:'Live Card B',number:'2',rarity:'Common',cardmarket:{updatedAt:'2026/10/10',prices:{trendPrice:0.4}},images:{small:'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=='}}]})});
     return r.abort();
   });
   await page.goto('file://'+path.resolve(process.argv[2]));
