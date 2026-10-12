@@ -320,6 +320,8 @@ const check = process.argv.includes('--check');
 const files = new Map(dex.map(p => [path.join('pokedex', p.slug + '.html'), page(p)]));
 tcg.forEach((t, i) => files.set(path.join('tcg', setSlug.get(t.id) + '.html'), setPage(t, i)));
 files.set(path.join('tcg', 'sets.html'), setsIndex());
+// compact name list for the Who's That Pokémon? puzzle: [id, name, types, generation, page slug]
+files.set(path.join('assets', 'pokedex-names.json'), JSON.stringify(dex.map(p => [p.id, p.name, p.types, p.gen, p.slug])));
 files.set('sitemap.xml', sitemap());
 const stale = [];
 if (!check) { fs.mkdirSync(path.join(root, 'pokedex'), { recursive: true }); fs.mkdirSync(path.join(root, 'tcg'), { recursive: true }); }

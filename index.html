@@ -415,6 +415,85 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .toast{ position:fixed; left:50%; bottom:calc(90px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); opacity:0; pointer-events:none; z-index:60; max-width:calc(100% - 32px);
   background:var(--forest-dark); color:var(--parchment); border:3px solid var(--gold); border-radius:6px; padding:10px 14px; font-family:var(--font-retro); font-size:17px; transition:opacity .2s, transform .2s; }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ---- holo shine ---- */
+.holo{ position:relative; overflow:hidden; }
+.holo::after{ content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit; mix-blend-mode:color-dodge; opacity:.5; z-index:2;
+  background:radial-gradient(circle at var(--mx,50%) var(--my,30%),rgba(255,255,255,.6),transparent 42%),
+    linear-gradient(115deg,transparent 22%,rgba(255,60,180,.38) 36%,rgba(60,220,255,.38) 50%,rgba(255,235,60,.38) 64%,transparent 78%);
+  background-size:100% 100%,240% 240%; background-position:center,var(--px,30%) var(--py,30%); transition:background-position .15s; }
+.holo.shimmer::after{ animation:holoSweep 2.6s ease-in-out infinite; }
+.holo.tilt{ transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)); transition:transform .12s; }
+@keyframes holoSweep{ 0%,100%{ background-position:center,0% 0%; } 50%{ background-position:center,100% 100%; } }
+.confetti{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:5; }
+.confetti i{ position:absolute; top:-10px; width:7px; height:7px; animation:confettiFall 1.3s ease-in forwards; }
+@keyframes confettiFall{ to{ transform:translate(var(--dx,0),420px) rotate(540deg); opacity:0; } }
+
+/* ---- pack opening ---- */
+#tcg-packs [hidden]{ display:none !important; } /* flex rules below must not override the hidden attribute */
+.pack-intro{ color:var(--parchment); font-family:var(--font-retro); font-size:17px; margin:0 0 14px; }
+.pack-odds{ display:block; color:var(--meadow); font-size:15px; }
+.pack-stage{ position:relative; min-height:420px; display:flex; flex-direction:column; align-items:center; }
+.pack{ position:relative; width:220px; height:340px; border:4px solid var(--forest-dark); border-radius:10px; cursor:pointer; padding:0; overflow:hidden;
+  background:linear-gradient(160deg,#2D6A4F,#1B4332 45%,#40916C 70%,#FFC94A); box-shadow:6px 6px 0 rgba(0,0,0,.3); color:var(--parchment); animation:packIdle 2.4s ease-in-out infinite; }
+.pack:disabled{ opacity:.5; cursor:default; animation:none; }
+.pack::before{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 6px,transparent 6px 12px); }
+.pack-top{ position:absolute; left:0; right:0; top:0; height:34px; background:repeating-linear-gradient(90deg,#d9dfd9 0 8px,#b8c4bc 8px 16px); border-bottom:3px dashed var(--forest-dark); transition:transform .5s, opacity .5s; }
+.pack-body{ position:absolute; inset:40px 12px 12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center; }
+.pack-logo{ display:grid; place-items:center; width:64px; height:64px; border-radius:50%; background:var(--gold); color:var(--forest-dark); border:4px solid var(--parchment); font-size:28px; }
+.pack-brand{ font-family:var(--font-pixel); font-size:11px; letter-spacing:1px; }
+.pack-set{ font-family:var(--font-retro); font-size:22px; line-height:1.1; color:var(--gold); }
+.pack-hint{ font-family:var(--font-pixel); font-size:10px; color:var(--meadow); }
+.pack.tearing .pack-top{ transform:translate(40px,-60px) rotate(18deg); opacity:0; }
+.pack.tearing{ animation:packShake .4s ease-in-out; }
+@keyframes packIdle{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+@keyframes packShake{ 0%,100%{ transform:rotate(0); } 25%{ transform:rotate(-3deg); } 75%{ transform:rotate(3deg); } }
+.pack-reveal{ position:relative; display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; }
+.pull{ width:230px; aspect-ratio:245/342; perspective:1000px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.pull-inner{ position:relative; width:100%; height:100%; transform-style:preserve-3d; -webkit-transform-style:preserve-3d; transition:transform .5s cubic-bezier(.4,.2,.2,1); }
+.pull.flipped .pull-inner{ transform:rotateY(180deg); }
+.pull-back, .pull-front{ position:absolute; inset:0; border-radius:10px; backface-visibility:hidden; -webkit-backface-visibility:hidden; overflow:hidden; }
+.pull-back{ transform:rotateY(0deg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; border:5px solid #f2d27a;
+  background:radial-gradient(circle at 50% 45%,#40916C,#1B4332 70%); color:var(--parchment); font-family:var(--font-pixel); font-size:10px; letter-spacing:1px; }
+.pull-mark{ display:grid; place-items:center; width:72px; height:72px; border-radius:50%; background:var(--gold); color:var(--forest-dark); border:5px solid var(--parchment); font-size:30px; }
+.pull-front{ transform:rotateY(180deg); background:var(--parchment-2); }
+.pull-front img, .pack-mini img{ display:block; width:100%; height:100%; object-fit:contain; }
+.pull-front.rev{ box-shadow:inset 0 0 0 4px rgba(255,255,255,.6); }
+.pull-front > svg{ width:100%; height:100%; }
+.pull-info{ min-height:2.6em; text-align:center; color:var(--parchment); font-family:var(--font-retro); font-size:18px; display:flex; flex-direction:column; align-items:center; }
+.pull-banner{ font-family:var(--font-pixel); font-size:11px; color:var(--gold); margin-top:4px; }
+.pull-count{ font-family:var(--font-retro); font-size:16px; color:var(--meadow); }
+.pack-summary{ width:100%; padding:14px; display:flex; flex-direction:column; gap:10px; position:relative; }
+.pack-summary h3{ margin:0; font-size:17px; }
+.pack-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+@media(min-width:560px){ .pack-grid{ grid-template-columns:repeat(5,1fr); } }
+.pack-mini{ position:relative; border-radius:6px; font-family:var(--font-retro); font-size:14px; line-height:1.15; }
+.pack-mini img, .pack-mini > svg, .pack-mini .pocket-ph{ position:relative; display:block; width:100%; aspect-ratio:245/342; height:auto; border-radius:6px; background:var(--parchment-2); }
+.pack-mini span{ display:block; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pack-mini small{ display:block; font-size:13px; color:var(--ink-soft); }
+.pack-mini.holo::after{ bottom:auto; aspect-ratio:245/342; height:auto; }
+.pack-stats{ color:var(--gold); font-family:var(--font-retro); font-size:17px; text-align:center; }
+
+/* ---- who's that pokémon ---- */
+.today-grid .puzzle-card{ grid-column:1/-1; }
+.whos{ display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; }
+.whos-art{ flex:0 0 auto; }
+.whos-img{ display:block; width:160px; height:160px; image-rendering:pixelated; background:radial-gradient(circle,#fff6d6,#f3ecd2 70%); border:3px solid var(--forest-dark); border-radius:6px;
+  filter:brightness(0); transition:filter .8s ease; }
+.whos-img.shown{ filter:none; }
+.whos-q{ display:grid; place-items:center; filter:none; font-family:var(--font-pixel); font-size:48px; color:var(--forest-dark); }
+.whos-main{ flex:1 1 240px; min-width:0; display:flex; flex-direction:column; gap:8px; }
+.whos-main h3{ margin:0; }
+.whos-form{ display:flex; gap:8px; flex-wrap:wrap; }
+.whos-form input{ flex:1 1 160px; min-width:0; min-height:44px; }
+.whos-form .today-btn{ margin-top:0; }
+.whos-guesses{ margin:0; padding-left:22px; display:flex; flex-direction:column; gap:6px; }
+.whos-guesses li{ font-size:15px; }
+.whos-chip{ display:inline-block; font-family:var(--font-retro); font-size:15px; padding:0 7px; border-radius:3px; margin:0 2px; color:#fff; }
+.whos-chip.ok{ background:#2F9E44; } .whos-chip.part{ background:#D89A1F; } .whos-chip.no{ background:#5c6b62; }
+.whos-link{ display:inline-flex; align-items:center; text-decoration:none; }
+.whos .binder-actions .today-btn{ margin-top:0; }
+.whos-legend{ font-size:14px; }
 </style>
 </head>
 <body>
@@ -440,6 +519,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <p id="today-date"></p>
   </div>
   <div class="today-grid">
+    <section class="ev pixel-box puzzle-card" id="today-puzzle"></section>
     <section class="ev pixel-box" id="today-event" aria-live="off"></section>
     <section class="ev pixel-box" id="today-cd"></section>
     <section class="ev pixel-box" id="today-potd"></section>
@@ -484,6 +564,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   <div class="seg" role="group" aria-label="TCG view">
     <button type="button" class="seg-btn" data-tcgview="browse" aria-pressed="true">BROWSE SETS</button>
     <button type="button" class="seg-btn" data-tcgview="binder" aria-pressed="false">MY BINDER<span id="binder-count"></span></button>
+    <button type="button" class="seg-btn" data-tcgview="packs" aria-pressed="false">OPEN PACKS</button>
   </div>
 
   <div id="tcg-browse">
@@ -502,6 +583,19 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
   <div class="card-grid" id="card-grid"></div>
   <div class="empty pixel-box" id="tcg-empty" style="display:none;"></div>
+  </div>
+
+  <div id="tcg-packs" hidden>
+    <p class="pack-intro"><b id="pack-setname"></b> · <span id="pack-note"></span> <span class="pack-odds">Fun odds, not official pull rates. Free, no purchases.</span></p>
+    <div class="pack-stage" id="pack-stage">
+      <button type="button" class="pack" id="pack-btn" aria-label="Open a pack">
+        <span class="pack-top" aria-hidden="true"></span>
+        <span class="pack-body"><span class="pack-logo" aria-hidden="true">✦</span><span class="pack-brand">TRAINER DESK</span><span class="pack-set"></span><span class="pack-hint">TAP TO OPEN</span></span>
+      </button>
+      <div class="pack-reveal" id="pack-reveal" hidden></div>
+      <div class="pack-summary pixel-box" id="pack-summary" hidden></div>
+    </div>
+    <p class="pack-stats" id="pack-stats"></p>
   </div>
 
   <div id="tcg-binder" hidden>
@@ -1093,7 +1187,7 @@ function renderCards(){
     <div class="tcard" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(c.name)} — flip to see price" data-id="${esc(c.id)}">
       <div class="tflip">
         <div class="tface tfront pixel-box">
-          <div class="imgwrap">
+          <div class="imgwrap${rarityTier(c.rarity)>=3?" holo":""}">
             ${c.images?`<img class="card-img" data-src="${esc(c.images.small)}"${/\.webp$/.test(c.images.small)?` data-alt="${esc(c.images.small.replace(/\.webp$/,".png"))}"`:""} alt="${esc(c.name)}" decoding="async">`:placeholderCardSVG(c)}
           </div>
           <div class="meta">
@@ -1221,7 +1315,8 @@ function toast(msg){
   // ---- view switch ----
   function showView(which){
     const binder=which==="binder";
-    browse.hidden=binder; view.hidden=!binder;
+    browse.hidden=which!=="browse"; view.hidden=!binder; document.getElementById("tcg-packs").hidden=which!=="packs";
+    if(which==="packs"&&window.packsShow) window.packsShow();
     document.querySelectorAll("[data-tcgview]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.tcgview===which)));
     if(binder) render(); else if(typeof renderCards==="function"&&allCards.length) renderCards(); // refresh "in binder" labels
   }
@@ -1380,7 +1475,254 @@ function toast(msg){
   // tab click handlers are attached later in the script, so open the shared binder once everything is wired up
   if(openShared()) setTimeout(()=>{ const t=document.querySelector('.tab[data-view="tcg"]'); if(t) t.click(); showView("binder"); },0);
   // test hook
+  window.binderAddCards=list=>{ // used by the pack opener
+    const b=binderActive(); let added=0;
+    list.forEach(c=>{ if(b.cards.some(x=>x.id===c.id)) return; const sn=snapshot(c); if(sn){ b.cards.push(sn); added++; } });
+    binderSave(); updateCount(); return {added,name:b.name};
+  };
   window.__binder={ get store(){ return binderStore; }, get shared(){ return shared; } };
+})();
+
+/* ============================================================
+   HOLO SHINE — rainbow glare that follows the finger/mouse on rare cards (.holo). Static under reduced motion.
+   ============================================================ */
+function rarityTier(r){
+  r=(r||"").toLowerCase(); if(!r) return 0;
+  if(/special illustration|hyper|rainbow|secret|gold|black white rare|shiny ultra/.test(r)) return 6;
+  if(/illustration rare|ace spec|amazing|radiant|shiny rare|trainer gallery|classic collection/.test(r)) return 5;
+  if(/ultra|full art|holo (v|vmax|vstar|gx|ex|lv)|legend|prime|break|prism|rare ex|rare v/.test(r)) return 4;
+  if(/double rare|holo/.test(r)) return 3;
+  if(/rare|promo/.test(r)) return 2;
+  if(/uncommon/.test(r)) return 1;
+  return 0;
+}
+(function(){
+  function move(e){
+    const el=e.target.closest&&e.target.closest(".holo"); if(!el) return;
+    const r=el.getBoundingClientRect(); if(!r.width) return;
+    const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)), y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));
+    el.style.setProperty("--mx",(x*100).toFixed(1)+"%"); el.style.setProperty("--my",(y*100).toFixed(1)+"%");
+    el.style.setProperty("--px",(x*100).toFixed(1)+"%"); el.style.setProperty("--py",(y*100).toFixed(1)+"%");
+    if(el.classList.contains("tilt")) el.style.setProperty("--rx",((0.5-y)*14).toFixed(1)+"deg"), el.style.setProperty("--ry",((x-0.5)*14).toFixed(1)+"deg");
+  }
+  function leave(e){ const el=e.target.closest&&e.target.closest(".holo"); if(!el) return; ["--mx","--my","--px","--py","--rx","--ry"].forEach(k=>el.style.removeProperty(k)); }
+  document.addEventListener("pointermove",move,{passive:true});
+  document.addEventListener("pointerout",leave,{passive:true});
+})();
+
+/* small pixel confetti burst (skipped under reduced motion) */
+function confetti(host){
+  if(!host||(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+  const colors=["#FFC94A","#74C69D","#FF5C5C","#6390F0","#F95587","#FDF6E3"];
+  const box=document.createElement("div"); box.className="confetti"; box.setAttribute("aria-hidden","true");
+  for(let i=0;i<28;i++){ const p=document.createElement("i"); p.style.left=(Math.random()*100)+"%"; p.style.background=colors[i%colors.length]; p.style.animationDelay=(Math.random()*0.25)+"s"; p.style.setProperty("--dx",((Math.random()-.5)*120)+"px"); box.appendChild(p); }
+  host.appendChild(box); setTimeout(()=>box.remove(),1600);
+}
+
+/* ============================================================
+   PACK OPENING — opens a 10-card pack from the set picked in BROWSE SETS. Fun odds (not official pull rates),
+   our own pack and card-back art (never the official card back). Pulls can go straight into the binder.
+   ============================================================ */
+(function(){
+  const $=id=>document.getElementById(id);
+  const view=$("tcg-packs"), stage=$("pack-stage"), packBtn=$("pack-btn"), reveal=$("pack-reveal"), summary=$("pack-summary");
+  const STATS="td-packs-v1";
+  const TIER_NAME=["Common","Uncommon","Rare","Holo / Double Rare","Ultra Rare","Illustration Rare","Special / Hyper Rare"];
+  let pack=[], idx=0, flipped=false;
+
+  const stats=()=>{ try{ return JSON.parse(localStorage.getItem(STATS)||"null")||{opened:0,best:[]}; }catch(e){ return {opened:0,best:[]}; } };
+  const saveStats=s=>{ try{ localStorage.setItem(STATS,JSON.stringify(s)); }catch(e){} };
+  const setName=()=>{ const o=setSel.options[setSel.selectedIndex]; return o?o.textContent.replace(/\s*\(\d{4}\)$/,""):""; };
+  const shuffle=a=>{ a=[...a]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+  function generatePack(cards){
+    const pool=cards.filter(c=>!c.sample); if(!pool.length) return [];
+    const used=new Set();
+    const take=(arr,n)=>{ const out=[]; for(const c of shuffle(arr)){ if(out.length>=n) break; if(!used.has(c.id)){ used.add(c.id); out.push(c); } } return out; };
+    const tier=c=>rarityTier(c.rarity);
+    const commons=pool.filter(c=>tier(c)===0), uncs=pool.filter(c=>tier(c)===1), low=pool.filter(c=>tier(c)<=2);
+    if(commons.length<5||uncs.length<3){ // promos, old or unrated sets: just 10 random cards, rarest last
+      return take(pool,10).sort((a,b)=>tier(a)-tier(b)).map(c=>({c,rev:false}));
+    }
+    const out=[...take(commons,5),...take(uncs,3)].map(c=>({c,rev:false}));
+    const rev=take(low,1)[0]; if(rev) out.push({c:rev,rev:true}); // reverse-holo slot
+    const weights={2:70,3:15,4:6,5:6,6:3}, present=Object.keys(weights).map(Number).filter(t=>pool.some(c=>tier(c)===t&&!used.has(c.id)));
+    if(present.length){
+      let roll=Math.random()*present.reduce((n,t)=>n+weights[t],0), t=present[0];
+      for(const k of present){ roll-=weights[k]; if(roll<=0){ t=k; break; } }
+      const hit=take(pool.filter(c=>tier(c)===t),1)[0]; if(hit) out.push({c:hit,rev:false});
+    }
+    return out;
+  }
+  const cardImg=c=>c.images&&c.images.small?`<img src="${esc(c.images.small)}"${/\.webp$/.test(c.images.small)?` data-alt="${esc(c.images.small.replace(/\.webp$/,".png"))}"`:""} alt="${esc(c.name)}" decoding="async">`:placeholderCardSVG(c);
+
+  function renderIntro(){
+    const s=stats(), n=allCards.filter(c=>!c.sample).length;
+    $("pack-setname").textContent=n?setName():"No set loaded";
+    packBtn.querySelector(".pack-set").textContent=n?setName():"—";
+    packBtn.disabled=!n;
+    $("pack-note").textContent=n?"Tap the pack to open it. Pick another set in BROWSE SETS to change packs.":"Card data didn't load (offline?). Try again from BROWSE SETS.";
+    const best=s.best[0];
+    $("pack-stats").textContent=s.opened?`Packs opened: ${s.opened}${best?` · Best pull: ${best.name} (${best.rarity||TIER_NAME[best.tier]}, ${best.set})`:""}`:"";
+  }
+  function showIntro(){ stage.classList.remove("revealing","done"); packBtn.hidden=false; packBtn.classList.remove("tearing"); reveal.hidden=true; summary.hidden=true; renderIntro(); }
+
+  function open(){
+    pack=generatePack(allCards); if(!pack.length){ renderIntro(); return; }
+    idx=0; flipped=false;
+    packBtn.classList.add("tearing");
+    const reduced=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setTimeout(()=>{ packBtn.hidden=true; stage.classList.add("revealing"); reveal.hidden=false; showCard(); },reduced?0:650);
+    const s=stats(); s.opened++; saveStats(s);
+  }
+  function showCard(){
+    const p=pack[idx], t=rarityTier(p.c.rarity), shiny=t>=3||p.rev;
+    reveal.innerHTML=`
+      <div class="pull${flipped?" flipped":""}" role="button" tabindex="0" aria-label="${flipped?esc(p.c.name):"Card "+(idx+1)+" of "+pack.length+", tap to reveal"}">
+        <div class="pull-inner">
+          <div class="pull-back" aria-hidden="true"><span class="pull-mark">✦</span><span>TRAINER DESK</span></div>
+          <div class="pull-front${shiny?" holo tilt shimmer":""}${p.rev?" rev":""}">${cardImg(p.c)}</div>
+        </div>
+      </div>
+      <div class="pull-info" aria-live="polite">${flipped?`<b>${esc(p.c.name)}</b> <span>${esc(p.c.rarity||"")}${p.rev?" · Reverse holo":""}</span>${t>=4?`<span class="pull-banner">${esc((TIER_NAME[t]||"").toUpperCase())}!</span>`:""}`:""}</div>
+      <div class="pull-count">${idx+1} / ${pack.length} · ${flipped?(idx<pack.length-1?"tap for the next card":"tap to see your pack"):"tap the card to flip it"}</div>
+      <button type="button" class="arena-btn alt" id="pack-skip">SKIP TO ALL CARDS</button>`;
+    if(flipped&&t>=4) confetti(reveal);
+  }
+  function next(){
+    if(!flipped){ flipped=true; showCard(); return; }
+    if(idx<pack.length-1){ idx++; flipped=false; showCard(); return; }
+    finish();
+  }
+  function finish(){
+    stage.classList.remove("revealing"); stage.classList.add("done"); reveal.hidden=true; summary.hidden=false;
+    const ranked=[...pack].sort((a,b)=>rarityTier(b.c.rarity)-rarityTier(a.c.rarity)||((b.c.price&&b.c.price.v)||0)-((a.c.price&&a.c.price.v)||0));
+    const best=ranked[0].c, bt=rarityTier(best.rarity);
+    let usd=0,eur=0; pack.forEach(({c})=>{ if(c.price){ if(c.price.cur==="EUR") eur+=c.price.v; else usd+=c.price.v; } });
+    const val=[usd?"$"+usd.toFixed(2):"",eur?"€"+eur.toFixed(2):""].filter(Boolean).join(" + ");
+    summary.innerHTML=`
+      <h3>Your ${esc(setName())} pack</h3>
+      <p class="cd-meta">Best pull: <b>${esc(best.name)}</b> (${esc(best.rarity||TIER_NAME[bt])})${val?` · Pack value about ${esc(val)}`:""}</p>
+      <div class="pack-grid">${pack.map(({c,rev})=>`<div class="pack-mini${rarityTier(c.rarity)>=3||rev?" holo":""}" title="${esc(c.name)}">${cardImg(c)}<span>${esc(c.name)}</span><small>${esc(c.rarity||"")}${rev?" · Rev":""}</small></div>`).join("")}</div>
+      <div class="binder-actions">
+        <button type="button" class="arena-btn" id="pack-again">OPEN ANOTHER</button>
+        <button type="button" class="arena-btn alt" id="pack-add-all">ADD ALL TO BINDER</button>
+        <button type="button" class="arena-btn alt" id="pack-add-best">ADD BEST TO BINDER</button>
+      </div>`;
+    const s=stats();
+    s.best=[...s.best,{name:best.name,rarity:best.rarity||"",tier:bt,set:setName()}].sort((a,b)=>b.tier-a.tier).slice(0,5);
+    saveStats(s);
+    if(bt>=4) confetti(summary);
+    $("pack-stats").textContent=`Packs opened: ${s.opened} · Best pull: ${s.best[0].name} (${s.best[0].rarity||TIER_NAME[s.best[0].tier]}, ${s.best[0].set})`;
+  }
+
+  packBtn.addEventListener("click",open);
+  reveal.addEventListener("click",e=>{ if(e.target.closest("#pack-skip")){ finish(); return; } if(e.target.closest(".pull")) next(); });
+  reveal.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.closest(".pull")){ e.preventDefault(); next(); } });
+  summary.addEventListener("click",e=>{
+    if(e.target.closest("#pack-again")){ showIntro(); open(); return; }
+    const all=e.target.closest("#pack-add-all"), best=e.target.closest("#pack-add-best");
+    if(all||best){
+      const list=all?pack.map(p=>p.c):[[...pack].sort((a,b)=>rarityTier(b.c.rarity)-rarityTier(a.c.rarity))[0].c];
+      const r=window.binderAddCards?window.binderAddCards(list):null;
+      if(r) toast(r.added?`Added ${r.added} card${r.added===1?"":"s"} to ${r.name}`:`Already in ${r.name}`);
+      (all||best).disabled=true;
+    }
+  });
+  stage.addEventListener("error",e=>{ const im=e.target; if(!im||im.tagName!=="IMG") return; if(im.dataset.alt&&!im.dataset.tried){ im.dataset.tried="1"; im.src=im.dataset.alt; } else im.replaceWith(Object.assign(document.createElement("span"),{className:"pocket-ph",textContent:(im.alt||"?").charAt(0)})); },true);
+  window.packsShow=showIntro;
+  window.__packs={ generate:()=>generatePack(allCards), tier:rarityTier, get pack(){ return pack; } };
+})();
+
+/* ============================================================
+   WHO'S THAT POKÉMON? — one daily puzzle for everyone (same Pokémon worldwide, changes at 00:00 UTC).
+   Silhouette of the sprite (hotlinked; hints-only if SHOW_SPRITES is off), 5 guesses with Gen / Type / # feedback,
+   streaks and a spoiler-free share text. Names come from assets/pokedex-names.json (built by scripts/build-pages.mjs).
+   ============================================================ */
+(function(){
+  const el=document.getElementById("today-puzzle"); if(!el) return;
+  const KEY="td-whos-v1", STATS="td-whos-stats-v1", MAX=5, EPOCH=Math.floor(Date.UTC(2026,9,12)/864e5);
+  const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/♀/g,"f").replace(/♂/g,"m").replace(/[^a-z0-9]/g,"");
+  const day=Math.floor(Date.now()/864e5), num=day-EPOCH+1;
+  let names=null, answer=null, state=null;
+  const load=(k,d)=>{ try{ return JSON.parse(localStorage.getItem(k)||"null")||d; }catch(e){ return d; } };
+  const save=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+  const byId=id=>names.find(n=>n[0]===id);
+
+  function feedback(g){
+    const gen=g[3]===answer[3]?"=":g[3]<answer[3]?"↑":"↓";
+    const shared=g[2].filter(t=>answer[2].includes(t)).length;
+    const type=shared===answer[2].length&&g[2].length===answer[2].length?"=":shared?"~":"x";
+    const no=g[0]===answer[0]?"=":g[0]<answer[0]?"↑":"↓";
+    return {gen,type,no};
+  }
+  const chip=(label,v)=>`<span class="whos-chip ${v==="="?"ok":v==="~"?"part":"no"}">${label} ${v==="="?"✓":v==="~"?"~":v==="x"?"✗":v}</span>`;
+
+  function render(){
+    const done=state.done, won=state.won;
+    const art=SHOW_SPRITES?`<img class="whos-img${done?" shown":""}" src="${SPRITE_URL(answer[0])}" alt="${done?esc(answer[1]):"Mystery Pokémon silhouette"}" width="160" height="160">`:`<span class="whos-img whos-q" aria-hidden="true">?</span>`;
+    const rows=state.guesses.map(id=>{ const g=byId(id); if(!g) return ""; const f=feedback(g); return `<li><b>${esc(g[1])}</b> ${chip("Gen",f.gen)} ${chip("Type",f.type)} ${chip("#",f.no)}</li>`; }).join("");
+    const left=MAX-state.guesses.length, wrong=state.guesses.length-(won?1:0);
+    const s=load(STATS,{played:0,won:0,streak:0,max:0,last:-1});
+    el.innerHTML=`<div class="today-label">▸ WHO'S THAT POKÉMON? #${num}</div>
+      <div class="whos">
+        <div class="whos-art">${art}</div>
+        <div class="whos-main">
+          ${done?`<h3>${won?"You got it!":"It's"} ${esc(answer[1])}${won?"":"!"}</h3><p class="today-meta">${won?`Solved in ${state.guesses.length}/${MAX}.`:"Better luck tomorrow."} Streak: ${s.streak} · Best: ${s.max} · Solved ${s.won}/${s.played}</p>
+            <div class="binder-actions"><button type="button" class="today-btn" id="whos-share">SHARE RESULT</button><a class="today-btn whos-link" href="/pokedex/${esc(answer[4]||"")}"NFD").replace(/[̀-ͯ]/g,"").replace(/♀/g,"-f").replace(/♂/g,"-m").replace(/['’.:]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""))}">SEE ITS PAGE</a></div>
+            <p class="today-meta">Next Pokémon <span class="cd" data-t="${new Date((day+1)*864e5).toISOString()}" data-pre="in"></span></p>`
+          :`<p class="today-meta">Guess today's Pokémon from its silhouette. ${left} guess${left===1?"":"es"} left.</p>
+            <form class="whos-form" id="whos-form" autocomplete="off"><input type="text" id="whos-input" list="whos-names" placeholder="Type a Pokémon…" aria-label="Your guess" enterkeyhint="go"><button type="submit" class="today-btn">GUESS</button></form>
+            ${wrong>=2?`<p class="today-meta">Hint: it's ${answer[2].length>1?"a dual-type":"a single-type"} Pokémon from Generation ${answer[3]}.</p>`:""}
+            ${wrong>=4?`<p class="today-meta">Last hint: its name starts with “${esc(answer[1].charAt(0))}”.</p>`:""}`}
+          ${rows?`<ol class="whos-guesses">${rows}</ol>`:""}
+          ${!done&&!rows?`<p class="today-meta whos-legend">After each guess: Gen ↑/↓ = later/earlier generation, Type ~ = one type matches, # ↑/↓ = higher/lower Pokédex number.</p>`:""}
+        </div>
+      </div>`;
+    const img=el.querySelector("img.whos-img"); if(img) img.addEventListener("error",()=>{ img.outerHTML='<span class="whos-img whos-q" aria-hidden="true">?</span>'; },{once:true}); // sprite unreachable: hints still work
+    if(!done) document.getElementById("whos-form").addEventListener("submit",onGuess);
+    else document.getElementById("whos-share").addEventListener("click",share);
+    if(typeof tickCountdowns==="function") tickCountdowns();
+  }
+  function onGuess(e){
+    e.preventDefault();
+    const input=document.getElementById("whos-input"), q=norm(input.value); if(!q) return;
+    const g=names.find(n=>norm(n[1])===q);
+    if(!g){ toast("That's not in the Pokédex — pick a name from the list."); return; }
+    if(state.guesses.includes(g[0])){ toast("Already guessed "+g[1]); return; }
+    state.guesses.push(g[0]);
+    if(g[0]===answer[0]||state.guesses.length>=MAX){
+      state.done=true; state.won=g[0]===answer[0];
+      const s=load(STATS,{played:0,won:0,streak:0,max:0,last:-1});
+      s.played++; if(state.won){ s.won++; s.streak=s.last===day-1?s.streak+1:1; s.max=Math.max(s.max,s.streak); s.last=day; } else s.streak=0;
+      save(STATS,s);
+    }
+    save(KEY,state); render();
+    if(state.done&&state.won) confetti(el);
+    else if(!state.done){ const i=document.getElementById("whos-input"); if(i) i.focus(); }
+  }
+  function shareText(){
+    const lines=state.guesses.map(id=>{ const f=feedback(byId(id)); return [f.gen,f.type,f.no].map(v=>v==="="?"🟩":v==="~"?"🟨":"⬛").join(""); });
+    return `Who's That Pokémon? #${num} ${state.won?state.guesses.length:"X"}/${MAX}\n${lines.join("\n")}\nhttps://www.trainerdesk.net`;
+  }
+  async function share(){
+    const text=shareText();
+    try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+    try{ await navigator.clipboard.writeText(text); toast("Result copied — paste it anywhere"); }catch(e){ toast(text.replace(/\n/g," ")); }
+  }
+  (async function init(){
+    el.innerHTML='<div class="today-label">▸ WHO\'S THAT POKÉMON?</div><div class="today-meta">Loading today\'s puzzle…</div>';
+    try{
+      if(location.protocol==="file:") throw new Error("local preview"); // browsers block fetch() from file:// pages
+      const r=await fetchWithTimeout("assets/pokedex-names.json",8000); if(!r.ok) throw new Error(r.status);
+      names=await r.json(); if(!Array.isArray(names)||names.length<100) throw new Error("bad list");
+    }catch(e){ el.innerHTML='<div class="today-label">▸ WHO\'S THAT POKÉMON?</div><div class="today-meta">Today\'s puzzle couldn\'t load. Check your connection and refresh.</div>'; return; }
+    answer=names[(((day*48271)+12345)%names.length+names.length)%names.length];
+    state=load(KEY,null); if(!state||state.day!==day) state={day,guesses:[],done:false,won:false};
+    if(!document.getElementById("whos-names")){ const dl=document.createElement("datalist"); dl.id="whos-names"; dl.innerHTML=names.map(n=>`<option value="${esc(n[1])}">`).join(""); document.body.appendChild(dl); }
+    render();
+    window.__whos={ get answer(){ return answer; }, get state(){ return state; }, shareText };
+  })();
 })();
 
 
