@@ -62,6 +62,12 @@ Solo battle-royale minigame on a `<canvas>` (single page, no backend). Pick a fi
 - **Tests:** `tests/arena.test.js` (offline + mocked PokéAPI, plus a spectate/podium scenario) plays to a result using a small `window.__arena` test hook; because a `file://` page taints its own canvas, it counts colours in a screenshot instead of calling `getImageData`. Header tab labels shorten to GO / TCG / DEX on phones so five tabs fit.
 - **Not built:** online multiplayer, queues and XP (the battle-royale project has these, backed by a Cloudflare Worker + D1 database; a port would need a backend or Supabase), a full-species picker, weather and per-arena type bonuses.
 
+## SEO
+- **Tab URLs:** each tab has a real address — `/` (Today), `/go`, `/tcg`, `/pokedex`, `/arena`. `vercel.json` rewrites those paths to `index.html`; the page reads the path on load, and tab clicks update it with `history.pushState` (back/forward work). Each route sets its own `<title>`, meta description, canonical and Open Graph/Twitter tags from `ROUTES` in the script. Shared-binder links (`#binder=…`) keep their code when the page jumps to `/tcg`. Local `file://` previews skip URL changes.
+- **Head:** canonical (`https://www.trainerdesk.net`), robots `max-image-preview:large`, Open Graph + `summary_large_image` Twitter card with `assets/og-image.jpg` (1200×630, original art: arena background + text, no Pokémon artwork), JSON-LD (`WebSite` + free `WebApplication` with a feature list), `<noscript>` summary, apple-touch icon and `site.webmanifest` (installable icons in `assets/icons`).
+- **Files:** `sitemap.xml` (all five routes), `robots.txt` (points at the sitemap), `404.html` (noindex, links back to each tab).
+- **After deploy:** add the site in Google Search Console (and Bing Webmaster Tools), verify the domain, and submit `https://www.trainerdesk.net/sitemap.xml`. Keep `ROUTES` titles ≤ 65 characters and descriptions 70–165; `tests/seo.test.js` enforces this and serves the site over HTTP with the same rewrites.
+
 ## Network resilience
 
 All `fetch()` calls go through `fetchWithTimeout()` (6s default AbortController; the TCG calls use 12s/15s because pokemontcg.io is slow

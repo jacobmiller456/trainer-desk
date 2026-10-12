@@ -15,14 +15,30 @@
   gtag('config', 'G-S7NHPZKHJQ');
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trainer Desk — GO Events &amp; TCG Set Browser</title>
-<meta name="description" content="Unofficial fan hub for Pokémon GO event countdowns, Pokémon TCG sets and tournaments, and a searchable Pokédex.">
+<title>Trainer Desk: Pokémon GO Events, TCG Card Prices &amp; Pokédex</title>
+<meta name="description" content="Free, unofficial Pokémon fan hub: GO event and Community Day countdowns, TCG card prices with a digital binder, a searchable Pokédex and a pixel battle mini-game.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://www.trainerdesk.net/">
 <meta name="theme-color" content="#1B4332">
+<meta name="application-name" content="Trainer Desk">
+<meta name="apple-mobile-web-app-title" content="Trainer Desk">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Trainer Desk">
-<meta property="og:title" content="Trainer Desk — GO Events &amp; TCG Set Browser">
-<meta property="og:description" content="Unofficial fan hub for Pokémon GO event countdowns, Pokémon TCG sets and tournaments, and a searchable Pokédex.">
-<meta name="twitter:card" content="summary">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://www.trainerdesk.net/">
+<meta property="og:title" content="Trainer Desk: Pokémon GO Events, TCG Card Prices &amp; Pokédex">
+<meta property="og:description" content="Free, unofficial Pokémon fan hub: GO event and Community Day countdowns, TCG card prices with a digital binder, a searchable Pokédex and a pixel battle mini-game.">
+<meta property="og:image" content="https://www.trainerdesk.net/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Trainer Desk: Pokémon GO events and Community Day, TCG card prices and digital binder, Pokédex, Pixel Arena mini-game">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Trainer Desk: Pokémon GO Events, TCG Card Prices &amp; Pokédex">
+<meta name="twitter:description" content="Free, unofficial Pokémon fan hub: GO event and Community Day countdowns, TCG card prices with a digital binder, a searchable Pokédex and a pixel battle mini-game.">
+<meta name="twitter:image" content="https://www.trainerdesk.net/assets/og-image.jpg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebSite", "@id": "https://www.trainerdesk.net/#website", "url": "https://www.trainerdesk.net/", "name": "Trainer Desk", "inLanguage": "en", "description": "Free, unofficial Pokémon fan hub: GO event and Community Day countdowns, TCG card prices with a digital binder, a searchable Pokédex and a pixel battle mini-game."}, {"@type": "WebApplication", "@id": "https://www.trainerdesk.net/#app", "name": "Trainer Desk", "url": "https://www.trainerdesk.net/", "applicationCategory": "GameApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "featureList": ["Pokémon GO event and Community Day countdowns", "Pokémon TCG set browser with card prices", "Digital card binder saved in your browser", "Searchable Pokédex with base stats", "Pixel Arena battle royale mini-game"]}]}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -402,6 +418,9 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 </head>
 <body>
 
+<noscript><div class="wrap" style="padding:16px;color:#FDF6E3;font-family:sans-serif;">
+  <p><b>Trainer Desk</b> is a free, unofficial Pokémon fan site with Pokémon GO event and Community Day countdowns, a Pokémon TCG set browser with card prices and a digital binder, a searchable Pokédex, and the Pixel Arena mini-game. Please turn on JavaScript to use it.</p>
+</div></noscript>
 <header><div class="wrap">
   <div class="logo"><span class="mark">✦</span> TRAINER DESK</div>
   <div class="tabs">
@@ -1662,15 +1681,49 @@ dexGrid.addEventListener("click",e=>{
 });
 dexDetail.addEventListener("click",e=>{ if(e.target.closest("#dex-close")) closeDexDetail(); });
 
+/* ---- Routes: each tab has its own URL (/go, /tcg, /pokedex, /arena; Vercel rewrites them to this page) with its own
+   title, description and canonical link, so search engines can index and link straight to a tab. ---- */
+const SITE_URL="https://www.trainerdesk.net";
+const ROUTES={
+  today:{path:"/",title:"Trainer Desk: Pokémon GO Events, TCG Card Prices & Pokédex",desc:"Free, unofficial Pokémon fan hub: GO event and Community Day countdowns, TCG card prices with a digital binder, a searchable Pokédex and a pixel battle mini-game."},
+  go:{path:"/go",title:"Pokémon GO Events & Community Day Countdown | Trainer Desk",desc:"Live countdowns for current and upcoming Pokémon GO events, plus this month's Community Day: featured Pokémon, shinies, bonuses and times in your timezone."},
+  tcg:{path:"/tcg",title:"Pokémon TCG Card Prices, Sets & Digital Binder | Trainer Desk",desc:"Browse Pokémon TCG sets and cards with TCGplayer and Cardmarket market prices, sort by value, track set completion and build a free digital binder."},
+  dex:{path:"/pokedex",title:"Pokédex: Types, Base Stats & Abilities | Trainer Desk",desc:"Search every Pokémon by name, number or generation and see types, base stats, abilities, height and weight in a fast, mobile-friendly Pokédex."},
+  arena:{path:"/arena",title:"Pixel Arena: Free Pokémon Battle Royale Mini-Game | Trainer Desk",desc:"Pick a Pokémon and survive a shrinking zone against 11 rivals in this free pixel-art battle royale mini-game. Type matchups and base stats decide the fight."}
+};
+const canRoute=/^https?:$/.test(location.protocol);
+function viewFromPath(p){
+  p=(p||"/").replace(/\/index\.html$/,"/").replace(/\/+$/,"")||"/";
+  return Object.keys(ROUTES).find(k=>ROUTES[k].path===p)||"today";
+}
+function setMeta(view){
+  const r=ROUTES[view]||ROUTES.today, url=SITE_URL+r.path;
+  document.title=r.title;
+  const set=(sel,attr,val)=>{ const el=document.querySelector(sel); if(el) el.setAttribute(attr,val); };
+  set('meta[name="description"]',"content",r.desc);
+  set('link[rel="canonical"]',"href",url);
+  set('meta[property="og:url"]',"content",url);
+  set('meta[property="og:title"]',"content",r.title); set('meta[name="twitter:title"]',"content",r.title);
+  set('meta[property="og:description"]',"content",r.desc); set('meta[name="twitter:description"]',"content",r.desc);
+}
+function activateView(view,push){
+  const t=document.querySelector('.tab[data-view="'+view+'"]'); if(!t) return;
+  document.querySelectorAll(".tab").forEach(x=>{ x.classList.remove("active"); x.removeAttribute("aria-current"); });
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  t.classList.add("active"); t.setAttribute("aria-current","page");
+  document.getElementById("view-"+view).classList.add("active");
+  if(view==="dex") initDex(); // lazy: don't hit PokéAPI until someone opens the tab
+  setMeta(view);
+  if(push&&canRoute&&viewFromPath(location.pathname)!==view){
+    const keep=/^#binder=/.test(location.hash)?location.hash:""; // shared-binder links survive the jump to /tcg
+    try{ history.pushState({view},"",ROUTES[view].path+location.search+keep); }catch(e){}
+  }
+}
 document.querySelectorAll(".tab").forEach(t=>{
-  t.addEventListener("click",()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-    t.classList.add("active");
-    document.getElementById("view-"+t.dataset.view).classList.add("active");
-    if(t.dataset.view==="dex") initDex(); // lazy: don't hit PokéAPI until someone opens the tab
-  });
+  t.addEventListener("click",()=>activateView(t.dataset.view,true));
 });
+window.addEventListener("popstate",()=>{ const v=viewFromPath(location.pathname); const t=document.querySelector('.tab[data-view="'+v+'"]'); if(t) t.click(); });
+(function(){ const v=viewFromPath(location.pathname); if(v!=="today"){ const t=document.querySelector('.tab[data-view="'+v+'"]'); if(t) t.click(); } else setMeta("today"); })();
 
 (async function initGoEvents(){
   await loadGoEvents();
