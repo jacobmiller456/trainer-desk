@@ -380,6 +380,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   </div>
   <div class="today-grid">
     <section class="ev pixel-box" id="today-event" aria-live="off"></section>
+    <section class="ev pixel-box" id="today-cd"></section>
     <section class="ev pixel-box" id="today-potd"></section>
     <section class="ev pixel-box" id="today-set"></section>
     <section class="ev pixel-box" id="today-arena">
@@ -1365,6 +1366,27 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     tickCountdowns();
   }
 
+  function renderTodayCD(){
+    const el=$("today-cd");
+    const head='<div class="today-label">▸ COMMUNITY DAY</div>';
+    if(GO_EVENTS===SAMPLE_GO_EVENTS){ el.innerHTML=head+'<div class="today-meta">Waiting for the live event feed…</div><button type="button" class="today-btn" data-goto="go">GO EVENTS</button>'; return; }
+    const now=new Date();
+    const cds=GO_EVENTS.filter(e=>/community-day/.test(e.type||"")&&e.start&&e.end).map(e=>({...e,_s:new Date(e.start),_e:new Date(e.end)})).filter(e=>!isNaN(e._s)&&!isNaN(e._e)).sort((a,b)=>a._s-b._s);
+    const f=cds.find(e=>e._s<=now&&e._e>now)||cds.find(e=>e._s>now);
+    if(!f){ el.innerHTML=head+'<h3>None scheduled yet</h3><div class="desc">Community Days are usually announced a few weeks ahead.</div><button type="button" class="today-btn" data-goto="go">GO EVENTS</button>'; return; }
+    const live=f._s<=now, mons=(f.cd&&f.cd.spawns)||[], shiny=new Set((f.cd&&f.cd.shinies)||[]);
+    const t=d=>d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+    el.innerHTML=`${head}
+      <h3>${esc(f.title)}</h3>
+      ${mons.length?`<div class="cd-mons">${mons.map(n=>`<div class="cd-mon">${cdArt(n)}<div><b>${esc(n)}</b>${shiny.has(n)?"<small>✦ shiny available</small>":""}</div></div>`).join("")}</div>`:'<div class="today-meta">Featured Pokémon not announced yet.</div>'}
+      <div class="when"><span>${esc(f._s.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}))} · ${esc(t(f._s))}–${esc(t(f._e))}</span><span class="cd" data-t="${(live?f._e:f._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span></div>
+      <button type="button" class="today-btn" id="today-cd-btn">CD DETAILS</button>`;
+    $("today-cd-btn").addEventListener("click",()=>{ goTab("go"); const box=document.getElementById("cd-box"); if(box&&box.scrollIntoView) box.scrollIntoView({block:"start"}); });
+    tickCountdowns();
+    const missing=mons.filter(n=>!cdIds.has(n));
+    if(SHOW_SPRITES&&missing.length) Promise.all(missing.map(cdMonId)).then(renderTodayCD);
+  }
+
   function dayIndex(){ const d=new Date(); return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5); }
   // Pokédex entry for the Pokémon of the day: latest English game entry + category, live from PokéAPI, cached per session.
   async function loadSpeciesText(id){
@@ -1425,10 +1447,10 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       <button type="button" class="today-btn" data-goto="tcg">BROWSE SETS</button>`;
   }
 
-  renderTodayEvent(); renderTodaySet(); renderPotd();
-  setInterval(renderTodayEvent,60000);
+  renderTodayEvent(); renderTodayCD(); renderTodaySet(); renderPotd();
+  setInterval(()=>{ renderTodayEvent(); renderTodayCD(); },60000);
   // GO events load asynchronously; repaint the card once they arrive
-  (async function wait(){ for(let i=0;i<40;i++){ await new Promise(r=>setTimeout(r,500)); if(GO_EVENTS&&GO_EVENTS.length&&GO_EVENTS!==SAMPLE_GO_EVENTS){ renderTodayEvent(); return; } } renderTodayEvent(); })();
+  (async function wait(){ for(let i=0;i<40;i++){ await new Promise(r=>setTimeout(r,500)); if(GO_EVENTS&&GO_EVENTS.length&&GO_EVENTS!==SAMPLE_GO_EVENTS){ renderTodayEvent(); renderTodayCD(); return; } } renderTodayEvent(); renderTodayCD(); })();
 })();
 
 
