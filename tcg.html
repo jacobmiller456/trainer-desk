@@ -938,10 +938,11 @@ function pumpPrices(){
 function applyCachedPrice(c){ // re-apply prices looked up in the last 6h to a card restored from the session cache
   const p=priceGet(c.id); return {...c,price:p||null,priceState:p===null?undefined:(p?"ok":"none")};
 }
-const PRICE_TTL=6*3600e3; // card prices move slowly; keep lookups for 6h across visits
+const PRICE_TTL=6*3600e3, PRICE_NONE_TTL=30*60e3; // card prices move slowly; keep lookups for 6h across visits
 function priceGet(id){
   const m=tcgMem.get("p-"+id); if(m!==undefined) return m;
-  try{ const v=JSON.parse(localStorage.getItem("td-pc1-"+id)||"null"); if(v&&Date.now()-v.t<PRICE_TTL){ tcgMem.set("p-"+id,v.p); return v.p; } }catch(e){}
+  // a found price is kept 6h; "no price listed" only 30 min, so a temporary gap at the source doesn't stick around
+  try{ const v=JSON.parse(localStorage.getItem("td-pc1-"+id)||"null"); if(v&&Date.now()-v.t<(v.p?PRICE_TTL:PRICE_NONE_TTL)){ tcgMem.set("p-"+id,v.p); return v.p; } }catch(e){}
   return null; // null = never looked up; 0 = looked up, no price listed
 }
 function priceSet(id,p){
