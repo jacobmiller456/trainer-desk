@@ -44,10 +44,10 @@ Searchable species list backed by [PokéAPI](https://pokeapi.co) (`pokeapi.co/ap
 - **Lazy:** nothing is fetched until the Pokédex tab is first opened. PokéAPI asks clients to cache, which is why the list and details are cached as above.
 - **Offline:** if the API is unreachable, 5 hand-entered species (Bulbasaur, Charmander, Squirtle, Pikachu, Eevee) render so the tab is never blank; re-opening the tab retries the live API.
 - **Names:** display names come from slugs via `prettyName()`, with `DEX_NAME_OVERRIDES` / `DEX_HYPHEN_KEEP` for the awkward ones (Mr. Mime, Ho-Oh, Type: Null…). Add entries there if you spot a mangled name.
-- **Not imported on purpose:** Pokédex flavor-text entries (that's the games' own prose — write your own if you want descriptions) and sprites (see below).
+- **Flavor text:** not shown in the Pokédex tab (it is the games' own prose). The one exception, approved by the site owner in Oct 2026, is the Today tab's Pokémon of the day (see Today above).
 
 ### Today (landing view)
-First tab and the default view: the live or next GO event with countdown (from the same ScrapedDuck data as the GO tab), a deterministic Pokémon of the day (`(dayIndex*7919)%1025+1`, one `pokemon/{id}` request through `loadDexDetail`, offline falls back to `DEX_SAMPLE`), the next entry in `UPCOMING_SETS` (latest one if none are in the future), and a card promoting the Arena. Buttons jump to the other tabs; "View in Pokédex" pre-fills the Pokédex search. The Pokédex species *list* is still lazy (only fetched when that tab opens).
+First tab and the default view: the live or next GO event with countdown (from the same ScrapedDuck data as the GO tab), a deterministic Pokémon of the day (`(dayIndex*7919)%1025+1`, one `pokemon/{id}` request through `loadDexDetail`, offline falls back to `DEX_SAMPLE`), the species' category and the latest English Pokédex entry (`pokemon-species/{id}`, soft hyphens joined, breaks collapsed, credited with the game version and "via PokéAPI"; cached in `sessionStorage`; switch: `SHOW_FLAVOR_TEXT`), the next entry in `UPCOMING_SETS` (latest one if none are in the future), and a card promoting the Arena. Buttons jump to the other tabs; "View in Pokédex" pre-fills the Pokédex search. The Pokédex species *list* is still lazy (only fetched when that tab opens).
 
 ### Pixel Arena
 Solo battle-royale minigame on a `<canvas>` (single page, no backend). Pick a fighter from a 24-species roster (`ROSTER`) and an arena, then outlast 11 computer-controlled rivals while a red zone shrinks; the last one standing wins.

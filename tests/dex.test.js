@@ -36,7 +36,7 @@ async function run(mode) {
     const u = route.request().url();
     if (u.startsWith('file://') ) return route.continue();
     if (mode === 'mock' && u.startsWith('https://pokeapi.co/api/v2/')) {
-      pokeapiHits++; if (u.includes('/pokemon-species')) speciesHits++;
+      pokeapiHits++; if (u.includes('/pokemon-species?')) speciesHits++;
       const p = u.replace('https://pokeapi.co/api/v2/', '');
       const cors = { 'access-control-allow-origin': '*' };
       if (p === 'pokemon-species?limit=1') return route.fulfill({ status:200, headers:cors, contentType:'application/json', body: JSON.stringify({count: SPECIES.length, results:[]}) });

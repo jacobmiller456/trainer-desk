@@ -332,6 +332,8 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   border:3px solid var(--forest-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); box-shadow:2px 2px 0 rgba(0,0,0,0.3);
 }
 .today-btn:focus-visible{ outline:3px solid var(--forest); outline-offset:2px; }
+.today-flavor{ margin:0; padding:10px 12px; border-left:4px solid var(--gold-dark); background:var(--parchment-2); font-family:var(--font-retro); font-size:18px; line-height:1.25; color:var(--ink); }
+.today-flavor cite{ display:block; margin-top:6px; font-size:14px; font-style:normal; color:var(--ink-soft); }
 .today-label{ font-family:var(--font-pixel); font-size:10px; color:var(--forest); letter-spacing:0.5px; }
 </style>
 </head>
@@ -1008,6 +1010,7 @@ setInterval(loadTournaments, 15*60000);
    ============================================================ */
 const POKEAPI="https://pokeapi.co/api/v2";
 const SHOW_SPRITES=true; // true = hotlink PokéAPI's sprite repo (official game art; see README). false = original monogram tiles
+const SHOW_FLAVOR_TEXT=true; // owner-approved (Oct 2026): Today shows the game's own Pokédex entry for the Pokémon of the day, fetched live from PokéAPI and credited (never stored in the repo). false = hide it
 const SPRITE_URL=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
 
 const GEN_RANGES=[
@@ -1256,12 +1259,30 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   }
 
   function dayIndex(){ const d=new Date(); return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5); }
+  // Pokédex entry for the Pokémon of the day: latest English game entry + category, live from PokéAPI, cached per session.
+  async function loadSpeciesText(id){
+    const key="td-flavor-v1-"+id;
+    try{ const c=sessionStorage.getItem(key); if(c) return JSON.parse(c); }catch(e){}
+    const j=await getJSON(`${POKEAPI}/pokemon-species/${id}`);
+    const en=(j.flavor_text_entries||[]).filter(x=>x.language&&x.language.name==="en");
+    const last=en[en.length-1];
+    const genus=((j.genera||[]).find(x=>x.language&&x.language.name==="en")||{}).genus||"";
+    const out={
+      genus,
+      text:last?String(last.flavor_text).replace(/\u00ad\n?/g,"").replace(/[\f\n\r]+/g," ").replace(/\s+/g," ").trim():"", // soft hyphens join split words; line/page breaks become spaces
+      version:last&&last.version?last.version.name:""
+    };
+    try{ sessionStorage.setItem(key,JSON.stringify(out)); }catch(e){}
+    return out;
+  }
   async function renderPotd(){
     const el=$("today-potd"), day=dayIndex();
     el.innerHTML='<div class="today-label">▸ POKÉMON OF THE DAY</div><div class="today-meta">Loading…</div>';
-    let d;
-    try{ d=await loadDexDetail((day*7919)%1025+1); }
-    catch(e){ d=DEX_SAMPLE[day%DEX_SAMPLE.length]; } // offline: rotate through the built-in species
+    const pid=(day*7919)%1025+1;
+    let d, sp=null;
+    const [dr,sr]=await Promise.allSettled([loadDexDetail(pid),SHOW_FLAVOR_TEXT?loadSpeciesText(pid):Promise.resolve(null)]);
+    if(dr.status==="fulfilled"){ d=dr.value; if(sr.status==="fulfilled") sp=sr.value; }
+    else d=DEX_SAMPLE[day%DEX_SAMPLE.length]; // offline: rotate through the built-in species (no entry text)
     const bst=d.stats.reduce((n,s)=>n+s[1],0), name=prettyName(d.name);
     const art=SHOW_SPRITES
       ? `<img src="${SPRITE_URL(d.id)}" alt="${esc(name)}" onerror="this.outerHTML='<span class=&quot;mono&quot; aria-hidden=&quot;true&quot; style=&quot;background:${DEX_TYPE_COLORS[d.types[0]]||"#888"}&quot;>${esc(name.charAt(0))}</span>'">`
@@ -1269,10 +1290,11 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     el.innerHTML=`<div class="today-label">▸ POKÉMON OF THE DAY</div>
       <div class="today-potd">${art}<div>
         <h3>${esc(name)}</h3>
-        <div class="today-meta">#${String(d.id).padStart(3,"0")}</div>
+        <div class="today-meta">#${String(d.id).padStart(3,"0")}${sp&&sp.genus?" · "+esc(sp.genus):""}</div>
         <div class="today-types">${d.types.map(t=>`<span style="background:${DEX_TYPE_COLORS[t]||"#888"}">${esc(t)}</span>`).join("")}</div>
         <div class="today-meta">Base stat total ${bst}</div>
       </div></div>
+      ${sp&&sp.text?`<blockquote class="today-flavor">“${esc(sp.text)}”<cite>— Pokédex entry${sp.version?", Pokémon "+esc(prettyName(sp.version)):""} · via PokéAPI</cite></blockquote>`:""}
       <button type="button" class="today-btn" id="today-potd-btn">VIEW IN POKÉDEX</button>`;
     $("today-potd-btn").addEventListener("click",()=>{
       const box=document.getElementById("dex-search");

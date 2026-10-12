@@ -26,7 +26,7 @@ Most visitors are on phones. `tests/mobile.test.js` (part of `npm test`, and run
 - Do not remove `const API=...` (it was once dropped by a bad edit; `tests/tcg.test.js` guards it). After any edit run `npm test`.
 
 ## Legal guardrails (do not relax without asking the owner)
-- Facts only. No Pokédex flavor text, no copied descriptions.
+- Facts only; no copied descriptions. One owner-approved exception (Oct 2026): the Today tab's Pokémon of the day shows the game's own Pokédex entry, fetched live from PokéAPI at view time (`SHOW_FLAVOR_TEXT`), credited, never stored in the repo. Do not extend flavor text to other places without asking the owner.
 - Card images are hotlinked from pokemontcg.io (or TCGdex's `assets.tcgdex.net` in backup mode), never rehosted. Sprites are hotlinked from PokéAPI's sprite repo (`SHOW_SPRITES=true`, owner's decision) in both the Pokédex and the Pixel Arena minigame, which respects the same flag; never copy sprite files into the repo. The Arena stays free: no ads, no purchases, no prizes. `assets/arena` (generated backgrounds, CC0 effect images) may live in the repo; Pokémon sprites and card art may not.
 - Keep the "unofficial fan project" footer and attributions.
 - No ads, merch, paywalls, or "Pokémon" in domain/business names.

@@ -16,3 +16,7 @@ by the site owner (backgrounds only: no creatures, trainers, text or logos), cen
 
 Never stored in this repository. The Pokédex, Today and Arena tabs hotlink them from PokéAPI's sprite repository (see `SHOW_SPRITES` in `index.html`).
 They belong to their respective owners.
+
+## Pokédex entry text
+
+The Today tab shows the games' own Pokédex entry for the Pokémon of the day. It is fetched live from PokéAPI when the page loads, credited on screen, and never stored in this repository. The text belongs to its owners (Nintendo, Game Freak, Creatures Inc., The Pokémon Company). Set `SHOW_FLAVOR_TEXT=false` in `index.html` to hide it.

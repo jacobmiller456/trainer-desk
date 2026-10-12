@@ -15,6 +15,13 @@ async function run(mode) {
   await page.route('**/*', r => {
     const u = r.request().url(); const m = u.match(/^https:\/\/pokeapi\.co\/api\/v2\/pokemon\/(\d+)$/);
     if (u.startsWith('file://')) return r.continue();
+    const sp = u.match(/^https:\/\/pokeapi\.co\/api\/v2\/pokemon-species\/(\d+)$/);
+    if (mode === 'mock' && sp) return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({
+      genera: [{ genus: 'Wateroid', language: { name: 'en' } }, { genus: 'x', language: { name: 'fr' } }],
+      flavor_text_entries: [
+        { flavor_text: 'Old entry.', language: { name: 'en' }, version: { name: 'red' } },
+        { flavor_text: 'Latest entry with a soft\u00ad\nhyphen\nand a break\fNext sentence.', language: { name: 'en' }, version: { name: 'scarlet' } },
+        { flavor_text: 'Entrée française.', language: { name: 'fr' }, version: { name: 'x' } }] }) });
     if (mode === 'mock' && m) return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify(MON(+m[1])) });
     return r.abort();
   });
@@ -25,6 +32,10 @@ async function run(mode) {
   check(`${mode}: GO event card filled`, /GO|HAPPENING|NEXT/.test(await t('today-event')) && (await t('today-event')).length > 20);
   const potd = await t('today-potd');
   check(`${mode}: Pokémon of the day shown`, /POKÉMON OF THE DAY/.test(potd) && /Base stat total/.test(potd) && (mode !== 'mock' || /Testmon/.test(potd)), potd.slice(0, 120));
+  if (mode === 'mock') {
+    check('mock: Pokédex entry shown (latest English, cleaned, credited)', /“Latest entry with a softhyphen and a break Next sentence\.”/.test(potd) && /Pokémon Scarlet/.test(potd) && /via PokéAPI/.test(potd) && /Wateroid/.test(potd), potd);
+    check('mock: older and non-English entries ignored', !/Old entry|Entrée/.test(potd));
+  } else check('offline: no entry text, card still fine', !/Pokédex entry/.test(potd));
   check(`${mode}: next TCG set shown`, /TCG SET/.test(await t('today-set')));
   check(`${mode}: sprite falls back to a letter disc when the image fails`, (await page.$$eval('#today-potd .mono', n => n.length)) === 1 || (await page.$$eval('#today-potd img', n => n.length)) === 1);
   // buttons navigate
