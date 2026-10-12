@@ -49,11 +49,5 @@
         }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/(go|tcg|pokedex|arena)",
-      "destination": "/index.html"
-    }
   ]
 }

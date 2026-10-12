@@ -1,0 +1,2218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- GENERATED from index.html by scripts/tab-pages.mjs. Edit index.html, then run: npm run pages -->
+<meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S7NHPZKHJQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  // Consent Mode: no analytics cookies until the visitor accepts (see cookie banner below).
+  gtag('consent', 'default', { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+  try { if (localStorage.getItem('td-cookie-consent') === 'granted') gtag('consent', 'update', { analytics_storage: 'granted' }); } catch (e) {}
+  gtag('js', new Date());
+
+  gtag('config', 'G-S7NHPZKHJQ');
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Arena: Free Pokémon Battle Royale Mini-Game | Trainer Desk</title>
+<meta name="description" content="Pick a Pokémon and survive a shrinking zone against 11 rivals in this free pixel-art battle royale mini-game. Type matchups and base stats decide the fight.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://www.trainerdesk.net/arena">
+<meta name="theme-color" content="#1B4332">
+<meta name="application-name" content="Trainer Desk">
+<meta name="apple-mobile-web-app-title" content="Trainer Desk">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Trainer Desk">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://www.trainerdesk.net/arena">
+<meta property="og:title" content="Pixel Arena: Free Pokémon Battle Royale Mini-Game | Trainer Desk">
+<meta property="og:description" content="Pick a Pokémon and survive a shrinking zone against 11 rivals in this free pixel-art battle royale mini-game. Type matchups and base stats decide the fight.">
+<meta property="og:image" content="https://www.trainerdesk.net/assets/og-arena.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Pixel Arena: Free Pokémon Battle Royale Mini-Game | Trainer Desk">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pixel Arena: Free Pokémon Battle Royale Mini-Game | Trainer Desk">
+<meta name="twitter:description" content="Pick a Pokémon and survive a shrinking zone against 11 rivals in this free pixel-art battle royale mini-game. Type matchups and base stats decide the fight.">
+<meta name="twitter:image" content="https://www.trainerdesk.net/assets/og-arena.jpg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebSite", "@id": "https://www.trainerdesk.net/#website", "url": "https://www.trainerdesk.net/", "name": "Trainer Desk", "inLanguage": "en", "description": "Free, unofficial Pokémon fan hub: GO event and Community Day countdowns, TCG card prices with a digital binder, a searchable Pokédex and a pixel battle mini-game."}, {"@type": "WebApplication", "@id": "https://www.trainerdesk.net/#app", "name": "Trainer Desk", "url": "https://www.trainerdesk.net/", "applicationCategory": "GameApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "featureList": ["Pokémon GO event and Community Day countdowns", "Pokémon TCG set browser with card prices", "Digital card binder saved in your browser", "Searchable Pokédex with base stats", "Pixel Arena battle royale mini-game"]}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+
+:root{
+  --forest-dark:#1B4332;
+  --forest:#2D6A4F;
+  --forest-light:#40916C;
+  --meadow:#74C69D;
+  --parchment:#FDF6E3;
+  --parchment-2:#F3ECD2;
+  --ink:#1B2E1F;
+  --ink-soft:rgba(27,46,31,0.62);
+  --gold:#FFC94A;
+  --gold-dark:#D89A1F;
+  --hp-green:#4CD964;
+  --hp-yellow:#FFD43B;
+  --hp-red:#FF5C5C;
+  --border:#1B4332;
+
+  --font-pixel:'Press Start 2P',monospace;
+  --font-retro:'VT323',monospace;
+  --font-body:'Inter',sans-serif;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(116,198,157,0.25), transparent 60%),
+    linear-gradient(180deg, var(--forest-dark), var(--forest) 55%, var(--forest-light));
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:var(--font-body);
+  line-height:1.5;
+  min-height:100vh;
+}
+a{color:inherit;text-decoration:none;}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(16px,4vw,36px);}
+
+/* ---- pixel box (GBA dialogue-box style: double border, hard corners) ---- */
+.pixel-box{
+  background:var(--parchment);
+  border:3px solid var(--border);
+  box-shadow: inset 0 0 0 2px var(--parchment-2), 4px 4px 0 rgba(0,0,0,0.25);
+  border-radius:4px;
+}
+
+/* ---- header ---- */
+header{
+  background:var(--forest-dark);
+  border-bottom:4px solid var(--gold-dark);
+  position:sticky; top:0; z-index:20;
+}
+header .wrap{display:flex; align-items:center; justify-content:space-between; min-height:70px; padding-top:8px; padding-bottom:8px; gap:12px; flex-wrap:wrap;}
+.logo{
+  font-family:var(--font-pixel); font-size:13px; color:var(--parchment);
+  display:flex; align-items:center; gap:10px; letter-spacing:0.5px;
+}
+.logo .mark{
+  width:30px; height:30px; background:var(--gold);
+  border:3px solid var(--parchment); border-radius:50%;
+  display:grid; place-items:center; font-size:13px; color:var(--forest-dark);
+  box-shadow: 0 0 0 3px var(--forest-dark);
+}
+.tabs{ display:flex; gap:6px; }
+.tab{
+  font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px;
+  padding:10px 14px; min-height:44px; display:inline-flex; align-items:center; justify-content:center;
+  background:var(--forest); color:var(--meadow);
+  border:3px solid var(--forest-dark); border-radius:4px; cursor:pointer;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  transition: transform .1s;
+}
+.tab:hover{ transform: translateY(-1px); }
+.tab.active{ background:var(--gold); color:var(--forest-dark); border-color:var(--gold-dark); }
+
+/* ---- views ---- */
+.view{ display:none; padding:32px 0 70px; }
+.view.active{ display:block; }
+.view-head{ margin-bottom:24px; }
+.view-head h1{
+  font-family:var(--font-pixel); font-size:clamp(15px,2.6vw,20px); color:var(--parchment);
+  margin:0 0 12px; line-height:1.6; text-shadow: 2px 2px 0 rgba(0,0,0,0.35);
+}
+.view-head p{ margin:0; color:var(--meadow); font-size:15.5px; max-width:60ch; font-family:var(--font-retro); }
+
+.sec-label{
+  font-family:var(--font-pixel); font-size:10.5px; color:var(--gold);
+  margin:28px 0 14px; display:flex; align-items:center; gap:10px;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+}
+.sec-label::after{ content:""; flex:1; height:3px; background:var(--forest-dark); border-radius:2px; }
+
+/* ---- event cards ---- */
+.ev-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+.ev{ padding:16px; position:relative; }
+.ev-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px; }
+.ev-type{
+  font-family:var(--font-retro); font-size:13px; letter-spacing:0.04em; text-transform:uppercase;
+  padding:3px 10px; border-radius:20px; font-weight:700; border:2px solid var(--type-c,var(--forest));
+  color:var(--type-c,var(--forest)); background:var(--type-bg,transparent);
+}
+.ev-live{ font-family:var(--font-retro); font-size:14px; color:var(--hp-red); display:flex; align-items:center; gap:6px; font-weight:700; }
+.ev-live .dot{ width:8px; height:8px; border-radius:50%; background:var(--hp-red); animation:blink 1.2s infinite; }
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.ev h3{ margin:0 0 6px; font-size:17px; font-weight:800; color:var(--ink); font-family:var(--font-body); }
+.ev .desc{ color:var(--ink-soft); font-size:13.5px; margin-bottom:12px; }
+.ev .when{
+  font-family:var(--font-retro); font-size:15px; color:var(--ink-soft);
+  padding-top:10px; border-top:2px dashed var(--forest-light);
+  display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;
+}
+.ev .cd{ color:var(--forest-dark); font-weight:700; }
+
+/* ---- TCG controls ---- */
+.set-value{ font-family:var(--font-retro); font-size:18px; color:var(--gold); margin:-8px 0 18px; min-height:1.3em; }
+.tcg-controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:22px; }
+select,input[type=text]{
+  background:var(--parchment); border:3px solid var(--forest-dark); color:var(--ink);
+  padding:10px 13px; border-radius:4px; font-family:var(--font-retro); font-size:16px; min-width:200px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.25);
+}
+select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
+.status{ font-family:var(--font-retro); font-size:15px; color:var(--parchment); }
+
+.card-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:16px; }
+.tcard{ perspective:900px; cursor:pointer; transition:.15s; -webkit-tap-highlight-color:transparent; }
+.tcard:hover{ transform:translateY(-3px); }
+.tcard:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; border-radius:4px; }
+.tflip{ position:relative; -webkit-transform-style:preserve-3d; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.4,.2,.2,1); }
+.tcard.flipped .tflip{ transform:rotateY(180deg); }
+.tface{ backface-visibility:hidden; -webkit-backface-visibility:hidden; overflow:hidden; }
+.tfront{ -webkit-transform:rotateY(0deg); transform:rotateY(0deg); } /* iOS Safari: a hidden-backface face needs its own transform or it may not paint */
+.tback{ position:absolute; inset:0; transform:rotateY(180deg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center; padding:12px;
+  background:linear-gradient(160deg,var(--parchment),var(--parchment-2)); }
+.tb-name{ font-size:13.5px; font-weight:800; color:var(--ink); }
+.tb-body{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+.tb-price{ font-family:var(--font-retro); font-size:34px; line-height:1; color:var(--forest-dark); }
+.tb-src{ font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
+.tb-date{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
+.tb-hint{ font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); }
+.tcard .imgwrap{ position:relative; aspect-ratio:245/342; background:var(--parchment-2); display:grid; place-items:center; overflow:hidden; border-bottom:3px solid var(--forest-dark); }
+.tcard .imgwrap img{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; }
+@supports not (aspect-ratio:1/1){ /* older iPhones: keep the card shape with the padding trick */
+  .tcard .imgwrap{ height:0; padding-top:139.6%; }
+  .tcard .imgwrap > svg{ position:absolute; inset:0; width:100%; height:100%; }
+}
+.tcard .ph{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); padding:10px; text-align:center; }
+.tcard .meta{ padding:10px 11px; }
+.tcard .nm{ font-size:13.5px; font-weight:800; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink); }
+.tcard .sub{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); display:flex; justify-content:space-between; gap:6px; }
+
+.tourney-row{
+  display:grid; grid-template-columns:1fr auto auto auto; align-items:center; gap:14px;
+  padding:12px 16px; margin-bottom:8px;
+}
+.tourney-name{ font-weight:700; font-size:14.5px; color:var(--ink); }
+.tourney-format{
+  font-family:var(--font-retro); font-size:13px; padding:2px 10px; border-radius:20px;
+  border:2px solid var(--forest); color:var(--forest); white-space:nowrap;
+}
+.tourney-date, .tourney-players{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); white-space:nowrap; }
+.tourney-link{ font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); text-decoration:underline; white-space:nowrap; display:inline-flex; align-items:center; min-height:44px; }
+@media(max-width:700px){ .tourney-row{ grid-template-columns:1fr; gap:4px; } }
+
+.region-badge{
+  font-family:var(--font-retro); font-size:13px; padding:2px 9px; border-radius:20px;
+  font-weight:700; letter-spacing:0.04em;
+}
+.region-en{ background:rgba(25,113,194,0.14); color:#1971C2; }
+.region-jp{ background:rgba(217,72,15,0.14); color:#D9480F; }
+
+.empty{ padding:44px 20px; text-align:center; color:var(--parchment); font-family:var(--font-retro); font-size:16px; border:3px dashed var(--gold); border-radius:6px; }
+
+.note{
+  padding:15px 17px; margin-top:26px; font-size:13.5px; color:var(--ink-soft);
+  border-left:5px solid var(--gold-dark);
+}
+.note b{ color:var(--ink); font-weight:700; }
+.note code{ background:var(--parchment-2); padding:1px 5px; border-radius:3px; font-family:var(--font-retro); font-size:14px; }
+
+footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); padding:22px 0; font-size:11.5px; color:var(--meadow); line-height:1.7; font-family:var(--font-retro); font-size:14px; }
+
+/* ---- Pokédex ---- */
+.dex-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; }
+.dex-tile{
+  display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 8px 10px;
+  cursor:pointer; font:inherit; color:var(--ink); text-align:center; transition:.12s;
+}
+.dex-tile:hover{ transform:translateY(-2px); border-color:var(--gold-dark); }
+.dex-tile[aria-pressed="true"]{ border-color:var(--gold-dark); background:#FFF3C4; }
+.dex-num{ font-family:var(--font-retro); font-size:15px; color:var(--ink-soft); }
+.dex-name{ font-weight:700; font-size:13px; line-height:1.25; word-break:break-word; }
+.dex-mono{
+  width:44px; height:44px; border-radius:50%; display:grid; place-items:center;
+  background:var(--forest-light); color:var(--parchment); font-family:var(--font-pixel); font-size:14px;
+  border:3px solid var(--forest-dark);
+}
+.dex-sprite{ width:64px; height:64px; image-rendering:pixelated; object-fit:contain; }
+.dex-detail{ padding:18px; margin-bottom:22px; display:none; }
+.dex-detail.open{ display:block; }
+.dex-detail-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+.dex-detail h2{ margin:0; font-size:22px; font-weight:800; }
+.dex-detail .dex-num{ font-size:18px; }
+.dex-close{
+  font-family:var(--font-pixel); font-size:10px; padding:8px 10px; background:var(--forest); color:var(--parchment);
+  border:3px solid var(--forest-dark); border-radius:4px; cursor:pointer;
+}
+.dex-types{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.dex-type{ font-family:var(--font-retro); font-size:15px; text-transform:uppercase; padding:1px 12px; border-radius:20px; letter-spacing:0.04em; }
+.dex-cols{ display:grid; grid-template-columns:1fr 1.4fr; gap:22px; }
+@media(max-width:700px){ .dex-cols{ grid-template-columns:1fr; } }
+.dex-facts{ font-family:var(--font-retro); font-size:17px; line-height:1.5; }
+.dex-facts dt{ color:var(--ink-soft); float:left; clear:left; width:110px; }
+.dex-facts dd{ margin:0 0 4px 110px; }
+.dex-ability-hidden{ color:var(--ink-soft); font-size:14px; }
+.dex-stat{ display:grid; grid-template-columns:62px 38px 1fr; align-items:center; gap:8px; font-family:var(--font-retro); font-size:17px; padding:2px 0; }
+.dex-stat-k{ color:var(--ink-soft); }
+.dex-stat-bar{ height:10px; background:var(--parchment-2); border:2px solid var(--forest-dark); border-radius:3px; overflow:hidden; }
+.dex-stat-bar div{ height:100%; }
+.dex-total{ font-family:var(--font-retro); font-size:17px; margin-top:6px; padding-top:6px; border-top:2px dashed var(--forest-light); }
+
+/* HP-style progress accents for type icons on GO cards */
+.type-raid{ --type-c:#D9480F; --type-bg:rgba(217,72,15,0.1); }
+.type-community{ --type-c:#D89A1F; --type-bg:rgba(216,154,31,0.12); }
+.type-spotlight{ --type-c:#1971C2; --type-bg:rgba(25,113,194,0.1); }
+.type-research{ --type-c:#7048E8; --type-bg:rgba(112,72,232,0.1); }
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important;}}
+
+/* ---- cookie banner ---- */
+.cookie-banner{
+  position:fixed; left:0; right:0; bottom:0; z-index:50;
+  background:var(--parchment); color:var(--ink);
+  border-top:4px solid var(--gold-dark); box-shadow:0 -4px 0 rgba(0,0,0,0.25);
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+}
+.cookie-banner[hidden]{ display:none; }
+.cookie-inner{ max-width:960px; margin:0 auto; display:flex; gap:12px 20px; align-items:center; flex-wrap:wrap; }
+.cookie-inner p{ margin:0; flex:1 1 280px; font-size:14px; line-height:1.45; }
+.cookie-inner a{ color:var(--forest-dark); text-decoration:underline; }
+.cookie-actions{ display:flex; gap:8px; flex:0 0 auto; }
+.cookie-btn{
+  font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px;
+  min-height:44px; min-width:44px; padding:10px 16px; cursor:pointer;
+  border:3px solid var(--forest-dark); border-radius:4px;
+  background:var(--parchment-2); color:var(--forest-dark); box-shadow:2px 2px 0 rgba(0,0,0,0.3);
+}
+.cookie-btn.primary{ background:var(--gold); border-color:var(--gold-dark); }
+.cookie-btn:focus-visible{ outline:3px solid var(--forest); outline-offset:2px; }
+.link-btn{
+  background:none; border:0; padding:0; font:inherit; color:inherit; text-decoration:underline; cursor:pointer;
+  min-height:44px; display:inline-flex; align-items:center;
+}
+@media(max-width:480px){ .cookie-actions{ width:100%; } .cookie-btn{ flex:1; } }
+
+/* ---- tab labels: short on phones so four tabs fit ---- */
+.tab .short{ display:none; }
+@media(max-width:700px){ .tab .full{ display:none; } .tab .short{ display:inline; } .tab{ padding:10px 8px; min-width:44px; } .tabs{ gap:4px; } }
+@media(max-width:400px){ .tab{ padding:10px 4px; } }
+
+/* ---- pixel arena ---- */
+.arena-controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; }
+.arena-field{ display:flex; flex-direction:column; gap:6px; font-family:var(--font-retro); font-size:16px; color:var(--parchment); }
+.arena-field select{ min-width:0; width:100%; min-height:44px; }
+.arena-btn{
+  font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px; min-height:44px; min-width:44px; padding:10px 18px; cursor:pointer;
+  border:3px solid var(--gold-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); box-shadow:2px 2px 0 rgba(0,0,0,0.3);
+}
+.arena-btn:disabled{ opacity:.6; cursor:default; }
+.arena-btn:focus-visible{ outline:3px solid var(--parchment); outline-offset:2px; }
+.arena-wrap{ position:relative; width:100%; max-width:480px; margin:0 auto; }
+#arena-canvas{ display:block; width:100%; height:auto; aspect-ratio:1/1; image-rendering:pixelated; touch-action:none; border:4px solid var(--border); border-radius:4px; box-shadow:4px 4px 0 rgba(0,0,0,0.25); background:#2D6A4F; }
+.arena-overlay{
+  position:absolute; inset:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:20px; text-align:center;
+  background:rgba(27,67,50,0.82); color:var(--parchment); font-family:var(--font-retro); font-size:20px; line-height:1.3; border-radius:2px;
+}
+.arena-overlay[hidden]{ display:none; }
+.arena-btn img{ vertical-align:middle; margin-right:6px; image-rendering:pixelated; }
+#arena-skip{ display:block; margin:8px auto 0; }
+#arena-skip[hidden]{ display:none; }
+.podium{ display:flex; align-items:flex-end; justify-content:center; gap:8px; width:100%; }
+.podium:empty{ display:none; }
+.pod{ display:flex; flex-direction:column; align-items:center; width:30%; max-width:96px; min-width:0; }
+.pod > img, .pod .mono{ width:48px; height:48px; image-rendering:pixelated; }
+.pod .mono{ display:grid; place-items:center; font-family:var(--font-pixel); font-size:16px; color:#fff; border:3px solid var(--forest-dark); border-radius:4px; }
+.pod-name{ font-family:var(--font-retro); font-size:14px; line-height:1.1; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:3px; }
+.pod-block{ width:100%; background:var(--gold); color:var(--forest-dark); border:3px solid var(--forest-dark); font-family:var(--font-pixel); font-size:10px; display:flex; flex-direction:column; align-items:center; padding-top:4px; gap:2px; }
+.pod-1 .pod-block{ height:58px; } .pod-2 .pod-block{ height:42px; background:#d9dfd9; } .pod-3 .pod-block{ height:30px; background:#d89a5a; }
+.pod.you .pod-name{ color:var(--gold); }
+.pod .medal{ width:22px; height:22px; }
+@media(max-width:400px){ .arena-overlay{ font-size:17px; gap:8px; padding:12px; } }
+
+.arena-overlay p{ margin:0; }
+.arena-hud{ max-width:480px; margin:10px auto 0; font-family:var(--font-retro); font-size:18px; color:var(--parchment); min-height:1.4em; }
+
+/* ---- today ---- */
+.today-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+.today-grid .ev{ display:flex; flex-direction:column; gap:10px; }
+.today-grid .ev h3{ margin:0; }
+.today-potd{ display:flex; gap:14px; align-items:center; }
+.today-potd img{ width:96px; height:96px; image-rendering:pixelated; flex:0 0 auto; background:var(--parchment-2); border:3px solid var(--forest-dark); border-radius:4px; }
+.today-potd .mono{ width:96px; height:96px; flex:0 0 auto; display:grid; place-items:center; font-family:var(--font-pixel); font-size:28px; color:#fff; border:3px solid var(--forest-dark); border-radius:4px; }
+.today-types{ display:flex; gap:6px; flex-wrap:wrap; margin:4px 0; }
+.today-types span{ font-family:var(--font-retro); font-size:14px; color:#fff; padding:1px 9px; border-radius:3px; text-transform:capitalize; }
+.today-meta{ font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
+.today-btn{
+  align-self:flex-start; font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px; min-height:44px; min-width:44px; padding:10px 14px; cursor:pointer; margin-top:auto;
+  border:3px solid var(--forest-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); box-shadow:2px 2px 0 rgba(0,0,0,0.3);
+}
+.today-btn:focus-visible{ outline:3px solid var(--forest); outline-offset:2px; }
+.today-flavor{ margin:0; padding:10px 12px; border-left:4px solid var(--gold-dark); background:var(--parchment-2); font-family:var(--font-retro); font-size:18px; line-height:1.25; color:var(--ink); }
+.today-flavor cite{ display:block; margin-top:6px; font-size:14px; font-style:normal; color:var(--ink-soft); }
+.today-label{ font-family:var(--font-pixel); font-size:10px; color:var(--forest); letter-spacing:0.5px; }
+
+/* ---- community day ---- */
+.cd-card{ display:flex; flex-direction:column; gap:12px; }
+.cd-card h3{ margin:0; }
+.cd-mons{ display:flex; flex-wrap:wrap; gap:10px; }
+.cd-mon{ display:flex; align-items:center; gap:8px; background:var(--parchment-2); border:3px solid var(--forest-dark); border-radius:4px; padding:4px 10px 4px 4px; }
+.cd-mon img, .cd-mon .mono{ width:48px; height:48px; image-rendering:pixelated; flex:0 0 auto; }
+.cd-mon .mono{ display:grid; place-items:center; font-family:var(--font-pixel); font-size:16px; color:#fff; background:var(--forest); border-radius:3px; }
+.cd-mon b{ font-family:var(--font-body); font-size:15px; color:var(--ink); }
+.cd-mon small{ display:block; font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); }
+.cd-sub{ font-family:var(--font-pixel); font-size:10px; color:var(--forest); letter-spacing:0.5px; }
+.cd-bonuses{ margin:0; padding-left:20px; columns:2 220px; column-gap:20px; font-size:14px; color:var(--ink); }
+.cd-bonuses li{ margin:0 0 4px; break-inside:avoid; }
+.cd-note, .cd-meta{ margin:0; font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
+.cd-link{ align-self:flex-start; display:inline-flex; align-items:center; min-height:44px; padding:0 14px; font-family:var(--font-pixel); font-size:10px; color:var(--forest-dark); background:var(--gold); border:3px solid var(--forest-dark); border-radius:4px; text-decoration:none; box-shadow:2px 2px 0 rgba(0,0,0,0.3); }
+.cd-next{ margin-top:12px; font-family:var(--font-retro); font-size:17px; color:var(--parchment); }
+.cd-next ul{ margin:4px 0 0; padding-left:20px; }
+
+/* ---- tcg view toggle + binder ---- */
+.seg{ display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
+.seg-btn{ font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px; min-height:44px; padding:10px 14px; cursor:pointer; border:3px solid var(--forest-dark); border-radius:4px; background:var(--forest); color:var(--meadow); box-shadow:2px 2px 0 rgba(0,0,0,0.3); }
+.seg-btn[aria-pressed="true"]{ background:var(--gold); color:var(--forest-dark); border-color:var(--gold-dark); }
+.arena-btn.alt{ background:var(--parchment); border-color:var(--forest-dark); }
+.tb-add{ font-family:var(--font-pixel); font-size:10px; min-height:44px; padding:8px 10px; cursor:pointer; border:3px solid var(--forest-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); }
+.tb-add.in{ background:var(--meadow); }
+.binder-bar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:12px; }
+.binder-bar select{ flex:1 1 200px; min-height:44px; }
+.binder-actions{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.binder-name-form{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.binder-name-form input{ flex:1 1 180px; min-height:44px; min-width:0; }
+.binder-stats{ font-family:var(--font-retro); font-size:18px; color:var(--gold); margin-bottom:6px; }
+.binder-sets{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.binder-set{ font-family:var(--font-retro); font-size:15px; color:var(--parchment); background:rgba(0,0,0,0.25); padding:2px 8px; border-radius:3px; }
+.binder-book{ background:linear-gradient(135deg,#243b2f,#1b2e24); border:4px solid var(--border); border-radius:8px; box-shadow:4px 4px 0 rgba(0,0,0,0.3), inset 6px 0 0 rgba(0,0,0,0.25); padding:10px; touch-action:pan-y; perspective:1200px; max-width:560px; margin:0 auto; }
+.binder-page{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; transform-origin:left center; }
+.binder-page.turn-next{ animation:pageNext .35s ease-out; } .binder-page.turn-prev{ animation:pagePrev .35s ease-out; }
+@keyframes pageNext{ from{ transform:rotateY(-35deg); opacity:.3; } to{ transform:none; opacity:1; } }
+@keyframes pagePrev{ from{ transform:rotateY(35deg); opacity:.3; } to{ transform:none; opacity:1; } }
+.pocket{ position:relative; aspect-ratio:245/342; border:2px solid rgba(255,255,255,0.35); border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden; padding:0; cursor:pointer; min-height:44px; }
+.pocket::after{ content:""; position:absolute; inset:0; background:linear-gradient(120deg,rgba(255,255,255,0.18),rgba(255,255,255,0) 40%); pointer-events:none; }
+.pocket.empty{ border-style:dashed; border-color:rgba(255,255,255,0.18); cursor:default; }
+.pocket.picked{ outline:3px solid var(--gold); outline-offset:1px; }
+.pocket img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.pocket-ph{ position:absolute; inset:0; display:grid; place-items:center; font-family:var(--font-pixel); font-size:18px; color:var(--parchment); background:var(--forest); }
+.pocket-name{ position:absolute; left:0; right:0; bottom:0; padding:2px 4px; font-family:var(--font-retro); font-size:13px; color:#fff; background:rgba(0,0,0,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; }
+@supports not (aspect-ratio:1/1){ .pocket{ height:0; padding-top:139.6%; } }
+.binder-pager{ display:flex; justify-content:center; align-items:center; gap:14px; margin:12px 0; font-family:var(--font-pixel); font-size:10px; color:var(--parchment); }
+.binder-detail{ padding:14px; margin-bottom:12px; display:flex; flex-direction:column; gap:8px; }
+.binder-detail h3{ margin:0; font-size:17px; }
+.binder-detail select{ min-height:44px; min-width:0; }
+.binder-io{ margin-top:6px; }
+#binder-share-url{ width:100%; margin-top:10px; min-height:44px; }
+.binder-shared{ padding:12px 14px; margin-bottom:12px; display:flex; flex-direction:column; gap:10px; }
+#tcg-binder.readonly .edit-only{ display:none; }
+#tcg-binder [hidden]{ display:none !important; } /* flex rules above must not override the hidden attribute */
+.toast{ position:fixed; left:50%; bottom:calc(90px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); opacity:0; pointer-events:none; z-index:60; max-width:calc(100% - 32px);
+  background:var(--forest-dark); color:var(--parchment); border:3px solid var(--gold); border-radius:6px; padding:10px 14px; font-family:var(--font-retro); font-size:17px; transition:opacity .2s, transform .2s; }
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<noscript><div class="wrap" style="padding:16px;color:#FDF6E3;font-family:sans-serif;">
+  <p><b>Trainer Desk</b> is a free, unofficial Pokémon fan site with Pokémon GO event and Community Day countdowns, a Pokémon TCG set browser with card prices and a digital binder, a searchable Pokédex, and the Pixel Arena mini-game. Please turn on JavaScript to use it.</p>
+</div></noscript>
+<header><div class="wrap">
+  <div class="logo"><span class="mark">✦</span> TRAINER DESK</div>
+  <div class="tabs">
+    <button class="tab active" data-view="today">TODAY</button>
+    <button class="tab" data-view="go"><span class="full">GO EVENTS</span><span class="short">GO</span></button>
+    <button class="tab" data-view="tcg"><span class="full">TCG SETS</span><span class="short">TCG</span></button>
+    <button class="tab" data-view="dex"><span class="full">POKÉDEX</span><span class="short">DEX</span></button>
+    <button class="tab" data-view="arena">ARENA</button>
+  </div>
+</div></header>
+
+<!-- ============ TODAY ============ -->
+<div class="view active" id="view-today"><div class="wrap">
+  <div class="view-head">
+    <h1>TRAINER DESK<br>TODAY</h1>
+    <p id="today-date"></p>
+  </div>
+  <div class="today-grid">
+    <section class="ev pixel-box" id="today-event" aria-live="off"></section>
+    <section class="ev pixel-box" id="today-cd"></section>
+    <section class="ev pixel-box" id="today-potd"></section>
+    <section class="ev pixel-box" id="today-set"></section>
+    <section class="ev pixel-box" id="today-arena">
+      <div class="today-label">▸ PIXEL ARENA</div>
+      <h3>Battle royale, solo</h3>
+      <div class="desc">Pick a fighter and outlast 11 computer-controlled rivals before the red zone closes in. A round takes about a minute.</div>
+      <button type="button" class="today-btn" data-goto="arena">PLAY NOW</button>
+    </section>
+  </div>
+</div></div>
+
+<!-- ============ GO EVENTS ============ -->
+<div class="view" id="view-go"><div class="wrap">
+  <div class="view-head">
+    <h1>POKEMON GO<br>EVENT TRACKER</h1>
+    <p>Live countdowns for active and upcoming events. Times shown in your local timezone.</p>
+  </div>
+
+  <div class="sec-label">▸ COMMUNITY DAY</div>
+  <div id="cd-box"></div>
+
+  <div class="sec-label">▸ HAPPENING NOW</div>
+  <div class="ev-grid" id="active-events"></div>
+
+  <div class="sec-label">▸ COMING UP</div>
+  <div class="ev-grid" id="upcoming-events"></div>
+
+  <div class="pixel-box note">
+    <b>Live data:</b> event titles, dates, and types are pulled automatically from the community-maintained <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> feed and refresh every 15 minutes. Each card links back to the original source for full details. If the feed can't be reached, sample data renders instead so the layout still works.
+  </div>
+</div></div>
+
+<!-- ============ TCG ============ -->
+<div class="view" id="view-tcg"><div class="wrap">
+  <div class="view-head">
+    <h1>TCG SET BROWSER</h1>
+    <p>Browse sets and cards from the community-maintained Pokémon TCG API. Card images are served directly from their CDN.</p>
+  </div>
+
+  <div class="seg" role="group" aria-label="TCG view">
+    <button type="button" class="seg-btn" data-tcgview="browse" aria-pressed="true">BROWSE SETS</button>
+    <button type="button" class="seg-btn" data-tcgview="binder" aria-pressed="false">MY BINDER<span id="binder-count"></span></button>
+  </div>
+
+  <div id="tcg-browse">
+  <div class="tcg-controls">
+    <select id="set-select"><option>Loading sets…</option></select>
+    <input type="text" id="card-search" placeholder="Filter by card name…">
+    <select id="card-sort" aria-label="Sort cards">
+      <option value="number">Sort: card number</option>
+      <option value="price-desc">Sort: price, high to low</option>
+      <option value="price-asc">Sort: price, low to high</option>
+    </select>
+    <button type="button" class="arena-btn" id="load-prices" hidden>LOAD ALL PRICES</button>
+    <span class="status" id="tcg-status"></span>
+  </div>
+  <div class="set-value" id="set-value" aria-live="polite"></div>
+
+  <div class="card-grid" id="card-grid"></div>
+  <div class="empty pixel-box" id="tcg-empty" style="display:none;"></div>
+  </div>
+
+  <div id="tcg-binder" hidden>
+    <div class="binder-shared pixel-box" id="binder-shared" hidden>
+      <b>Viewing a shared binder (read-only).</b>
+      <div class="binder-actions"><button type="button" class="arena-btn" id="binder-save-copy">SAVE A COPY</button><button type="button" class="arena-btn alt" id="binder-close-shared">CLOSE</button></div>
+    </div>
+    <div class="binder-bar">
+      <select id="binder-select" aria-label="Binder"></select>
+      <div class="binder-actions edit-only">
+        <button type="button" class="arena-btn alt" id="binder-new">NEW</button>
+        <button type="button" class="arena-btn alt" id="binder-rename">RENAME</button>
+        <button type="button" class="arena-btn alt" id="binder-delete">DELETE</button>
+      </div>
+    </div>
+    <form class="binder-name-form edit-only" id="binder-name-form" hidden>
+      <input type="text" id="binder-name" maxlength="40" placeholder="Binder name" aria-label="Binder name">
+      <button type="submit" class="arena-btn">SAVE</button>
+      <button type="button" class="arena-btn alt" id="binder-name-cancel">CANCEL</button>
+    </form>
+    <div class="binder-stats" id="binder-stats"></div>
+    <div class="binder-sets" id="binder-sets"></div>
+    <div class="binder-book" id="binder-book"><div class="binder-page" id="binder-page"></div></div>
+    <div class="binder-pager">
+      <button type="button" class="arena-btn alt" id="binder-prev" aria-label="Previous page">◀</button>
+      <span id="binder-pageno"></span>
+      <button type="button" class="arena-btn alt" id="binder-next" aria-label="Next page">▶</button>
+    </div>
+    <div class="binder-detail pixel-box" id="binder-detail" hidden></div>
+    <div class="binder-actions binder-io edit-only">
+      <button type="button" class="arena-btn alt" id="binder-export">EXPORT</button>
+      <button type="button" class="arena-btn alt" id="binder-import-btn">IMPORT</button>
+      <input type="file" id="binder-import" accept="application/json,.json" hidden>
+      <button type="button" class="arena-btn alt" id="binder-share">SHARE LINK</button>
+    </div>
+    <input type="text" id="binder-share-url" readonly hidden aria-label="Share link">
+    <div class="pixel-box note"><b>Saved in this browser only.</b> Binders live on this device — use EXPORT to back up or move them, and IMPORT on the other device. Card images stay linked from the card databases; prices are the market estimate from when you added each card.<span id="binder-warn" hidden> <b>This browser isn't saving data (private mode?), so export before you leave.</b></span></div>
+  </div>
+
+  <div class="sec-label">▸ UPCOMING SETS</div>
+  <div class="ev-grid" id="upcoming-sets"></div>
+
+  <div class="sec-label">▸ RECENT TOURNAMENTS</div>
+  <div id="tourney-list"></div>
+
+  <div class="pixel-box note">
+    <b>Live API:</b> card data pulls from <code>api.pokemontcg.io/v2</code> (with <code>api.tcgdex.net</code> as an automatic backup); tournament results pull from Limitless TCG's public API (<code>play.limitlesstcg.com/api</code>) — the platform the competitive community uses for standings and decklists. Both work when the page is served over HTTP. <b>Upcoming sets are hand-maintained</b> — edit the <code>UPCOMING_SETS</code> array in the script whenever a new set is officially announced (via pokemon-card.com for Japan or official press for English). Sample data renders if a request is blocked (e.g. in a sandboxed preview).
+  </div>
+</div></div>
+
+<!-- ============ POKÉDEX ============ -->
+<div class="view" id="view-dex"><div class="wrap">
+  <div class="view-head">
+    <h1>POKÉDEX</h1>
+    <p>Every species, searchable by name or number. Click one for types, base stats, and abilities.</p>
+  </div>
+
+  <div class="tcg-controls">
+    <input type="text" id="dex-search" placeholder="Search name or #number…" autocomplete="off">
+    <select id="dex-gen" aria-label="Filter by generation"></select>
+    <span class="status" id="dex-status"></span>
+  </div>
+
+  <div class="dex-detail pixel-box" id="dex-detail" aria-live="polite"></div>
+
+  <div class="dex-grid" id="dex-grid"></div>
+  <div class="empty pixel-box" id="dex-empty" style="display:none;"></div>
+
+  <div class="pixel-box note">
+    <b>Live API:</b> species data pulls from <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a> (<code>pokeapi.co/api/v2</code>), a free community API that asks clients to cache responses — this page keeps the species list in session storage and each detail lookup in memory. Only factual fields are shown (names, types, base stats, abilities, size); Pokédex description text is not imported. Sample data renders if the API can't be reached.
+  </div>
+</div></div>
+
+<!-- ============ PIXEL ARENA ============ -->
+<div class="view" id="view-arena"><div class="wrap">
+  <div class="view-head">
+    <h1>PIXEL ARENA</h1>
+    <p>Solo battle royale. Pick a fighter and outlast the computer-controlled rivals as the red zone closes in. Type matchups matter — water beats fire, and so on.</p>
+  </div>
+  <div class="arena-controls">
+    <label class="arena-field">YOUR FIGHTER
+      <select id="arena-fighter" aria-label="Your fighter"></select>
+    </label>
+    <label class="arena-field">ARENA
+      <select id="arena-map" aria-label="Arena"></select>
+    </label>
+    <button type="button" class="arena-btn" id="arena-start"><img src="assets/arena/pokeball.webp" alt="" width="20" height="20"> START</button>
+  </div>
+  <div class="arena-wrap">
+    <canvas id="arena-canvas" width="480" height="480" role="img" aria-label="Battle arena with fighters and a shrinking red zone"></canvas>
+    <div class="arena-overlay" id="arena-overlay" role="status"><p id="arena-msg"></p><div class="podium" id="arena-podium"></div><button type="button" class="arena-btn" id="arena-again" hidden>PLAY AGAIN</button></div>
+  </div>
+  <div class="arena-hud" id="arena-hud"></div>
+  <button type="button" class="arena-btn" id="arena-skip" hidden>SKIP TO RESULT</button>
+  <div class="pixel-box note">
+    <b>Unofficial fan minigame.</b> Fighter stats and types come from <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>; sprites are hotlinked from PokéAPI's sprite repository and belong to their respective owners. Not affiliated with or endorsed by Nintendo, Game Freak, Creatures Inc., or The Pokémon Company International. Free to play, no ads.
+  </div>
+</div></div>
+
+<footer><div class="wrap">
+  Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
+  Pokémon and all related names are trademarks of their respective owners. Card data, images and prices via the community Pokémon TCG API. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (it also lists TCGplayer and Cardmarket prices). GO event schedule and Community Day data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed, sourced from <a href="https://leekduck.com" target="_blank" rel="noopener" style="text-decoration:underline;">LeekDuck</a>. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
+  This site uses Google Analytics (cookies) to count visits, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
+</div></footer>
+
+<div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Cookie consent" hidden>
+  <div class="cookie-inner">
+    <p>We'd like to use Google Analytics cookies to count visits and see which tabs are useful. Nothing is collected unless you accept. <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Learn more</a></p>
+    <div class="cookie-actions">
+      <button type="button" class="cookie-btn" id="cookie-decline">DECLINE</button>
+      <button type="button" class="cookie-btn primary" id="cookie-accept">ACCEPT</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var KEY='td-cookie-consent', banner=document.getElementById('cookie-banner');
+  function stored(){ try{ return localStorage.getItem(KEY); }catch(e){ return null; } }
+  function save(v){ try{ localStorage.setItem(KEY,v); }catch(e){} }
+  function choose(v){
+    save(v);
+    gtag('consent','update',{ analytics_storage: v });
+    banner.hidden=true;
+  }
+  document.getElementById('cookie-accept').addEventListener('click',function(){ choose('granted'); });
+  document.getElementById('cookie-decline').addEventListener('click',function(){ choose('denied'); });
+  document.getElementById('cookie-settings').addEventListener('click',function(){ banner.hidden=false; document.getElementById('cookie-accept').focus(); });
+  if(!stored()) banner.hidden=false;
+})();
+</script>
+
+<script>
+/* ============================================================
+   Live event data, sourced from the community ScrapedDuck feed
+   (structured fields only — titles/dates/type/link; we write our
+   own short blurbs rather than importing any source page's text).
+   Falls back to sample data if the feed can't be reached.
+   ============================================================ */
+const FEED_URLS = [
+  "https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/events.json",
+  "https://cdn.jsdelivr.net/gh/bigfoott/ScrapedDuck@data/events.json"
+];
+const SAMPLE_GO_EVENTS = [
+  { title:"Community Day: Starter Spotlight", type:"community-day",
+    start:"2026-09-14T11:00:00-05:00", end:"2026-09-21T14:00:00-05:00", link:null },
+  { title:"Legendary Raid Hour", type:"raid-hour",
+    start:"2026-09-16T18:00:00-05:00", end:"2026-09-19T19:00:00-05:00", link:null },
+  { title:"Spotlight Hour", type:"spotlight-hour",
+    start:"2026-09-22T18:00:00-05:00", end:"2026-09-22T19:00:00-05:00", link:null },
+  { title:"Timed Research: Season Finale", type:"research",
+    start:"2026-09-25T10:00:00-05:00", end:"2026-10-02T20:00:00-05:00", link:null },
+  { title:"Raid Weekend", type:"raid-battles",
+    start:"2026-10-04T09:00:00-05:00", end:"2026-10-05T21:00:00-05:00", link:null }
+];
+let GO_EVENTS = SAMPLE_GO_EVENTS;
+
+/* Palette assigned dynamically per event-type slug so any category
+   the feed uses gets a consistent color without us hardcoding a list. */
+const TYPE_PALETTE = ["#D9480F","#D89A1F","#1971C2","#7048E8","#2F9E44","#C2255C","#0C8599"];
+function colorForType(slug){
+  let h=0; for(const c of slug) h=(h*31+c.charCodeAt(0))>>>0;
+  return TYPE_PALETTE[h%TYPE_PALETTE.length];
+}
+function labelForType(slug){
+  return (slug||"event").replace(/[-_]/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+}
+function styleForType(slug){
+  const c=colorForType(slug||"event");
+  return { label:labelForType(slug), cls:"", color:c, bg:c+"1A" };
+}
+
+function fetchWithTimeout(url, ms=6000){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(()=>clearTimeout(t));
+}
+// Community Day details from the feed: featured/shiny Pokémon names, the short bonus lines and Special Research
+// names. Research task text, disclaimers and LeekDuck's images are deliberately not imported (we link out instead).
+function cdData(x){
+  if(!x||typeof x!=="object") return null;
+  const names=a=>(Array.isArray(a)?a:[]).map(o=>o&&typeof o.name==="string"?o.name.trim():"").filter(Boolean);
+  return {
+    spawns:names(x.spawns), shinies:names(x.shinies),
+    bonuses:(Array.isArray(x.bonuses)?x.bonuses:[]).map(o=>o&&typeof o.text==="string"?o.text.trim():"").filter(Boolean).slice(0,12),
+    research:[...new Set(names(x.specialresearch))]
+  };
+}
+async function loadGoEvents(){
+  for(const url of FEED_URLS){
+    try{
+      const r=await fetchWithTimeout(url);
+      if(!r.ok) throw new Error(r.status);
+      const j=await r.json();
+      if(Array.isArray(j)&&j.length){
+        GO_EVENTS=j.map(e=>({
+          title:e.name||e.title||"Untitled event",
+          type:e.eventType||"event",
+          start:e.start, end:e.end,
+          link:e.link||null,
+          cd:cdData(e.extraData&&e.extraData.communityday)
+        }));
+        return;
+      }
+    }catch(err){ /* try next source */ }
+  }
+  GO_EVENTS=SAMPLE_GO_EVENTS; // offline/blocked fallback
+}
+function fmtRange(s,e){
+  const o={month:'short',day:'numeric',hour:'numeric',minute:'2-digit'};
+  return s.toLocaleString(undefined,o)+" → "+e.toLocaleString(undefined,o);
+}
+function countdown(target){
+  let ms=target-new Date();
+  if(ms<=0) return "now";
+  const d=Math.floor(ms/864e5), h=Math.floor(ms/36e5)%24, m=Math.floor(ms/6e4)%60, s=Math.floor(ms/1e3)%60;
+  if(d>0) return `${d}d ${h}h ${m}m`;
+  if(h>0) return `${h}h ${m}m ${s}s`;
+  return `${m}m ${s}s`;
+}
+function evCard(ev,isActive){
+  const st=styleForType(ev.type);
+  const el=document.createElement("div");
+  el.className="ev pixel-box";
+  el.style.setProperty("--type-c",st.color);
+  el.style.setProperty("--type-bg",st.bg);
+  el.innerHTML=`
+    <div class="ev-top">
+      <span class="ev-type">${st.label}</span>
+      ${isActive?'<span class="ev-live"><span class="dot"></span>LIVE</span>':''}
+    </div>
+    <h3>${ev.title}</h3>
+    <div class="when">
+      <span>${fmtRange(ev._s,ev._e)}</span>
+      <span class="cd" data-t="${(isActive?ev._e:ev._s).toISOString()}" data-pre="${isActive?'ends in':'starts in'}"></span>
+    </div>
+    ${ev.link?`<div style="margin-top:10px;"><a href="${ev.link}" target="_blank" rel="noopener" style="font-family:var(--font-retro);font-size:14px;color:var(--forest-dark);text-decoration:underline;">Full details on source site ↗</a></div>`:''}`;
+  return el;
+}
+function renderEvents(){
+  const now=new Date();
+  const evs=GO_EVENTS
+    .filter(e=>e.start&&e.end)
+    .map(e=>({...e,_s:new Date(e.start),_e:new Date(e.end)}))
+    .filter(e=>!isNaN(e._s)&&!isNaN(e._e));
+  const active=evs.filter(e=>e._s<=now&&e._e>now).sort((a,b)=>a._e-b._e);
+  const upcoming=evs.filter(e=>e._s>now).sort((a,b)=>a._s-b._s).slice(0,24);
+  const aEl=document.getElementById("active-events");
+  const uEl=document.getElementById("upcoming-events");
+  aEl.innerHTML=""; uEl.innerHTML="";
+  if(active.length) active.forEach(e=>aEl.appendChild(evCard(e,true)));
+  else aEl.innerHTML='<div class="empty pixel-box" style="grid-column:1/-1;">Nothing running right now — check the upcoming list.</div>';
+  if(upcoming.length) upcoming.forEach(e=>uEl.appendChild(evCard(e,false)));
+  else uEl.innerHTML='<div class="empty pixel-box" style="grid-column:1/-1;">No upcoming events on the board yet.</div>';
+  renderCommunityDay(evs);
+  tickCountdowns();
+}
+const cdIds=new Map(); // Pokémon name -> PokéAPI id (or 0 when it can't be matched)
+async function cdMonId(name){
+  if(cdIds.has(name)) return cdIds.get(name);
+  const slug=t=>t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/♀/g,"-f").replace(/♂/g,"-m").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  let id=0;
+  for(const tryName of [name,name.split(/\s+/).pop()]){ // "Alolan Vulpix" -> try the full name, then "vulpix"
+    try{ const j=await getJSON(`${POKEAPI}/pokemon/${slug(tryName)}`); if(j&&j.id){ id=j.id; break; } }catch(e){}
+  }
+  cdIds.set(name,id); return id;
+}
+function cdArt(name){
+  const id=cdIds.get(name);
+  return SHOW_SPRITES&&id?`<img src="${SPRITE_URL(id)}" alt="" loading="lazy">`:`<span class="mono" aria-hidden="true">${esc(name.charAt(0))}</span>`;
+}
+function renderCommunityDay(evs){
+  const box=document.getElementById("cd-box"); if(!box) return;
+  if(GO_EVENTS===SAMPLE_GO_EVENTS){ box.innerHTML='<div class="empty pixel-box">Community Day details come from the live event feed, which can\'t be reached right now.</div>'; return; }
+  const now=new Date();
+  const cds=evs.filter(e=>/community-day/.test(e.type)).sort((a,b)=>a._s-b._s);
+  const live=cds.find(e=>e._s<=now&&e._e>now), upcoming=cds.filter(e=>e._s>now);
+  const f=live||upcoming[0]||cds.filter(e=>e._e<=now).pop();
+  if(!f){ box.innerHTML='<div class="empty pixel-box">No Community Day is on the schedule yet — they are usually announced a few weeks ahead.</div>'; return; }
+  const ended=f._e<=now, cd=f.cd||{spawns:[],shinies:[],bonuses:[],research:[]};
+  const day=f._s.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  const t=d=>d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+  const shiny=new Set(cd.shinies);
+  const extraShiny=cd.shinies.filter(n=>!cd.spawns.includes(n));
+  const mons=cd.spawns.length
+    ? `<div class="cd-sub">FEATURED POKÉMON</div><div class="cd-mons">${cd.spawns.map(n=>`<div class="cd-mon">${cdArt(n)}<div><b>${esc(n)}</b>${shiny.has(n)?"<small>✦ shiny available</small>":""}</div></div>`).join("")}</div>${extraShiny.length?`<p class="cd-meta">Shiny also available: ${esc(extraShiny.join(", "))}</p>`:""}`
+    : '<p class="cd-meta">Featured Pokémon not announced yet.</p>';
+  const bonuses=cd.bonuses.length
+    ? `<div class="cd-sub">EVENT BONUSES</div><ul class="cd-bonuses">${cd.bonuses.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>${cd.bonuses.some(b=>b.includes("*"))?'<p class="cd-note">* Starred bonuses run longer than the event itself — see the full details for times.</p>':""}`
+    : "";
+  const others=upcoming.filter(e=>e!==f).slice(0,3);
+  box.innerHTML=`<div class="ev pixel-box cd-card">
+      <div class="ev-top"><span class="ev-type">COMMUNITY DAY</span>${live?'<span class="ev-live"><span class="dot"></span>LIVE</span>':ended?'<span class="cd-meta">ended</span>':""}</div>
+      <h3>${esc(f.title)}</h3>
+      <div class="when"><span>${esc(day)} · ${esc(t(f._s))}–${esc(t(f._e))} local time</span>${ended?"":`<span class="cd" data-t="${(live?f._e:f._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span>`}</div>
+      ${mons}
+      ${bonuses}
+      ${cd.research.length?`<p class="cd-meta">Special Research: ${esc(cd.research.join(", "))}</p>`:""}
+      ${f.link?`<a class="cd-link" href="${esc(f.link)}" target="_blank" rel="noopener">FULL DETAILS ON LEEKDUCK ↗</a>`:""}
+    </div>
+    ${others.length?`<div class="cd-next">Also scheduled:<ul>${others.map(e=>`<li>${esc(e._s.toLocaleDateString(undefined,{month:"short",day:"numeric"}))} — ${esc(e.title)}${e.cd&&e.cd.spawns.length?" ("+esc(e.cd.spawns.join(", "))+")":" (Pokémon TBA)"}</li>`).join("")}</ul></div>`:""}`;
+  tickCountdowns();
+  // fill in sprites once names are matched to Pokédex numbers (cached for the session)
+  const missing=cd.spawns.filter(n=>!cdIds.has(n));
+  if(SHOW_SPRITES&&missing.length) Promise.all(missing.map(cdMonId)).then(()=>renderCommunityDay(evs));
+}
+function tickCountdowns(){
+  document.querySelectorAll("[data-t]").forEach(el=>{
+    el.textContent=el.dataset.pre+" "+countdown(new Date(el.dataset.t));
+  });
+}
+setInterval(()=>{tickCountdowns();},1000);
+setInterval(()=>{renderEvents();},60000);
+
+/* Original placeholder art for offline/sample cards — abstract, type-colored,
+   monogram-based. No copyrighted card art; purely generated geometry. */
+const CARD_PALETTE = ["#D9480F","#D89A1F","#1971C2","#7048E8","#2F9E44","#C2255C","#0C8599","#9A6EFF"];
+function hashStr(s){ let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))>>>0; return h; }
+const RARITY_STARS = { "Common":1, "Uncommon":2, "Rare":3, "Rare Holo":4 };
+function placeholderCardSVG(card){
+  const h = hashStr(card.name||"card");
+  const c1 = CARD_PALETTE[h % CARD_PALETTE.length];
+  const c2 = CARD_PALETTE[(h>>3) % CARD_PALETTE.length];
+  const letter = (card.name||"?").trim().charAt(0).toUpperCase();
+  const stars = RARITY_STARS[card.rarity] || 1;
+  const starRow = Array.from({length:stars}).map((_,i)=>
+    `<circle cx="${34+i*22}" cy="196" r="5" fill="#FDF6E3" opacity="0.9"/>`
+  ).join("");
+  return `<svg viewBox="0 0 175 245" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="g${h}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+    </defs>
+    <rect width="175" height="245" fill="url(#g${h})"/>
+    <rect x="8" y="8" width="159" height="229" fill="none" stroke="#FDF6E3" stroke-width="2" stroke-opacity="0.55" rx="6"/>
+    <circle cx="87" cy="100" r="46" fill="#FDF6E3" opacity="0.14"/>
+    <text x="87" y="118" font-family="Georgia,serif" font-size="58" fill="#FDF6E3" text-anchor="middle" opacity="0.92">${letter}</text>
+    ${starRow}
+    <text x="87" y="222" font-family="monospace" font-size="10" fill="#FDF6E3" text-anchor="middle" opacity="0.75">SAMPLE CARD</text>
+  </svg>`;
+}
+
+const API="https://api.pokemontcg.io/v2";
+const TCG_TIMEOUT=12000; // pokemontcg.io is often slow; give it 12s, then switch to the backup source
+const TCGDEX="https://api.tcgdex.net/v2/en"; // backup card source (TCGdex): sets + cards, images hotlinked from assets.tcgdex.net
+const TCGDEX_TIMEOUT=15000;
+const tcgMem=new Map(); // in-memory fallback if sessionStorage is unavailable
+function tcgCacheGet(key){
+  if(tcgMem.has(key)) return tcgMem.get(key);
+  try{ const v=sessionStorage.getItem("td-tcg-"+key); if(v){ const d=JSON.parse(v); tcgMem.set(key,d); return d; } }catch(e){}
+  return null;
+}
+function tcgCacheSet(key,data){
+  tcgMem.set(key,data);
+  try{ sessionStorage.setItem("td-tcg-"+key,JSON.stringify(data)); }catch(e){} // quota/private mode: memory copy still works
+}
+const SAMPLE_SETS=[{id:"sample",name:"Sample Set (offline preview)",releaseDate:"—"}];
+const SAMPLE_CARDS=Array.from({length:10},(_,i)=>({
+  id:"s"+i, name:"Sample Card "+(i+1), number:String(i+1),
+  rarity:["Common","Uncommon","Rare","Rare Holo"][i%4],
+  hp:String(60+i*10), images:null, sample:true
+}));
+const setSel=document.getElementById("set-select");
+const grid=document.getElementById("card-grid");
+const statusEl=document.getElementById("tcg-status");
+const emptyEl=document.getElementById("tcg-empty");
+const searchEl=document.getElementById("card-search");
+let allCards=[];
+let tcgSource=tcgCacheGet("source")||"ptcg"; // "ptcg" = pokemontcg.io, "tcgdex" = backup; sticks for the session once the primary fails
+async function fetchSets(src){
+  if(src==="tcgdex"){
+    const r=await fetchWithTimeout(`${TCGDEX}/sets`,TCGDEX_TIMEOUT);
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    if(!Array.isArray(j)||!j.length) throw new Error("no sets");
+    // TCGdex's list has no release date; it lists oldest first, so reverse to put newer sets on top
+    return j.map(x=>({id:x.id,name:x.name,releaseDate:"—"})).reverse();
+  }
+  const r=await fetchWithTimeout(`${API}/sets?orderBy=-releaseDate&pageSize=60`,TCG_TIMEOUT);
+  if(!r.ok) throw new Error(r.status);
+  const j=await r.json();
+  return j.data.map(x=>({id:x.id,name:x.name,releaseDate:x.releaseDate}));
+}
+// Market price per card from pokemontcg.io's bundled TCGplayer (USD) / Cardmarket (EUR) data. Returns null if none.
+// Only positive numbers count: sources use null/0 for "no data", and a "$0.00" price would mislead.
+const pos=n=>typeof n==="number"&&isFinite(n)&&n>0?n:null;
+function cardPrice(c){
+  const tp=c.tcgplayer&&c.tcgplayer.prices;
+  if(tp){
+    for(const v of Object.keys(tp)){ // first variant with a market (else mid) price: normal, holofoil, reverse, ...
+      const n=tp[v]&&(pos(tp[v].market)??pos(tp[v].mid));
+      if(n!=null) return {v:n,cur:"USD",src:"TCGplayer",at:c.tcgplayer.updatedAt||""};
+    }
+  }
+  const cm=c.cardmarket&&c.cardmarket.prices;
+  const n=cm&&(pos(cm.trendPrice)??pos(cm.averageSellPrice));
+  if(n!=null) return {v:n,cur:"EUR",src:"Cardmarket",at:c.cardmarket.updatedAt||""};
+  return null;
+}
+function fmtPrice(p){ return (p.cur==="EUR"?"€":"$")+p.v.toFixed(2); }
+// TCGdex only lists prices on single-card requests, so in backup mode fetch them when a card is flipped.
+function tcgdexPrice(j){
+  // Shape (from TCGdex's own data): pricing.tcgplayer = {updated, unit:"USD", <variant>:{lowPrice,midPrice,highPrice,marketPrice,...}}
+  // and pricing.cardmarket = {updated, unit:"EUR", avg, low, trend, avg30, "trend-holo", ...}; unknown values are null or 0.
+  const pr=j&&j.pricing; if(!pr) return null;
+  const tp=pr.tcgplayer;
+  if(tp&&typeof tp==="object"){
+    for(const k of Object.keys(tp)){ const v=tp[k]; const n=v&&typeof v==="object"?(pos(v.marketPrice)??pos(v.midPrice)):null; if(n!=null) return {v:n,cur:"USD",src:"TCGplayer",at:(typeof tp.updated==="string"?tp.updated.slice(0,10):"")}; }
+  }
+  const cm=pr.cardmarket;
+  if(cm&&typeof cm==="object"){
+    const n=pos(cm.trend)??pos(cm.avg30)??pos(cm.avg)??pos(cm["trend-holo"])??pos(cm["avg30-holo"])??pos(cm["avg-holo"])??pos(cm.low);
+    if(n!=null) return {v:n,cur:"EUR",src:"Cardmarket",at:(typeof cm.updated==="string"?cm.updated.slice(0,10):"")};
+  }
+  return null;
+}
+// Backup-mode status line: "N cards · via TCGdex · prices: X found, Y not listed, Z failed" so a blank price is explainable.
+function updatePriceStatus(){
+  if(tcgSource!=="tcgdex"||!allCards.length) return;
+  const n=st=>allCards.filter(c=>c.priceState===st).length, ok=n("ok"), none=n("none"), fail=n("fail");
+  if(!ok&&!none&&!fail) return;
+  statusEl.textContent=allCards.length+" cards · via TCGdex · prices: "+ok+" found, "+none+" not listed"+(fail?", "+fail+" failed":"");
+}
+const priceQueue=[]; let priceActive=0;
+function queuePrice(c){ if(c.priceTried||c.price) return; c.priceTried=true; priceQueue.push(c); pumpPrices(); }
+function pumpPrices(){
+  while(priceActive<4&&priceQueue.length){
+    const c=priceQueue.shift(); priceActive++;
+    loadTcgdexPrice(c).finally(()=>{ priceActive--; pumpPrices(); });
+  }
+}
+function applyCachedPrice(c){ // re-apply prices looked up in the last 6h to a card restored from the session cache
+  const p=priceGet(c.id); return {...c,price:p||null,priceState:p===null?undefined:(p?"ok":"none")};
+}
+const PRICE_TTL=6*3600e3; // card prices move slowly; keep lookups for 6h across visits
+function priceGet(id){
+  const m=tcgMem.get("p-"+id); if(m!==undefined) return m;
+  try{ const v=JSON.parse(localStorage.getItem("td-pc1-"+id)||"null"); if(v&&Date.now()-v.t<PRICE_TTL){ tcgMem.set("p-"+id,v.p); return v.p; } }catch(e){}
+  return null; // null = never looked up; 0 = looked up, no price listed
+}
+function priceSet(id,p){
+  tcgMem.set("p-"+id,p);
+  try{ localStorage.setItem("td-pc1-"+id,JSON.stringify({t:Date.now(),p})); }
+  catch(e){ // storage full: drop expired entries once, memory copy still works
+    try{ for(let i=localStorage.length-1;i>=0;i--){ const k=localStorage.key(i); if(k&&k.startsWith("td-pc1-")){ const v=JSON.parse(localStorage.getItem(k)||"null"); if(!v||Date.now()-v.t>=PRICE_TTL) localStorage.removeItem(k); } } }catch(_){}
+  }
+}
+async function loadTcgdexPrice(c){
+  let p=priceGet(c.id);
+  for(let a=0;p===null&&a<3;a++){ // retry transient failures with a short backoff
+    try{
+      const r=await fetchWithTimeout(`${TCGDEX}/cards/${encodeURIComponent(c.id)}`,TCGDEX_TIMEOUT);
+      if(r.status===404){ p=0; break; }
+      if(!r.ok) throw new Error(r.status);
+      p=tcgdexPrice(await r.json())||0;
+    }catch(e){ if(a<2) await new Promise(res=>setTimeout(res,500*(a+1))); }
+  }
+  if(p===null){ c.priceState="fail"; updatePriceStatus(); paintBackFor(c); bulkCheck(); return; } // leave unpriced, don't cache
+  priceSet(c.id,p);
+  c.price=p||null;
+  c.priceState=p?"ok":"none";
+  updatePriceStatus(); updateSetValue(); paintBackFor(c); bulkCheck();
+}
+// Back of a card: price (or why there isn't one). In TCGdex mode the price is looked up only when the card is flipped.
+function backInner(c){
+  if(c.sample) return `<div class="tb-src">Sample card — no price</div>`;
+  if(c.price) return `<div class="tb-price">${esc(fmtPrice(c.price))}</div><div class="tb-src">${esc(c.price.src)} market price</div>${c.price.at?`<div class="tb-date">Updated ${esc(c.price.at)}</div>`:""}`;
+  if(c.priceState==="fail") return `<div class="tb-src">Couldn't load the price</div><div class="tb-date">Flip again to retry</div>`;
+  if(tcgSource==="tcgdex"&&c.priceState===undefined) return `<div class="tb-src">Loading price…</div>`;
+  return `<div class="tb-src">No price listed</div>`;
+}
+function paintBackFor(c){
+  const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
+  const body=el&&el.querySelector(".tb-body");
+  if(body) body.innerHTML=backInner(c);
+}
+function toggleCard(el){
+  const on=el.classList.toggle("flipped");
+  el.setAttribute("aria-pressed",on?"true":"false");
+  if(!on) return;
+  const c=allCards.find(x=>x.id===el.dataset.id); if(!c) return;
+  if(tcgSource==="tcgdex"&&!c.sample){ if(c.priceState==="fail"){ c.priceTried=false; c.priceState=undefined; } queuePrice(c); }
+  paintBackFor(c);
+}
+async function fetchCards(src,setId){
+  if(src==="tcgdex"){
+    const r=await fetchWithTimeout(`${TCGDEX}/sets/${encodeURIComponent(setId)}`,TCGDEX_TIMEOUT);
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    if(!Array.isArray(j.cards)) throw new Error("no cards");
+    return j.cards.map(c=>{
+      const p=priceGet(c.id); // prices looked up in the last 6h are applied immediately
+      return {id:c.id,name:c.name,number:c.localId,rarity:null,hp:null,images:c.image?{small:c.image+"/low.webp"}:null,price:p||null,priceState:p===null?undefined:(p?"ok":"none")};
+    });
+  }
+  const r=await fetchWithTimeout(`${API}/cards?q=set.id:${setId}&orderBy=number&pageSize=250`,TCG_TIMEOUT);
+  if(!r.ok) throw new Error(r.status);
+  const j=await r.json();
+  return j.data.map(c=>({id:c.id,name:c.name,number:c.number,rarity:c.rarity,hp:c.hp,images:c.images?{small:c.images.small}:null,price:cardPrice(c)}));
+}
+async function switchToBackup(){
+  tcgSource="tcgdex"; tcgCacheSet("source","tcgdex");
+  statusEl.textContent="Main card source is down — trying backup…";
+  await loadSets();
+}
+function showOffline(){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; }
+async function loadSets(){
+  const src=tcgSource;
+  const cachedSets=tcgCacheGet("sets-v2-"+src);
+  if(cachedSets){ fillSets(cachedSets); return; }
+  statusEl.textContent="Loading sets…";
+  try{
+    const sets=await fetchSets(src);
+    tcgCacheSet("sets-v2-"+src,sets);
+    fillSets(sets);
+    statusEl.textContent="";
+  }catch(err){
+    if(src==="ptcg") return switchToBackup();
+    fillSets(SAMPLE_SETS);
+    statusEl.textContent="offline — sample data";
+  }
+}
+function fillSets(sets){
+  setSel.innerHTML=sets.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.releaseDate!=="—"?" ("+esc(s.releaseDate.slice(0,4))+")":""}</option>`).join("");
+  loadCards(sets[0].id);
+}
+async function loadCards(setId){
+  grid.innerHTML=""; emptyEl.style.display="none";
+  bulk=false; loadBtn.hidden=true; valueEl.textContent="";
+  if(setId==="sample"){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; return; }
+  const showBulk=()=>{ loadBtn.hidden=tcgSource!=="tcgdex"; };
+  const src=tcgSource, tag=src==="tcgdex"?" · via TCGdex":"";
+  const cachedCards=tcgCacheGet("cards-v3-"+src+"-"+setId);
+  if(cachedCards){ allCards=cachedCards.map(c=>src==="tcgdex"?applyCachedPrice(c):c); statusEl.textContent=allCards.length+" cards"+tag; showBulk(); renderCards(); return; }
+  statusEl.textContent="Loading cards…";
+  try{
+    allCards=await fetchCards(src,setId);
+    tcgCacheSet("cards-v3-"+src+"-"+setId,allCards);
+    statusEl.textContent=allCards.length+" cards"+tag;
+    showBulk();
+    renderCards();
+  }catch(err){
+    if(src==="ptcg") return switchToBackup();
+    showOffline();
+  }
+}
+const sortEl=document.getElementById("card-sort"), loadBtn=document.getElementById("load-prices"), valueEl=document.getElementById("set-value");
+let bulk=false;
+const usdEq=p=>p.cur==="EUR"?p.v*1.08:p.v; // rough EUR→USD, only used to order mixed-currency cards
+function sortedCards(list){
+  const m=sortEl.value;
+  if(m==="number") return list;
+  const hi=m==="price-desc";
+  return [...list].sort((a,b)=>{ // unpriced cards always last
+    if(!a.price&&!b.price) return 0; if(!a.price) return 1; if(!b.price) return -1;
+    return hi?usdEq(b.price)-usdEq(a.price):usdEq(a.price)-usdEq(b.price);
+  });
+}
+function updateSetValue(){
+  const real=allCards.filter(c=>!c.sample);
+  if(!real.length){ valueEl.textContent=""; return; }
+  if(bulk){ const done=real.filter(c=>c.priceState).length; valueEl.textContent="Loading prices… "+done+"/"+real.length; return; }
+  let usd=0,eur=0,n=0;
+  real.forEach(c=>{ if(!c.price) return; n++; if(c.price.cur==="EUR") eur+=c.price.v; else usd+=c.price.v; });
+  if(!n){ valueEl.textContent=tcgSource==="tcgdex"?"Prices load when you flip a card, or press LOAD ALL PRICES.":""; return; }
+  const parts=[]; if(usd) parts.push("$"+usd.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})); if(eur) parts.push("€"+eur.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
+  const all=tcgSource!=="tcgdex"||real.every(c=>c.priceState);
+  valueEl.textContent="Set value"+(all?"":" so far")+": "+parts.join(" + ")+" · "+n+" of "+real.length+" cards priced";
+}
+function bulkCheck(){ if(bulk&&allCards.every(c=>c.sample||c.priceState)){ bulk=false; renderCards(); } else if(bulk) updateSetValue(); }
+loadBtn.addEventListener("click",()=>{
+  if(tcgSource!=="tcgdex") return;
+  bulk=true;
+  allCards.forEach(c=>{ if(c.sample) return; if(c.priceState==="fail"){ c.priceTried=false; c.priceState=undefined; } if(c.priceState===undefined) queuePrice(c); });
+  updateSetValue(); bulkCheck();
+});
+sortEl.addEventListener("change",()=>renderCards());
+function renderCards(){
+  const q=searchEl.value.trim().toLowerCase();
+  const list=sortedCards(q?allCards.filter(c=>c.name.toLowerCase().includes(q)):allCards);
+  if(!list.length){ grid.innerHTML=""; emptyEl.style.display="block"; emptyEl.textContent="No cards match that filter."; return; }
+  emptyEl.style.display="none";
+  grid.innerHTML=list.map(c=>`
+    <div class="tcard" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(c.name)} — flip to see price" data-id="${esc(c.id)}">
+      <div class="tflip">
+        <div class="tface tfront pixel-box">
+          <div class="imgwrap">
+            ${c.images?`<img class="card-img" data-src="${esc(c.images.small)}"${/\.webp$/.test(c.images.small)?` data-alt="${esc(c.images.small.replace(/\.webp$/,".png"))}"`:""} alt="${esc(c.name)}" decoding="async">`:placeholderCardSVG(c)}
+          </div>
+          <div class="meta">
+            <div class="nm">${c.name}</div>
+            <div class="sub"><span>#${c.number}</span><span>${c.rarity||"—"}</span></div>
+          </div>
+        </div>
+        <div class="tface tback pixel-box">
+          <div class="tb-name">${esc(c.name)}</div>
+          <div class="tb-body">${backInner(c)}</div>
+          ${c.sample?"":`<button type="button" class="tb-add${typeof binderHas==="function"&&binderHas(c.id)?" in":""}" data-add="${esc(c.id)}">${typeof binderHas==="function"&&binderHas(c.id)?"✓ IN BINDER":"+ ADD TO BINDER"}</button>`}
+          <div class="tb-hint">tap to flip back</div>
+        </div>
+      </div>
+    </div>`).join("");
+  startCardImages();
+  updateSetValue();
+}
+// Card images: the page starts each download itself. Native loading="lazy" can fail to fire for images inside
+// 3D-transformed elements (the flip card) on iPhone Safari, so we observe the outer card instead.
+let imgObserver=null;
+function loadCardImg(card){ const im=card.querySelector("img.card-img[data-src]"); if(im&&!im.getAttribute("src")) im.src=im.dataset.src; }
+function startCardImages(){
+  if(imgObserver) imgObserver.disconnect();
+  const cards=[...grid.querySelectorAll(".tcard")];
+  cards.slice(0,12).forEach(loadCardImg); // first rows right away, whatever the browser supports
+  if(typeof IntersectionObserver==="undefined"){ cards.forEach(loadCardImg); return; }
+  imgObserver=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ loadCardImg(e.target); imgObserver.unobserve(e.target); } }),{rootMargin:"600px 0px"});
+  cards.slice(12).forEach(c=>imgObserver.observe(c));
+}
+// Broken image: try TCGdex's PNG (older iPhones lack WebP), then fall back to the original placeholder art.
+grid.addEventListener("error",e=>{
+  const im=e.target; if(!im||im.tagName!=="IMG"||!im.classList.contains("card-img")) return;
+  if(im.dataset.alt&&!im.dataset.tried){ im.dataset.tried="1"; im.src=im.dataset.alt; return; }
+  const card=im.closest(".tcard"), c=card&&allCards.find(x=>x.id===card.dataset.id);
+  const wrap=im.closest(".imgwrap"); if(wrap) wrap.innerHTML=placeholderCardSVG(c||{name:im.alt||"?"});
+},true);
+grid.addEventListener("click",e=>{ const el=e.target.closest(".tcard"); if(el) toggleCard(el); });
+grid.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("tcard")){ e.preventDefault(); toggleCard(e.target); } });
+setSel.addEventListener("change",e=>loadCards(e.target.value));
+searchEl.addEventListener("input",()=>renderCards());
+
+/* ============================================================
+   BINDER (stage 1) — digital binders saved in this browser (localStorage), no accounts.
+   Cards are stored as small snapshots (id, name, set, image URL, price when added); images stay
+   hotlinked from the card APIs, never copied. Export/import as JSON; small binders can be shared
+   as a read-only link (#binder=...).
+   ============================================================ */
+const BINDER_KEY="td-binders-v1", POCKETS=9, SHARE_MAX=40;
+let binderStore={v:1,active:null,binders:[]}, binderPersist=true;
+(function(){ try{ localStorage.setItem("td-binder-test","1"); localStorage.removeItem("td-binder-test"); }catch(e){ binderPersist=false; } })();
+
+function sanitizeBinderCard(c){
+  if(!c||typeof c!=="object"||typeof c.id!=="string"||!c.id) return null;
+  const str=(v,n)=>typeof v==="string"?v.slice(0,n):"";
+  const p=c.price&&typeof c.price==="object"&&typeof c.price.v==="number"&&isFinite(c.price.v)&&c.price.v>0
+    ?{v:c.price.v,cur:c.price.cur==="EUR"?"EUR":"USD",src:c.price.src==="Cardmarket"?"Cardmarket":"TCGplayer",at:str(c.price.at,20)}:null;
+  return {id:c.id.slice(0,80),name:str(c.name,80)||"Card",number:str(c.number,12),rarity:str(c.rarity,40),set:str(c.set,80),setId:str(c.setId,40),
+    setTotal:Number.isFinite(c.setTotal)?Math.max(0,Math.min(2000,c.setTotal|0)):0,
+    img:typeof c.img==="string"&&/^https:\/\//.test(c.img)?c.img.slice(0,300):null,price:p};
+}
+function sanitizeBinder(b){
+  if(!b||typeof b!=="object") return null;
+  const cards=(Array.isArray(b.cards)?b.cards:[]).slice(0,1000).map(sanitizeBinderCard).filter(Boolean);
+  return {id:typeof b.id==="string"&&b.id?b.id.slice(0,40):"b"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    name:(typeof b.name==="string"&&b.name.trim()?b.name.trim():"My Binder").slice(0,40),cards};
+}
+function binderLoad(){
+  if(!binderPersist) return;
+  try{
+    const j=JSON.parse(localStorage.getItem(BINDER_KEY)||"null");
+    if(j&&Array.isArray(j.binders)){
+      const bs=j.binders.map(sanitizeBinder).filter(Boolean);
+      binderStore={v:1,active:bs.some(b=>b.id===j.active)?j.active:(bs[0]&&bs[0].id)||null,binders:bs};
+    }
+  }catch(e){}
+}
+function binderSave(){
+  if(!binderPersist) return true;
+  try{ localStorage.setItem(BINDER_KEY,JSON.stringify(binderStore)); return true; }
+  catch(e){ toast("Couldn't save — your browser's storage is full. Export your binder to keep it."); return false; }
+}
+function binderActive(){
+  let b=binderStore.binders.find(x=>x.id===binderStore.active);
+  if(!b){ b=binderStore.binders[0]; if(!b){ b=sanitizeBinder({name:"My Binder"}); binderStore.binders.push(b); } binderStore.active=b.id; }
+  return b;
+}
+function binderHas(id){ const b=binderStore.binders.find(x=>x.id===binderStore.active); return !!(b&&b.cards.some(c=>c.id===id)); }
+
+let toastTimer=0;
+function toast(msg){
+  let el=document.getElementById("toast");
+  if(!el){ el=document.createElement("div"); el.id="toast"; el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el); }
+  el.textContent=msg; el.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("show"),2600);
+}
+
+(function(){
+  binderLoad();
+  const $=id=>document.getElementById(id);
+  const browse=$("tcg-browse"), view=$("tcg-binder"), countEl=$("binder-count");
+  const sel=$("binder-select"), page=$("binder-page"), book=$("binder-book"), detail=$("binder-detail");
+  const nameForm=$("binder-name-form"), nameInput=$("binder-name"), shareUrl=$("binder-share-url"), sharedBar=$("binder-shared");
+  let pageNo=0, picked=-1, nameMode="", shared=null, delArmed=false;
+
+  const current=()=>shared||binderActive();
+  const fmtMoney=(v,cur)=>(cur==="EUR"?"€":"$")+v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  const addBtnLabel=id=>binderHas(id)?"✓ IN BINDER":"+ ADD TO BINDER";
+
+  // ---- card back button (TCG browse) ----
+  function snapshot(c){
+    const opt=document.getElementById("set-select"), o=opt&&opt.options[opt.selectedIndex];
+    return sanitizeBinderCard({id:c.id,name:c.name,number:c.number,rarity:c.rarity||"",set:o?o.textContent.replace(/\s*\(\d{4}\)$/,""):"",setId:opt?opt.value:"",
+      setTotal:allCards.filter(x=>!x.sample).length,img:c.images&&c.images.small,price:c.price});
+  }
+  grid.addEventListener("click",e=>{
+    const btn=e.target.closest("[data-add]"); if(!btn) return;
+    e.stopPropagation();
+    const c=allCards.find(x=>x.id===btn.dataset.add); if(!c) return;
+    const b=binderActive(), i=b.cards.findIndex(x=>x.id===c.id);
+    if(i>=0){ b.cards.splice(i,1); toast("Removed from "+b.name); }
+    else{ const s=snapshot(c); if(!s) return; b.cards.push(s); toast("Added to "+b.name+" ("+b.cards.length+")"); }
+    binderSave(); btn.textContent=addBtnLabel(c.id); btn.classList.toggle("in",binderHas(c.id)); updateCount();
+  },true);
+
+  // ---- view switch ----
+  function showView(which){
+    const binder=which==="binder";
+    browse.hidden=binder; view.hidden=!binder;
+    document.querySelectorAll("[data-tcgview]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.tcgview===which)));
+    if(binder) render(); else if(typeof renderCards==="function"&&allCards.length) renderCards(); // refresh "in binder" labels
+  }
+  document.querySelectorAll("[data-tcgview]").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.tcgview)));
+  function updateCount(){ const n=binderStore.binders.reduce((s,b)=>s+b.cards.length,0); countEl.textContent=n?" ("+n+")":""; }
+
+  // ---- render ----
+  function render(){
+    const b=current(), editable=!shared;
+    view.classList.toggle("readonly",!editable);
+    sharedBar.hidden=!shared;
+    sel.innerHTML=(shared?[shared]:binderStore.binders).map(x=>`<option value="${esc(x.id)}">${esc(x.name)} (${x.cards.length})</option>`).join("");
+    sel.value=b.id; sel.disabled=!!shared;
+    const pages=Math.max(1,Math.ceil(b.cards.length/POCKETS));
+    pageNo=Math.min(Math.max(0,pageNo),pages-1);
+    // stats
+    let usd=0,eur=0,priced=0; b.cards.forEach(c=>{ if(c.price){ priced++; if(c.price.cur==="EUR") eur+=c.price.v; else usd+=c.price.v; } });
+    const val=[usd?fmtMoney(usd,"USD"):"",eur?fmtMoney(eur,"EUR"):""].filter(Boolean).join(" + ");
+    $("binder-stats").textContent=b.cards.length
+      ? b.cards.length+" card"+(b.cards.length===1?"":"s")+" · "+pages+" page"+(pages===1?"":"s")+(val?" · value "+val+" ("+priced+" priced, prices from when added)":"")
+      : (shared?"This shared binder is empty.":"Empty binder. Flip a card in BROWSE SETS and tap + ADD TO BINDER.");
+    // set completion
+    const sets=new Map(); b.cards.forEach(c=>{ const k=c.setId||c.set; if(!k) return; const s=sets.get(k)||{name:c.set||k,n:0,total:c.setTotal}; s.n++; s.total=Math.max(s.total,c.setTotal); sets.set(k,s); });
+    $("binder-sets").innerHTML=[...sets.values()].sort((a,c)=>c.n-a.n).slice(0,6).map(s=>`<span class="binder-set">${esc(s.name)}: ${s.n}${s.total?" / "+s.total:""}</span>`).join("");
+    // page of 9 pockets
+    let html="";
+    for(let i=pageNo*POCKETS;i<pageNo*POCKETS+POCKETS;i++){
+      const c=b.cards[i];
+      if(!c){ html+='<div class="pocket empty" aria-hidden="true"></div>'; continue; }
+      const img=c.img?`<img src="${esc(c.img)}"${/\.webp$/.test(c.img)?` data-alt="${esc(c.img.replace(/\.webp$/,".png"))}"`:""} alt="" decoding="async">`:`<span class="pocket-ph">${esc(c.name.charAt(0))}</span>`;
+      html+=`<button type="button" class="pocket${i===picked?" picked":""}" data-i="${i}" aria-label="${esc(c.name)}${c.number?" #"+esc(c.number):""}">${img}<span class="pocket-name">${esc(c.name)}</span></button>`;
+    }
+    page.innerHTML=html;
+    $("binder-pageno").textContent="PAGE "+(pageNo+1)+" / "+pages;
+    $("binder-prev").disabled=pageNo===0; $("binder-next").disabled=pageNo>=pages-1;
+    renderDetail();
+    updateCount();
+  }
+  function renderDetail(){
+    const b=current(), c=b.cards[picked];
+    if(!c){ detail.hidden=true; picked=-1; return; }
+    const others=shared?[]:binderStore.binders.filter(x=>x.id!==b.id);
+    detail.hidden=false;
+    detail.innerHTML=`<h3>${esc(c.name)}</h3>
+      <div class="cd-meta">${esc([c.set,c.number?"#"+c.number:"",c.rarity].filter(Boolean).join(" · "))}</div>
+      <div class="cd-meta">${c.price?esc(fmtMoney(c.price.v,c.price.cur)+" "+c.price.src+" market price"+(c.price.at?" (as of "+c.price.at+")":"")):"No price saved"}</div>
+      ${shared?"":`<div class="binder-actions">
+        <button type="button" class="arena-btn alt" data-act="left" ${picked===0?"disabled":""}>◀ MOVE</button>
+        <button type="button" class="arena-btn alt" data-act="right" ${picked>=b.cards.length-1?"disabled":""}>MOVE ▶</button>
+        <button type="button" class="arena-btn alt" data-act="remove">REMOVE</button>
+        ${others.length?`<select id="binder-move-to" aria-label="Move to binder">${others.map(o=>`<option value="${esc(o.id)}">Move to ${esc(o.name)}</option>`).join("")}</select><button type="button" class="arena-btn alt" data-act="moveto">MOVE</button>`:""}
+      </div>`}`;
+  }
+  page.addEventListener("click",e=>{ const p=e.target.closest(".pocket[data-i]"); if(!p) return; const i=+p.dataset.i; picked=picked===i?-1:i; render(); });
+  page.addEventListener("error",e=>{ const im=e.target; if(!im||im.tagName!=="IMG") return; if(im.dataset.alt&&!im.dataset.tried){ im.dataset.tried="1"; im.src=im.dataset.alt; } else im.replaceWith(Object.assign(document.createElement("span"),{className:"pocket-ph",textContent:(im.closest(".pocket").getAttribute("aria-label")||"?").charAt(0)})); },true);
+  detail.addEventListener("click",e=>{
+    const a=e.target.closest("[data-act]"); if(!a||shared) return;
+    const b=binderActive(), i=picked; if(i<0||!b.cards[i]) return;
+    if(a.dataset.act==="left"&&i>0){ [b.cards[i-1],b.cards[i]]=[b.cards[i],b.cards[i-1]]; picked=i-1; }
+    else if(a.dataset.act==="right"&&i<b.cards.length-1){ [b.cards[i+1],b.cards[i]]=[b.cards[i],b.cards[i+1]]; picked=i+1; }
+    else if(a.dataset.act==="remove"){ const [c]=b.cards.splice(i,1); picked=-1; toast("Removed "+c.name); }
+    else if(a.dataset.act==="moveto"){ const t=binderStore.binders.find(x=>x.id===$("binder-move-to").value); if(t){ const [c]=b.cards.splice(i,1); t.cards.push(c); picked=-1; toast("Moved "+c.name+" to "+t.name); } }
+    pageNo=picked>=0?Math.floor(picked/POCKETS):pageNo;
+    binderSave(); render();
+  });
+
+  // ---- paging: buttons + swipe ----
+  function turn(dir){
+    const b=current(), pages=Math.max(1,Math.ceil(b.cards.length/POCKETS)), next=pageNo+dir;
+    if(next<0||next>=pages) return;
+    pageNo=next; picked=-1; render();
+    page.classList.remove("turn-next","turn-prev"); void page.offsetWidth; page.classList.add(dir>0?"turn-next":"turn-prev");
+  }
+  $("binder-prev").addEventListener("click",()=>turn(-1));
+  $("binder-next").addEventListener("click",()=>turn(1));
+  let sx=null,sy=0;
+  book.addEventListener("pointerdown",e=>{ sx=e.clientX; sy=e.clientY; });
+  book.addEventListener("pointerup",e=>{ if(sx===null) return; const dx=e.clientX-sx, dy=e.clientY-sy; sx=null; if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) turn(dx<0?1:-1); });
+
+  // ---- binder management ----
+  sel.addEventListener("change",()=>{ binderStore.active=sel.value; pageNo=0; picked=-1; binderSave(); render(); });
+  function openName(mode){ nameMode=mode; nameForm.hidden=false; nameInput.value=mode==="rename"?binderActive().name:""; nameInput.focus(); }
+  $("binder-new").addEventListener("click",()=>openName("new"));
+  $("binder-rename").addEventListener("click",()=>openName("rename"));
+  $("binder-name-cancel").addEventListener("click",()=>{ nameForm.hidden=true; });
+  nameForm.addEventListener("submit",e=>{
+    e.preventDefault();
+    const n=nameInput.value.trim().slice(0,40); if(!n) return;
+    if(nameMode==="new"){ const b=sanitizeBinder({name:n}); binderStore.binders.push(b); binderStore.active=b.id; pageNo=0; toast("Created "+n); }
+    else { binderActive().name=n; toast("Renamed to "+n); }
+    nameForm.hidden=true; picked=-1; binderSave(); render();
+  });
+  $("binder-delete").addEventListener("click",e=>{
+    const btn=e.currentTarget, b=binderActive();
+    if(!delArmed){ delArmed=true; btn.textContent="TAP AGAIN TO DELETE"; setTimeout(()=>{ delArmed=false; btn.textContent="DELETE"; },3000); return; }
+    delArmed=false; btn.textContent="DELETE";
+    binderStore.binders=binderStore.binders.filter(x=>x.id!==b.id); binderStore.active=null; binderActive();
+    pageNo=0; picked=-1; binderSave(); render(); toast("Deleted "+b.name);
+  });
+
+  // ---- export / import ----
+  $("binder-export").addEventListener("click",()=>{
+    const b=binderActive();
+    const blob=new Blob([JSON.stringify({app:"trainer-desk",type:"binder",v:1,binders:[b]},null,1)],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+    a.download=(b.name.replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()||"binder")+".json";
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+  });
+  $("binder-import-btn").addEventListener("click",()=>$("binder-import").click());
+  $("binder-import").addEventListener("change",async e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value=""; if(!f) return;
+    try{
+      if(f.size>2e6) throw new Error("too big");
+      const j=JSON.parse(await f.text());
+      const list=(Array.isArray(j&&j.binders)?j.binders:[j]).map(sanitizeBinder).filter(b=>b&&b.cards.length);
+      if(!list.length) throw new Error("empty");
+      list.forEach(b=>{ b.id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); if(binderStore.binders.some(x=>x.name===b.name)) b.name=(b.name+" (imported)").slice(0,40); binderStore.binders.push(b); });
+      binderStore.active=list[0].id; pageNo=0; picked=-1; binderSave(); render(); toast("Imported "+list.length+" binder"+(list.length===1?"":"s"));
+    }catch(err){ toast("That file isn't a Trainer Desk binder export."); }
+  });
+
+  // ---- share link (read-only, small binders) ----
+  const b64u={
+    enc:s=>btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""),
+    dec:s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0)))
+  };
+  $("binder-share").addEventListener("click",async()=>{
+    const b=binderActive();
+    if(!b.cards.length){ toast("Add some cards first."); return; }
+    if(b.cards.length>SHARE_MAX){ toast("Links work for up to "+SHARE_MAX+" cards — use EXPORT for bigger binders."); return; }
+    const code=b64u.enc(JSON.stringify({n:b.name,c:b.cards.map(c=>[c.id,c.name,c.number,c.img||"",c.set])}));
+    const link=location.href.split("#")[0]+"#binder="+code;
+    shareUrl.hidden=false; shareUrl.value=link; shareUrl.select();
+    try{ await navigator.clipboard.writeText(link); toast("Share link copied"); }catch(e){ toast("Copy the link below to share"); }
+  });
+  function openShared(){
+    const m=location.hash.match(/^#binder=([A-Za-z0-9_-]+)$/); if(!m) return false;
+    try{
+      const j=JSON.parse(b64u.dec(m[1]));
+      const b=sanitizeBinder({id:"shared",name:j.n,cards:(Array.isArray(j.c)?j.c:[]).slice(0,SHARE_MAX).map(a=>Array.isArray(a)?{id:a[0],name:a[1],number:a[2],img:a[3],set:a[4]}:null)});
+      if(!b||!b.cards.length) return false;
+      shared=b; return true;
+    }catch(e){ return false; }
+  }
+  $("binder-save-copy").addEventListener("click",()=>{
+    if(!shared) return;
+    const b=sanitizeBinder({name:shared.name,cards:shared.cards}); b.id="b"+Date.now().toString(36);
+    if(binderStore.binders.some(x=>x.name===b.name)) b.name=(b.name+" (copy)").slice(0,40);
+    binderStore.binders.push(b); binderStore.active=b.id; shared=null; binderSave();
+    history.replaceState(null,"",location.href.split("#")[0]); pageNo=0; render(); toast("Saved a copy as "+b.name);
+  });
+  $("binder-close-shared").addEventListener("click",()=>{ shared=null; history.replaceState(null,"",location.href.split("#")[0]); pageNo=0; picked=-1; render(); });
+
+  if(!binderPersist) $("binder-warn").hidden=false;
+  updateCount();
+  // tab click handlers are attached later in the script, so open the shared binder once everything is wired up
+  if(openShared()) setTimeout(()=>{ const t=document.querySelector('.tab[data-view="tcg"]'); if(t) t.click(); showView("binder"); },0);
+  // test hook
+  window.__binder={ get store(){ return binderStore; }, get shared(){ return shared; } };
+})();
+
+
+/* ---- Upcoming Sets (hand-maintained — no public API for pre-release info) ----
+   Update this whenever a new set is officially confirmed, via pokemon-card.com
+   (Japan) or official English press. Write descriptions in your own words. */
+const UPCOMING_SETS = [
+  {
+    name: "30th Celebration",
+    region: "EN",
+    date: "2026-09-16",
+    blurb: "The Pokémon TCG's 30th-anniversary set, and the first expansion ever to launch worldwide on the same day rather than staggering English behind Japan. Built around all-foil packs, roughly 150 cards, and a run of classic reprints spanning the game's history alongside dozens of newly illustrated Pikachu cards."
+  },
+  {
+    name: "Mega Evolution: Delta Reign",
+    region: "EN",
+    date: "2026-11-06",
+    blurb: "The sixth and closing set in the Mega Evolution block, headlined by Mega Rayquaza ex. This is the English adaptation of Japan's already-released Storm Emeralda, continuing the Mega Evolution mechanic introduced earlier in the year."
+  },
+  {
+    name: "Storm Emeralda",
+    region: "JP",
+    date: "2026-07-31",
+    blurb: "Already released in Japan and headlined by Mega Rayquaza ex. This is the source set for the upcoming English Delta Reign expansion — Japan traditionally releases 3–4 months ahead of the English equivalent."
+  }
+];
+function renderUpcomingSets(){
+  const el=document.getElementById("upcoming-sets");
+  const today=new Date();
+  const sorted=[...UPCOMING_SETS].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  el.innerHTML=sorted.map(s=>{
+    const d=new Date(s.date);
+    const isFuture=d>today;
+    const dateLabel=d.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'});
+    return `<div class="ev pixel-box">
+      <div class="ev-top">
+        <span class="region-badge region-${s.region.toLowerCase()}">${s.region==="JP"?"Japan":"English"}</span>
+        ${isFuture?'':'<span style="font-family:var(--font-retro);font-size:13px;color:var(--ink-soft);">already released</span>'}
+      </div>
+      <h3>${s.name}</h3>
+      <div class="desc">${s.blurb}</div>
+      <div class="when"><span>${isFuture?'Releases':'Released'} ${dateLabel}</span></div>
+    </div>`;
+  }).join("");
+}
+renderUpcomingSets();
+
+
+const TOURNEY_API="https://play.limitlesstcg.com/api/tournaments?game=PTCG&limit=12";
+const SAMPLE_TOURNEYS=[
+  { id:"sample1", name:"Sample Regional Championship", format:"STANDARD", date:new Date().toISOString(), players:412 },
+  { id:"sample2", name:"Sample Weekly Online Cup", format:"STANDARD", date:new Date(Date.now()-864e5).toISOString(), players:64 }
+];
+function fmtTDate(iso){
+  const d=new Date(iso);
+  if(isNaN(d)) return "—";
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+}
+function tourneyRow(t){
+  const link=`https://play.limitlesstcg.com/tournaments/${t.id}`;
+  return `<div class="tourney-row pixel-box">
+    <div class="tourney-name">${t.name}</div>
+    <span class="tourney-format">${(t.format||"—").replace(/_/g," ")}</span>
+    <span class="tourney-date">${fmtTDate(t.date)}</span>
+    <span class="tourney-players">${t.players!=null?t.players+" players":"—"}</span>
+    <a class="tourney-link" href="${link}" target="_blank" rel="noopener">Standings ↗</a>
+  </div>`;
+}
+async function loadTournaments(){
+  const listEl=document.getElementById("tourney-list");
+  listEl.innerHTML='<div class="empty pixel-box">Loading tournaments…</div>';
+  try{
+    const r=await fetchWithTimeout(TOURNEY_API);
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    if(!Array.isArray(j)||!j.length) throw new Error("empty");
+    listEl.innerHTML=j.slice(0,12).map(tourneyRow).join("");
+  }catch(err){
+    listEl.innerHTML=
+      '<div class="empty pixel-box" style="margin-bottom:10px;">offline — showing sample data</div>'
+      + SAMPLE_TOURNEYS.map(tourneyRow).join("");
+  }
+}
+loadTournaments();
+setInterval(loadTournaments, 15*60000);
+
+/* ============================================================
+   POKÉDEX — species data from PokéAPI (pokeapi.co, free, no key).
+   Only factual data is used: names, types, base stats, abilities,
+   height/weight. Pokédex flavor text is deliberately NOT pulled —
+   that's the games' own prose. Sprites are OFF by default (see
+   SHOW_SPRITES); tiles use an original monogram instead.
+   ============================================================ */
+const POKEAPI="https://pokeapi.co/api/v2";
+const SHOW_SPRITES=true; // true = hotlink PokéAPI's sprite repo (official game art; see README). false = original monogram tiles
+const SHOW_FLAVOR_TEXT=true; // owner-approved (Oct 2026): Today shows the game's own Pokédex entry for the Pokémon of the day, fetched live from PokéAPI and credited (never stored in the repo). false = hide it
+const SPRITE_URL=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+
+const GEN_RANGES=[
+  {id:"all",label:"All generations",from:1,to:Infinity},
+  {id:"1",label:"Gen 1 · Kanto",from:1,to:151},
+  {id:"2",label:"Gen 2 · Johto",from:152,to:251},
+  {id:"3",label:"Gen 3 · Hoenn",from:252,to:386},
+  {id:"4",label:"Gen 4 · Sinnoh",from:387,to:493},
+  {id:"5",label:"Gen 5 · Unova",from:494,to:649},
+  {id:"6",label:"Gen 6 · Kalos",from:650,to:721},
+  {id:"7",label:"Gen 7 · Alola",from:722,to:809},
+  {id:"8",label:"Gen 8 · Galar",from:810,to:905},
+  {id:"9",label:"Gen 9 · Paldea",from:906,to:Infinity}
+];
+const DEX_TYPE_COLORS={
+  normal:"#A8A77A",fire:"#EE8130",water:"#6390F0",electric:"#F7D02C",grass:"#7AC74C",ice:"#96D9D6",
+  fighting:"#C22E28",poison:"#A33EA1",ground:"#E2BF65",flying:"#A98FF3",psychic:"#F95587",bug:"#A6B91A",
+  rock:"#B6A136",ghost:"#735797",dragon:"#6F35FC",dark:"#705746",steel:"#B7B7CE",fairy:"#D685AD"
+};
+const DEX_NAME_OVERRIDES={
+  "mr-mime":"Mr. Mime","mime-jr":"Mime Jr.","mr-rime":"Mr. Rime","type-null":"Type: Null",
+  "farfetchd":"Farfetch'd","sirfetchd":"Sirfetch'd","flabebe":"Flabébé","nidoran-f":"Nidoran♀","nidoran-m":"Nidoran♂"
+};
+const DEX_HYPHEN_KEEP=new Set(["ho-oh","porygon-z","jangmo-o","hakamo-o","kommo-o","wo-chien","chien-pao","ting-lu","chi-yu"]);
+const DEX_STAT_LABELS={"hp":"HP","attack":"ATK","defense":"DEF","special-attack":"SP.ATK","special-defense":"SP.DEF","speed":"SPD"};
+
+/* Small factual fallback (base stats / sizes) so the tab is never blank offline. */
+const DEX_SAMPLE=[
+  {id:1,name:"bulbasaur",types:["grass","poison"],height:0.7,weight:6.9,
+   abilities:[{name:"overgrow",hidden:false},{name:"chlorophyll",hidden:true}],
+   stats:[["hp",45],["attack",49],["defense",49],["special-attack",65],["special-defense",65],["speed",45]]},
+  {id:4,name:"charmander",types:["fire"],height:0.6,weight:8.5,
+   abilities:[{name:"blaze",hidden:false},{name:"solar-power",hidden:true}],
+   stats:[["hp",39],["attack",52],["defense",43],["special-attack",60],["special-defense",50],["speed",65]]},
+  {id:7,name:"squirtle",types:["water"],height:0.5,weight:9.0,
+   abilities:[{name:"torrent",hidden:false},{name:"rain-dish",hidden:true}],
+   stats:[["hp",44],["attack",48],["defense",65],["special-attack",50],["special-defense",64],["speed",43]]},
+  {id:25,name:"pikachu",types:["electric"],height:0.4,weight:6.0,
+   abilities:[{name:"static",hidden:false},{name:"lightning-rod",hidden:true}],
+   stats:[["hp",35],["attack",55],["defense",40],["special-attack",50],["special-defense",50],["speed",90]]},
+  {id:133,name:"eevee",types:["normal"],height:0.3,weight:6.5,
+   abilities:[{name:"run-away",hidden:false},{name:"adaptability",hidden:false},{name:"anticipation",hidden:true}],
+   stats:[["hp",55],["attack",55],["defense",50],["special-attack",45],["special-defense",65],["speed",55]]}
+];
+
+const dexSearch=document.getElementById("dex-search");
+const dexGen=document.getElementById("dex-gen");
+const dexStatus=document.getElementById("dex-status");
+const dexGrid=document.getElementById("dex-grid");
+const dexEmpty=document.getElementById("dex-empty");
+const dexDetail=document.getElementById("dex-detail");
+let dexList=[], dexOffline=false, dexLoading=false, dexReady=false, dexSelected=null;
+const dexCache=new Map();
+
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function titleCase(s){ return s.split("-").map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(" "); }
+function prettyName(slug){
+  if(DEX_NAME_OVERRIDES[slug]) return DEX_NAME_OVERRIDES[slug];
+  if(DEX_HYPHEN_KEEP.has(slug)) return slug.split("-").map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join("-");
+  return titleCase(slug);
+}
+function inkFor(hex){
+  const n=parseInt(hex.slice(1),16), r=n>>16, g=(n>>8)&255, b=n&255;
+  return (0.299*r+0.587*g+0.114*b)>150 ? "#1B2E1F" : "#FDF6E3";
+}
+function pad3(n){ return String(n).padStart(3,"0"); }
+async function getJSON(url,ms=8000){
+  const r=await fetchWithTimeout(url,ms);
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function loadDexList(){
+  try{
+    const cached=sessionStorage.getItem("td-dex-list-v1");
+    if(cached){ const arr=JSON.parse(cached); if(Array.isArray(arr)&&arr.length) return arr; }
+  }catch(e){}
+  // Ask for the species count first so new generations appear without a code change.
+  const head=await getJSON(`${POKEAPI}/pokemon-species?limit=1`);
+  const count=Number(head.count);
+  if(!count||count<1) throw new Error("bad count");
+  const j=await getJSON(`${POKEAPI}/pokemon-species?limit=${count}`,15000);
+  const list=j.results.map(r=>{
+    const m=r.url.match(/\/(\d+)\/?$/);
+    return m?{id:Number(m[1]),slug:r.name}:null;
+  }).filter(Boolean).sort((a,b)=>a.id-b.id);
+  if(!list.length) throw new Error("empty");
+  try{ sessionStorage.setItem("td-dex-list-v1",JSON.stringify(list)); }catch(e){}
+  return list;
+}
+function normalizeDetail(j){
+  return {
+    id:j.id,
+    name:j.species&&j.species.name?j.species.name:j.name,
+    types:j.types.slice().sort((a,b)=>a.slot-b.slot).map(t=>t.type.name),
+    height:j.height/10,
+    weight:j.weight/10,
+    abilities:j.abilities.slice().sort((a,b)=>a.slot-b.slot).map(a=>({name:a.ability.name,hidden:a.is_hidden})),
+    stats:j.stats.map(s=>[s.stat.name,s.base_stat])
+  };
+}
+async function loadDexDetail(id){
+  if(dexCache.has(id)) return dexCache.get(id);
+  const sample=DEX_SAMPLE.find(s=>s.id===id);
+  if(dexOffline){ if(sample) return sample; throw new Error("offline"); }
+  const d=normalizeDetail(await getJSON(`${POKEAPI}/pokemon/${id}`));
+  dexCache.set(id,d);
+  return d;
+}
+
+function renderDexGrid(){
+  const q=dexSearch.value.trim().toLowerCase().replace(/^#/,"");
+  const gen=GEN_RANGES.find(g=>g.id===dexGen.value)||GEN_RANGES[0];
+  const list=dexList.filter(p=>
+    p.id>=gen.from && p.id<=gen.to &&
+    (!q || p.label.toLowerCase().includes(q) || p.slug.includes(q) || String(p.id)===q || pad3(p.id)===q)
+  );
+  if(!list.length){
+    dexGrid.innerHTML=""; dexEmpty.style.display="block"; dexEmpty.textContent="No species match that search.";
+    return;
+  }
+  dexEmpty.style.display="none";
+  dexGrid.innerHTML=list.map(p=>`
+    <button type="button" class="dex-tile pixel-box" data-id="${p.id}" aria-pressed="${p.id===dexSelected}">
+      ${SHOW_SPRITES
+        ? `<img class="dex-sprite" src="${SPRITE_URL(p.id)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;dex-mono&quot; aria-hidden=&quot;true&quot;>${esc(p.label.charAt(0))}</span>'">`
+        : `<span class="dex-mono" aria-hidden="true">${esc(p.label.charAt(0))}</span>`}
+      <span class="dex-num">#${pad3(p.id)}</span>
+      <span class="dex-name">${esc(p.label)}</span>
+    </button>`).join("");
+}
+
+function statColor(v){ return v<50?"var(--hp-red)":v<90?"var(--hp-yellow)":"var(--hp-green)"; }
+function renderDexDetail(d){
+  const total=d.stats.reduce((s,[,v])=>s+v,0);
+  dexDetail.innerHTML=`
+    <div class="dex-detail-head">
+      <div><span class="dex-num">#${pad3(d.id)}</span><h2>${esc(prettyName(d.name))}</h2></div>
+      <button type="button" class="dex-close" id="dex-close">CLOSE ✕</button>
+    </div>
+    <div class="dex-types">${d.types.map(t=>{
+      const c=DEX_TYPE_COLORS[t]||"#888888";
+      return `<span class="dex-type" style="background:${c};color:${inkFor(c)}">${esc(t)}</span>`;
+    }).join("")}</div>
+    <div class="dex-cols">
+      <dl class="dex-facts">
+        <dt>Height</dt><dd>${d.height.toFixed(1)} m</dd>
+        <dt>Weight</dt><dd>${d.weight.toFixed(1)} kg</dd>
+        <dt>Abilities</dt><dd>${d.abilities.map(a=>
+          `${esc(titleCase(a.name))}${a.hidden?' <span class="dex-ability-hidden">(hidden)</span>':''}`).join("<br>")}</dd>
+      </dl>
+      <div>
+        ${d.stats.map(([k,v])=>`
+          <div class="dex-stat">
+            <span class="dex-stat-k">${esc(DEX_STAT_LABELS[k]||k)}</span>
+            <span>${v}</span>
+            <div class="dex-stat-bar"><div style="width:${Math.min(100,v/255*100).toFixed(1)}%;background:${statColor(v)}"></div></div>
+          </div>`).join("")}
+        <div class="dex-total">Base stat total: <b>${total}</b></div>
+      </div>
+    </div>`;
+  dexDetail.classList.add("open");
+}
+function closeDexDetail(){
+  dexSelected=null; dexDetail.classList.remove("open"); dexDetail.innerHTML="";
+  dexGrid.querySelectorAll(".dex-tile[aria-pressed='true']").forEach(b=>b.setAttribute("aria-pressed","false"));
+}
+async function selectDex(id){
+  dexSelected=id;
+  dexGrid.querySelectorAll(".dex-tile").forEach(b=>b.setAttribute("aria-pressed",String(Number(b.dataset.id)===id)));
+  dexDetail.classList.add("open");
+  dexDetail.innerHTML='<div class="dex-facts">Loading…</div>';
+  dexDetail.scrollIntoView({behavior:"smooth",block:"nearest"});
+  try{
+    const d=await loadDexDetail(id);
+    if(dexSelected!==id) return; // user clicked something else while this loaded
+    renderDexDetail(d);
+  }catch(err){
+    if(dexSelected!==id) return;
+    dexDetail.innerHTML='<div class="dex-facts">Couldn\'t load that species — the API may be unreachable. Try again in a moment.</div>';
+  }
+}
+
+async function initDex(){
+  if(dexLoading || (dexReady && !dexOffline)) return;
+  dexLoading=true;
+  dexStatus.textContent="Loading Pokédex…";
+  try{
+    const list=await loadDexList();
+    dexList=list.map(p=>({id:p.id,slug:p.slug,label:prettyName(p.slug)}));
+    dexOffline=false;
+    dexStatus.textContent=dexList.length+" species";
+  }catch(err){
+    dexList=DEX_SAMPLE.map(s=>({id:s.id,slug:s.name,label:prettyName(s.name)}));
+    dexOffline=true;
+    dexStatus.textContent="offline — sample data";
+  }
+  dexReady=true; dexLoading=false;
+  renderDexGrid();
+}
+dexGen.innerHTML=GEN_RANGES.map(g=>`<option value="${g.id}">${g.label}</option>`).join("");
+dexSearch.addEventListener("input",renderDexGrid);
+dexGen.addEventListener("change",renderDexGrid);
+dexGrid.addEventListener("click",e=>{
+  const tile=e.target.closest(".dex-tile");
+  if(tile) selectDex(Number(tile.dataset.id));
+});
+dexDetail.addEventListener("click",e=>{ if(e.target.closest("#dex-close")) closeDexDetail(); });
+
+/* ---- Routes: each tab has its own URL (/go, /tcg, /pokedex, /arena; Vercel rewrites them to this page) with its own
+   title, description and canonical link, so search engines can index and link straight to a tab. ---- */
+const SITE_URL="https://www.trainerdesk.net";
+const ROUTES={
+  today:{path:"/",title:"Trainer Desk: Pokémon GO Events, TCG Card Prices & Pokédex",desc:"Free, unofficial Pokémon fan hub: GO event and Community Day countdowns, TCG card prices with a digital binder, a searchable Pokédex and a pixel battle mini-game.",img:"og-image.jpg"},
+  go:{path:"/go",title:"Pokémon GO Events & Community Day Countdown | Trainer Desk",desc:"Live countdowns for current and upcoming Pokémon GO events, plus this month's Community Day: featured Pokémon, shinies, bonuses and times in your timezone.",img:"og-go.jpg"},
+  tcg:{path:"/tcg",title:"Pokémon TCG Card Prices, Sets & Digital Binder | Trainer Desk",desc:"Browse Pokémon TCG sets and cards with TCGplayer and Cardmarket market prices, sort by value, track set completion and build a free digital binder.",img:"og-tcg.jpg"},
+  dex:{path:"/pokedex",title:"Pokédex: Types, Base Stats & Abilities | Trainer Desk",desc:"Search every Pokémon by name, number or generation and see types, base stats, abilities, height and weight in a fast, mobile-friendly Pokédex.",img:"og-pokedex.jpg"},
+  arena:{path:"/arena",title:"Pixel Arena: Free Pokémon Battle Royale Mini-Game | Trainer Desk",desc:"Pick a Pokémon and survive a shrinking zone against 11 rivals in this free pixel-art battle royale mini-game. Type matchups and base stats decide the fight.",img:"og-arena.jpg"}
+};
+const canRoute=/^https?:$/.test(location.protocol);
+function viewFromPath(p){
+  p=(p||"/").replace(/\/index\.html$/,"/").replace(/\/+$/,"")||"/";
+  return Object.keys(ROUTES).find(k=>ROUTES[k].path===p)||"today";
+}
+function setMeta(view){
+  const r=ROUTES[view]||ROUTES.today, url=SITE_URL+r.path;
+  document.title=r.title;
+  const set=(sel,attr,val)=>{ const el=document.querySelector(sel); if(el) el.setAttribute(attr,val); };
+  set('meta[name="description"]',"content",r.desc);
+  set('link[rel="canonical"]',"href",url);
+  set('meta[property="og:url"]',"content",url);
+  set('meta[property="og:title"]',"content",r.title); set('meta[name="twitter:title"]',"content",r.title);
+  set('meta[property="og:description"]',"content",r.desc); set('meta[name="twitter:description"]',"content",r.desc);
+  set('meta[property="og:image"]',"content",SITE_URL+"/assets/"+r.img); set('meta[name="twitter:image"]',"content",SITE_URL+"/assets/"+r.img);
+}
+function activateView(view,push){
+  const t=document.querySelector('.tab[data-view="'+view+'"]'); if(!t) return;
+  document.querySelectorAll(".tab").forEach(x=>{ x.classList.remove("active"); x.removeAttribute("aria-current"); });
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  t.classList.add("active"); t.setAttribute("aria-current","page");
+  document.getElementById("view-"+view).classList.add("active");
+  if(view==="dex") initDex(); // lazy: don't hit PokéAPI until someone opens the tab
+  setMeta(view);
+  if(push&&canRoute&&viewFromPath(location.pathname)!==view){
+    const keep=/^#binder=/.test(location.hash)?location.hash:""; // shared-binder links survive the jump to /tcg
+    try{ history.pushState({view},"",ROUTES[view].path+location.search+keep); }catch(e){}
+  }
+}
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click",()=>activateView(t.dataset.view,true));
+});
+window.addEventListener("popstate",()=>{ const v=viewFromPath(location.pathname); const t=document.querySelector('.tab[data-view="'+v+'"]'); if(t) t.click(); });
+(function(){ const v=viewFromPath(location.pathname); if(v!=="today"){ const t=document.querySelector('.tab[data-view="'+v+'"]'); if(t) t.click(); } else setMeta("today"); })();
+
+(async function initGoEvents(){
+  await loadGoEvents();
+  renderEvents();
+})();
+setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // refresh feed every 15 min
+
+/* ============ TODAY — what's live right now (no extra services beyond one Pokédex lookup) ============ */
+(function(){
+  const $=id=>document.getElementById(id);
+  const goTab=v=>{ const t=document.querySelector('.tab[data-view="'+v+'"]'); if(t) t.click(); };
+  document.addEventListener("click",e=>{ const b=e.target.closest("[data-goto]"); if(b) goTab(b.dataset.goto); });
+  $("today-date").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})+" — here's what's on today.";
+
+  function renderTodayEvent(){
+    const now=new Date();
+    const evs=GO_EVENTS.filter(e=>e.start&&e.end).map(e=>({...e,_s:new Date(e.start),_e:new Date(e.end)})).filter(e=>!isNaN(e._s)&&!isNaN(e._e));
+    const live=evs.filter(e=>e._s<=now&&e._e>now).sort((a,b)=>a._e-b._e)[0];
+    const next=evs.filter(e=>e._s>now).sort((a,b)=>a._s-b._s)[0];
+    const ev=live||next, el=$("today-event");
+    if(!ev){ el.innerHTML='<div class="today-label">▸ POKÉMON GO</div><h3>No events on the board</h3><div class="desc">Check back soon.</div><button type="button" class="today-btn" data-goto="go">ALL EVENTS</button>'; return; }
+    const st=styleForType(ev.type);
+    el.innerHTML=`<div class="today-label">▸ ${live?"HAPPENING NOW":"NEXT GO EVENT"}</div>
+      <h3>${esc(ev.title)}</h3>
+      <div class="when"><span>${esc(st.label)}</span><span class="cd" data-t="${(live?ev._e:ev._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span></div>
+      <button type="button" class="today-btn" data-goto="go">ALL EVENTS</button>`;
+    tickCountdowns();
+  }
+
+  function renderTodayCD(){
+    const el=$("today-cd");
+    const head='<div class="today-label">▸ COMMUNITY DAY</div>';
+    if(GO_EVENTS===SAMPLE_GO_EVENTS){ el.innerHTML=head+'<div class="today-meta">Waiting for the live event feed…</div><button type="button" class="today-btn" data-goto="go">GO EVENTS</button>'; return; }
+    const now=new Date();
+    const cds=GO_EVENTS.filter(e=>/community-day/.test(e.type||"")&&e.start&&e.end).map(e=>({...e,_s:new Date(e.start),_e:new Date(e.end)})).filter(e=>!isNaN(e._s)&&!isNaN(e._e)).sort((a,b)=>a._s-b._s);
+    const f=cds.find(e=>e._s<=now&&e._e>now)||cds.find(e=>e._s>now);
+    if(!f){ el.innerHTML=head+'<h3>None scheduled yet</h3><div class="desc">Community Days are usually announced a few weeks ahead.</div><button type="button" class="today-btn" data-goto="go">GO EVENTS</button>'; return; }
+    const live=f._s<=now, mons=(f.cd&&f.cd.spawns)||[], shiny=new Set((f.cd&&f.cd.shinies)||[]);
+    const t=d=>d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+    el.innerHTML=`${head}
+      <h3>${esc(f.title)}</h3>
+      ${mons.length?`<div class="cd-mons">${mons.map(n=>`<div class="cd-mon">${cdArt(n)}<div><b>${esc(n)}</b>${shiny.has(n)?"<small>✦ shiny available</small>":""}</div></div>`).join("")}</div>`:'<div class="today-meta">Featured Pokémon not announced yet.</div>'}
+      <div class="when"><span>${esc(f._s.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}))} · ${esc(t(f._s))}–${esc(t(f._e))}</span><span class="cd" data-t="${(live?f._e:f._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span></div>
+      <button type="button" class="today-btn" id="today-cd-btn">CD DETAILS</button>`;
+    $("today-cd-btn").addEventListener("click",()=>{ goTab("go"); const box=document.getElementById("cd-box"); if(box&&box.scrollIntoView) box.scrollIntoView({block:"start"}); });
+    tickCountdowns();
+    const missing=mons.filter(n=>!cdIds.has(n));
+    if(SHOW_SPRITES&&missing.length) Promise.all(missing.map(cdMonId)).then(renderTodayCD);
+  }
+
+  function dayIndex(){ const d=new Date(); return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5); }
+  // Pokédex entry for the Pokémon of the day: latest English game entry + category, live from PokéAPI, cached per session.
+  async function loadSpeciesText(id){
+    const key="td-flavor-v1-"+id;
+    try{ const c=sessionStorage.getItem(key); if(c) return JSON.parse(c); }catch(e){}
+    const j=await getJSON(`${POKEAPI}/pokemon-species/${id}`);
+    const en=(j.flavor_text_entries||[]).filter(x=>x.language&&x.language.name==="en");
+    const last=en[en.length-1];
+    const genus=((j.genera||[]).find(x=>x.language&&x.language.name==="en")||{}).genus||"";
+    const out={
+      genus,
+      text:last?String(last.flavor_text).replace(/\u00ad\n?/g,"").replace(/[\f\n\r]+/g," ").replace(/\s+/g," ").trim():"", // soft hyphens join split words; line/page breaks become spaces
+      version:last&&last.version?last.version.name:""
+    };
+    try{ sessionStorage.setItem(key,JSON.stringify(out)); }catch(e){}
+    return out;
+  }
+  async function renderPotd(){
+    const el=$("today-potd"), day=dayIndex();
+    el.innerHTML='<div class="today-label">▸ POKÉMON OF THE DAY</div><div class="today-meta">Loading…</div>';
+    const pid=(day*7919)%1025+1;
+    let d, sp=null;
+    const [dr,sr]=await Promise.allSettled([loadDexDetail(pid),SHOW_FLAVOR_TEXT?loadSpeciesText(pid):Promise.resolve(null)]);
+    if(dr.status==="fulfilled"){ d=dr.value; if(sr.status==="fulfilled") sp=sr.value; }
+    else d=DEX_SAMPLE[day%DEX_SAMPLE.length]; // offline: rotate through the built-in species (no entry text)
+    const bst=d.stats.reduce((n,s)=>n+s[1],0), name=prettyName(d.name);
+    const art=SHOW_SPRITES
+      ? `<img src="${SPRITE_URL(d.id)}" alt="${esc(name)}" onerror="this.outerHTML='<span class=&quot;mono&quot; aria-hidden=&quot;true&quot; style=&quot;background:${DEX_TYPE_COLORS[d.types[0]]||"#888"}&quot;>${esc(name.charAt(0))}</span>'">`
+      : `<span class="mono" aria-hidden="true" style="background:${DEX_TYPE_COLORS[d.types[0]]||"#888"}">${esc(name.charAt(0))}</span>`;
+    el.innerHTML=`<div class="today-label">▸ POKÉMON OF THE DAY</div>
+      <div class="today-potd">${art}<div>
+        <h3>${esc(name)}</h3>
+        <div class="today-meta">#${String(d.id).padStart(3,"0")}${sp&&sp.genus?" · "+esc(sp.genus):""}</div>
+        <div class="today-types">${d.types.map(t=>`<span style="background:${DEX_TYPE_COLORS[t]||"#888"}">${esc(t)}</span>`).join("")}</div>
+        <div class="today-meta">Base stat total ${bst}</div>
+      </div></div>
+      ${sp&&sp.text?`<blockquote class="today-flavor">“${esc(sp.text)}”<cite>— Pokédex entry${sp.version?", Pokémon "+esc(prettyName(sp.version)):""} · via PokéAPI</cite></blockquote>`:""}
+      <button type="button" class="today-btn" id="today-potd-btn">VIEW IN POKÉDEX</button>`;
+    $("today-potd-btn").addEventListener("click",()=>{
+      const box=document.getElementById("dex-search");
+      box.value="#"+d.id; box.dispatchEvent(new Event("input",{bubbles:true}));
+      goTab("dex");
+    });
+  }
+
+  function renderTodaySet(){
+    const el=$("today-set"), now=new Date();
+    const sorted=[...UPCOMING_SETS].sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const next=sorted.find(s=>new Date(s.date)>now), s=next||sorted[sorted.length-1];
+    if(!s){ el.innerHTML=""; return; }
+    const d=new Date(s.date), days=Math.ceil((d-now)/864e5);
+    const when=next?(days<=1?"Releases tomorrow":"Releases in "+days+" days"):"Latest set — released";
+    const blurb=s.blurb.length>150?s.blurb.slice(0,147).replace(/\s+\S*$/,"")+"…":s.blurb;
+    el.innerHTML=`<div class="today-label">▸ ${next?"NEXT TCG SET":"LATEST TCG SET"}</div>
+      <h3>${esc(s.name)}</h3>
+      <div class="desc">${esc(blurb)}</div>
+      <div class="when"><span>${esc(when)} · ${esc(d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}))}</span></div>
+      <button type="button" class="today-btn" data-goto="tcg">BROWSE SETS</button>`;
+  }
+
+  renderTodayEvent(); renderTodayCD(); renderTodaySet(); renderPotd();
+  setInterval(()=>{ renderTodayEvent(); renderTodayCD(); },60000);
+  // GO events load asynchronously; repaint the card once they arrive
+  (async function wait(){ for(let i=0;i<40;i++){ await new Promise(r=>setTimeout(r,500)); if(GO_EVENTS&&GO_EVENTS.length&&GO_EVENTS!==SAMPLE_GO_EVENTS){ renderTodayEvent(); renderTodayCD(); return; } } renderTodayEvent(); renderTodayCD(); })();
+})();
+
+
+/* ============================================================
+   PIXEL ARENA — solo battle-royale minigame (canvas, no backend).
+   Stats + types come from PokéAPI via loadDexDetail() (facts); sprites are
+   hotlinked from PokéAPI's sprite repo and only used when SHOW_SPRITES is true
+   (otherwise original type-colored monogram discs). Offline: the 5 DEX_SAMPLE
+   species are used so the game always works.
+   Look: four arena backgrounds (assets/arena/*.webp, original generated art),
+   attack effect sprites (assets/arena/fx, CC0 from Pokémon Showdown — see
+   THIRD-PARTY-NOTICES.md), jump-style attack animation, type-colored impact
+   bursts, damage popups and a winner podium.
+   ============================================================ */
+(function(){
+  const W=480, H=480, SPR=48, RAD=17, CX=240, CY=300, ELL=0.62, TOP=135;
+  const ZONE_START=262, ZONE_END=34, ZONE_DELAY=6, ZONE_TIME=70;
+  const ATK_DUR=0.42, LUNGE=34;
+  const REDUCED=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const ARENAS=[{id:"indigo",name:"Indigo Plateau"},{id:"forest",name:"Viridian Grove"},{id:"volcano",name:"Cinnabar Crater"},{id:"glacier",name:"Seafoam Summit"}];
+  const ROSTER=[[1,"bulbasaur"],[3,"venusaur"],[4,"charmander"],[6,"charizard"],[7,"squirtle"],[9,"blastoise"],[25,"pikachu"],[39,"jigglypuff"],
+    [52,"meowth"],[54,"psyduck"],[92,"gastly"],[94,"gengar"],[130,"gyarados"],[133,"eevee"],[143,"snorlax"],[149,"dragonite"],[150,"mewtwo"],
+    [248,"tyranitar"],[282,"gardevoir"],[445,"garchomp"],[448,"lucario"],[658,"greninja"],[681,"aegislash"],[700,"sylveon"]];
+  // Attacking type -> defending types it hits double / half / not at all (standard type chart).
+  const CHART={
+    normal:{half:["rock","steel"],zero:["ghost"]},
+    fire:{dbl:["grass","ice","bug","steel"],half:["fire","water","rock","dragon"]},
+    water:{dbl:["fire","ground","rock"],half:["water","grass","dragon"]},
+    electric:{dbl:["water","flying"],half:["electric","grass","dragon"],zero:["ground"]},
+    grass:{dbl:["water","ground","rock"],half:["fire","grass","poison","flying","bug","dragon","steel"]},
+    ice:{dbl:["grass","ground","flying","dragon"],half:["fire","water","ice","steel"]},
+    fighting:{dbl:["normal","ice","rock","dark","steel"],half:["poison","flying","psychic","bug","fairy"],zero:["ghost"]},
+    poison:{dbl:["grass","fairy"],half:["poison","ground","rock","ghost"],zero:["steel"]},
+    ground:{dbl:["fire","electric","poison","rock","steel"],half:["grass","bug"],zero:["flying"]},
+    flying:{dbl:["grass","fighting","bug"],half:["electric","rock","steel"]},
+    psychic:{dbl:["fighting","poison"],half:["psychic","steel"],zero:["dark"]},
+    bug:{dbl:["grass","psychic","dark"],half:["fire","fighting","poison","flying","ghost","steel","fairy"]},
+    rock:{dbl:["fire","ice","flying","bug"],half:["fighting","ground","steel"]},
+    ghost:{dbl:["psychic","ghost"],half:["dark"],zero:["normal"]},
+    dragon:{dbl:["dragon"],half:["steel"],zero:["fairy"]},
+    dark:{dbl:["psychic","ghost"],half:["fighting","dark","fairy"]},
+    steel:{dbl:["ice","rock","fairy"],half:["fire","water","electric","steel"]},
+    fairy:{dbl:["fighting","dragon","dark"],half:["fire","poison","steel"]}
+  };
+  function typeMult(atk,defTypes){
+    const c=CHART[atk]||{}; let m=1;
+    for(const t of defTypes){
+      if(c.zero&&c.zero.includes(t)) m*=0.25; // "barely affects": never fully immune, keeps fights moving
+      else if(c.dbl&&c.dbl.includes(t)) m*=2;
+      else if(c.half&&c.half.includes(t)) m*=0.5;
+    }
+    return Math.min(4,Math.max(0.25,m));
+  }
+  // Attack effect sprite per type (Showdown FX images); other types use the white wisp with a type-colored glow.
+  const FX_FOR={fire:"fireball",water:"waterwisp",grass:"leaf1",ice:"iceball",ghost:"shadowball",psychic:"purplewisp",dark:"purplewisp",poison:"purplewisp",dragon:"purplewisp"};
+  const CLAW_TYPES=new Set(["fighting","bug","rock","ground","steel"]); // these also slash on impact
+  // Jump-attack pose over time: [progress, forward (fraction of LUNGE), lift px, scale] — wind-up, hop, contact, return.
+  const KF=[[0,0,0,1],[.13,-.25,0,.94],[.4,.55,14,1.1],[.54,1,0,1.06],[.65,1,-2,1],[.83,.45,9,1.04],[1,0,0,1]];
+  function pose(p){
+    for(let i=1;i<KF.length;i++){
+      if(p<=KF[i][0]){ const a=KF[i-1], b=KF[i], t=(p-a[0])/(b[0]-a[0]||1); return [a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t,a[3]+(b[3]-a[3])*t]; }
+    }
+    return [0,0,1];
+  }
+
+  const cv=document.getElementById("arena-canvas"), ctx=cv.getContext("2d");
+  const sel=document.getElementById("arena-fighter"), arenaSel=document.getElementById("arena-map"), startBtn=document.getElementById("arena-start"), skipBtn=document.getElementById("arena-skip");
+  const hud=document.getElementById("arena-hud"), overlay=document.getElementById("arena-overlay");
+  const msgEl=document.getElementById("arena-msg"), podiumEl=document.getElementById("arena-podium"), againBtn=document.getElementById("arena-again");
+  cv.width=W; cv.height=H;
+  sel.innerHTML=ROSTER.map(r=>`<option value="${r[0]}">${esc(prettyName(r[1]))}</option>`).join("");
+  sel.value="25";
+  arenaSel.innerHTML='<option value="daily">Arena: today\'s pick</option>'+ARENAS.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("");
+
+  let G=null, raf=0, last=0, hudAt=0, stick=null;
+  const keys={}, sprites=new Map(), bgs=new Map(), fxImgs=new Map();
+
+  // Black/White-era sprites (static) up to gen 5, otherwise the default front sprite; always hotlinked, never copied.
+  const spriteUrl=id=>id<=649?"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/"+id+".png":SPRITE_URL(id);
+  function getSprite(id){
+    if(!SHOW_SPRITES) return null;
+    let e=sprites.get(id);
+    if(!e){ const im=new Image(); e={im,ok:false,fb:false}; im.onload=()=>{ e.ok=true; }; im.onerror=()=>{ if(!e.fb){ e.fb=true; im.src=SPRITE_URL(id); } }; im.src=spriteUrl(id); sprites.set(id,e); }
+    return e.ok?e.im:null;
+  }
+  function getBg(id){
+    let e=bgs.get(id);
+    if(!e){ const im=new Image(); e={im,ok:false}; im.onload=()=>{ e.ok=true; if(!raf) draw(); }; im.src="assets/arena/"+id+".webp"; bgs.set(id,e); }
+    return e.ok?e.im:null;
+  }
+  function getFx(name){
+    let e=fxImgs.get(name);
+    if(!e){ const im=new Image(); e={im,ok:false}; im.onload=()=>{ e.ok=true; }; im.src="assets/arena/fx/"+name+".png"; fxImgs.set(name,e); }
+    return e.ok?e.im:null;
+  }
+  const dayIndex=()=>{ const d=new Date(); return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5); };
+  const chosenArena=()=>arenaSel.value==="daily"?ARENAS[dayIndex()%ARENAS.length].id:arenaSel.value;
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const zoneDist=o=>Math.hypot(o.x-CX,(o.y-CY)/ELL); // distance in "zone units" (the zone is an ellipse, matching the arena floor)
+  const tcolor=t=>DEX_TYPE_COLORS[t]||"#fff";
+
+  function makeFighter(d,isPlayer,i,n,off){
+    const s={}; d.stats.forEach(([k,v])=>{ s[k]=v; });
+    const ang=off+(i/n)*Math.PI*2;
+    const spd=s.speed||50;
+    return {
+      id:d.id, name:prettyName(d.name), types:d.types, isPlayer,
+      x:CX+Math.cos(ang)*175, y:CY+Math.sin(ang)*175*ELL,
+      maxhp:70+(s.hp||50)*0.9, hp:0,
+      dmg:7+Math.max(s.attack||50,s["special-attack"]||50)*0.12,
+      def:1/(1+(((s.defense||50)+(s["special-defense"]||50))/2)/120),
+      speed:60+Math.min(spd,130)*0.45,
+      cool:clamp(1.3-spd/200,0.6,1.2), t:Math.random()*0.8,
+      alive:true, flash:0, strafe:Math.random()<0.5?1:-1, wander:Math.random()*6.28, wt:0, place:0, atk:null
+    };
+  }
+  function newGame(details,arena){
+    const n=details.length, off=Math.random()*6.28;
+    const f=details.map((d,i)=>makeFighter(d,i===0,i,n,off));
+    f.forEach(x=>{ x.hp=x.maxhp; });
+    return {f,shots:[],orbs:[],fx:[],dying:[],t:0,orbT:4,over:false,win:false,place:0,playerOut:false,arena};
+  }
+
+  function inputVec(){
+    if(stick){ const dx=stick.x-stick.ox, dy=stick.y-stick.oy, m=Math.hypot(dx,dy); if(m>6){ const k=Math.min(m,50)/50/m; return [dx*k,dy*k]; } return [0,0]; }
+    const x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0), y=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+    const m=Math.hypot(x,y); return m?[x/m,y/m]:[0,0];
+  }
+  let testInput=null;
+
+  function zoneR(t){ return ZONE_START+(ZONE_END-ZONE_START)*clamp((t-ZONE_DELAY)/ZONE_TIME,0,1); }
+  function nearestEnemy(f,list){
+    let best=null,bd=1e9;
+    for(const o of list){ if(o===f||!o.alive) continue; const d=dist(f,o); if(d<bd){bd=d;best=o;} }
+    return best?{o:best,d:bd}:null;
+  }
+  function burst(x,y,color,n,speed,life){
+    if(REDUCED) n=Math.ceil(n/3);
+    for(let i=0;i<n;i++){ const a=Math.random()*6.28, v=speed*(0.4+Math.random()*0.8); G.fx.push({k:"p",x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:0,max:life*(0.7+Math.random()*0.5),color,size:2+Math.random()*3}); }
+  }
+  function popup(x,y,text,color,size){ G.fx.push({k:"txt",x,y,vy:-34,t:0,max:0.8,text,color,size}); }
+
+  function hit(s,f){
+    const m=typeMult(s.type,f.types), dmg=s.owner.dmg*m*f.def;
+    f.hp-=dmg; f.flash=0.12;
+    burst(f.x,f.y-6,tcolor(s.type),m>1?9:6,90,0.4);
+    const big=m>1, small=m<1;
+    popup(f.x,f.y-RAD-10,"-"+Math.max(1,Math.round(dmg))+(big?"!":""),big?"#FFD43B":small?"#B8C4BC":"#FFFFFF",big?22:small?15:18);
+    if(CLAW_TYPES.has(s.type)&&!REDUCED) G.fx.push({k:"slash",x:f.x,y:f.y-6,t:0,max:0.28});
+  }
+
+  function step(dt){
+    if(!G||G.over) return;
+    G.t+=dt;
+    const zr=zoneR(G.t), alive=G.f.filter(f=>f.alive);
+    for(const f of alive){
+      let vx=0,vy=0;
+      const ne=nearestEnemy(f,G.f);
+      if(f.isPlayer){ [vx,vy]=testInput||inputVec(); }
+      else{
+        const dc=Math.hypot(f.x-CX,f.y-CY);
+        f.wt-=dt; if(f.wt<=0){ f.wander+=(Math.random()-.5)*1.6; f.wt=0.8+Math.random(); if(Math.random()<.2) f.strafe*=-1; }
+        if(zoneDist(f)>zr-34){ vx=(CX-f.x)/(dc||1); vy=(CY-f.y)/(dc||1); }
+        else if(ne){
+          const dx=(ne.o.x-f.x)/ne.d, dy=(ne.o.y-f.y)/ne.d;
+          if(f.hp<f.maxhp*0.35&&ne.d<210){ vx=-dx; vy=-dy; }
+          else if(ne.d>120){ vx=dx; vy=dy; }
+          else { vx=-dy*f.strafe; vy=dx*f.strafe; }
+        }
+        vx+=Math.cos(f.wander)*0.25; vy+=Math.sin(f.wander)*0.25;
+        const m=Math.hypot(vx,vy); if(m>1){ vx/=m; vy/=m; }
+      }
+      f.x=clamp(f.x+vx*f.speed*dt,RAD,W-RAD); f.y=clamp(f.y+vy*f.speed*dt,TOP,H-RAD);
+      if(zoneDist(f)>zr) f.hp-=(8+G.t*0.08)*dt; // outside the zone
+      f.flash=Math.max(0,f.flash-dt);
+      f.t-=dt;
+      if(!f.atk&&f.t<=0&&ne&&ne.d<200){ // start a jump attack; the shot leaves at the contact beat
+        f.t=f.cool; f.atk={t:0,fired:false,ux:(ne.o.x-f.x)/ne.d,uy:(ne.o.y-f.y)/ne.d};
+      }
+      if(f.atk){
+        f.atk.t+=dt/(REDUCED?0.2:ATK_DUR);
+        if(!f.atk.fired&&f.atk.t>=0.54){
+          f.atk.fired=true;
+          const tg=nearestEnemy(f,G.f);
+          if(tg&&tg.d<260){ const dx=(tg.o.x-f.x)/tg.d, dy=(tg.o.y-f.y)/tg.d; G.shots.push({x:f.x,y:f.y-6,vx:dx*290,vy:dy*290,owner:f,type:f.types[0]||"normal",life:0.9,spin:Math.atan2(dy,dx)}); }
+        }
+        if(f.atk.t>=1) f.atk=null;
+      }
+    }
+    // keep fighters from stacking
+    for(let i=0;i<alive.length;i++) for(let j=i+1;j<alive.length;j++){
+      const a=alive[i],b=alive[j],d=dist(a,b);
+      if(d>0&&d<RAD*1.6){ const p=(RAD*1.6-d)/2, ux=(a.x-b.x)/d, uy=(a.y-b.y)/d; a.x+=ux*p; a.y+=uy*p; b.x-=ux*p; b.y-=uy*p; }
+    }
+    for(const s of G.shots){
+      s.x+=s.vx*dt; s.y+=s.vy*dt; s.life-=dt;
+      for(const f of G.f){
+        if(!f.alive||f===s.owner||Math.hypot(f.x-s.x,f.y-6-s.y)>RAD+4) continue;
+        hit(s,f); s.life=0; break;
+      }
+    }
+    G.shots=G.shots.filter(s=>s.life>0&&s.x>-10&&s.x<W+10&&s.y>-10&&s.y<H+10);
+    G.orbT-=dt;
+    if(G.orbT<=0&&G.orbs.length<3){
+      G.orbT=7; const a=Math.random()*6.28, r=Math.random()*Math.max(20,zr-40);
+      G.orbs.push({x:CX+Math.cos(a)*r,y:CY+Math.sin(a)*r*ELL});
+    }
+    for(const f of alive){
+      G.orbs=G.orbs.filter(o=>{ if(Math.hypot(f.x-o.x,f.y-o.y)<RAD+8){ f.hp=Math.min(f.maxhp,f.hp+f.maxhp*0.3); popup(f.x,f.y-RAD-10,"+HP","#4CD964",16); return false; } return true; });
+    }
+    // effects
+    for(const e of G.fx){ e.t+=dt; if(e.k==="p"){ e.x+=e.vx*dt; e.y+=e.vy*dt; e.vx*=0.94; e.vy*=0.94; } else if(e.k==="txt") e.y+=e.vy*dt; }
+    G.fx=G.fx.filter(e=>e.t<e.max);
+    for(const d of G.dying) d.t+=dt;
+    G.dying=G.dying.filter(d=>d.t<0.6);
+    // knockouts
+    const dead=alive.filter(f=>f.hp<=0);
+    if(dead.length){
+      const left=alive.length-dead.length;
+      dead.forEach(f=>{
+        f.alive=false; f.hp=0; f.place=left+1; f.atk=null;
+        G.dying.push({x:f.x,y:f.y,id:f.id,name:f.name,types:f.types,t:0});
+        burst(f.x,f.y-6,tcolor(f.types[0]),18,140,0.6);
+        G.fx.push({k:"ring",x:f.x,y:f.y-6,t:0,max:0.45,color:tcolor(f.types[0])});
+      });
+    }
+    const player=G.f[0], remaining=G.f.filter(f=>f.alive);
+    if(!player.alive&&!G.playerOut){ G.playerOut=true; G.place=player.place; skipBtn.hidden=false; }
+    if(remaining.length<=1){
+      G.over=true; G.win=player.alive; if(remaining[0]) remaining[0].place=1;
+      if(player.alive) G.place=1;
+      finish();
+    }
+  }
+
+  function drawFighterArt(f,x,y,s,alpha,rot){
+    const im=getSprite(f.id);
+    ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x,y); if(rot) ctx.rotate(rot);
+    if(im){ ctx.imageSmoothingEnabled=false; ctx.drawImage(im,-SPR*s/2,-SPR*s/2-8,SPR*s,SPR*s); }
+    else{
+      ctx.fillStyle=tcolor(f.types[0])||"#888"; ctx.beginPath(); ctx.arc(0,0,RAD*s,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#1B4332"; ctx.lineWidth=3; ctx.stroke();
+      ctx.fillStyle="#fff"; ctx.font="bold 20px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(f.name.charAt(0),0,1);
+    }
+    ctx.restore();
+  }
+
+  function draw(){
+    const sel_=G?G.arena:chosenArena(), bg=getBg(sel_);
+    if(bg){ ctx.imageSmoothingEnabled=true; ctx.drawImage(bg,0,0,W,H); }
+    else for(let y=0;y<H;y+=40) for(let x=0;x<W;x+=40){ ctx.fillStyle=((x+y)/40)%2?"#2D6A4F":"#276049"; ctx.fillRect(x,y,40,40); }
+    if(!G) return;
+    ctx.imageSmoothingEnabled=false;
+    const zr=zoneR(G.t);
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); ctx.ellipse(CX,CY,zr,zr*ELL,0,0,Math.PI*2,true);
+    ctx.fillStyle="rgba(255,60,60,0.30)"; ctx.fill("evenodd"); ctx.restore();
+    ctx.strokeStyle="rgba(255,255,255,0.9)"; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(CX,CY,zr,zr*ELL,0,0,Math.PI*2); ctx.stroke();
+    for(const o of G.orbs){ ctx.fillStyle="#4CD964"; ctx.beginPath(); ctx.arc(o.x,o.y,8,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.stroke(); ctx.fillStyle="#fff"; ctx.fillRect(o.x-4,o.y-1,8,2); ctx.fillRect(o.x-1,o.y-4,2,8); }
+    for(const d of G.dying){ const p=d.t/0.6; drawFighterArt(d,d.x,d.y,1-p*0.35,1-p,REDUCED?0:p*5); }
+    for(const f of [...G.f].sort((a,b)=>a.y-b.y)){
+      if(!f.alive) continue;
+      ctx.fillStyle="rgba(0,0,0,0.28)"; ctx.beginPath(); ctx.ellipse(f.x,f.y+14,15,6,0,0,Math.PI*2); ctx.fill(); // ground shadow stays put while the sprite jumps
+      if(f.isPlayer){ ctx.strokeStyle="#FFC94A"; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(f.x,f.y+14,20,8,0,0,Math.PI*2); ctx.stroke(); }
+      let ox=0,oy=0,sc=1;
+      if(f.atk&&!REDUCED){ const [fw,lift,s]=pose(f.atk.t); ox=f.atk.ux*fw*LUNGE; oy=f.atk.uy*fw*LUNGE-lift; sc=s; }
+      drawFighterArt(f,f.x+ox,f.y+oy,sc,1,0);
+      if(f.flash>0){ ctx.fillStyle="rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.arc(f.x,f.y,RAD,0,Math.PI*2); ctx.fill(); }
+      const bw=34, r=f.hp/f.maxhp;
+      ctx.fillStyle="#1B2E1F"; ctx.fillRect(f.x-bw/2-1,f.y-RAD-19,bw+2,7);
+      ctx.fillStyle=r>0.5?"#4CD964":r>0.25?"#FFD43B":"#FF5C5C"; ctx.fillRect(f.x-bw/2,f.y-RAD-18,bw*r,5);
+    }
+    for(const s of G.shots){
+      const col=tcolor(s.type), name=FX_FOR[s.type]||"wisp", im=getFx(name);
+      ctx.save(); ctx.translate(s.x,s.y);
+      ctx.shadowColor=col; ctx.shadowBlur=14;
+      if(im){
+        const lw=name.startsWith("leaf")?im.width:null;
+        if(lw){ ctx.rotate(s.spin+G.t*10); ctx.drawImage(im,-im.width/2,-im.height/2); }
+        else { const sz=name==="fireball"?30:34; ctx.drawImage(im,-sz/2,-sz/2,sz,sz); }
+      } else { ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,5,0,Math.PI*2); ctx.fill(); }
+      ctx.restore();
+    }
+    for(const e of G.fx){
+      const p=e.t/e.max;
+      if(e.k==="p"){ ctx.globalAlpha=1-p; ctx.fillStyle=e.color; ctx.fillRect(Math.round(e.x-e.size/2),Math.round(e.y-e.size/2),Math.ceil(e.size),Math.ceil(e.size)); ctx.globalAlpha=1; }
+      else if(e.k==="ring"){ ctx.globalAlpha=1-p; ctx.strokeStyle=e.color; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(e.x,e.y,8+p*40,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1; }
+      else if(e.k==="slash"){ const l=getFx("leftclaw"), r=getFx("rightclaw"); ctx.globalAlpha=1-p; if(l) ctx.drawImage(l,e.x-34,e.y-30); if(r) ctx.drawImage(r,e.x-2,e.y-30); ctx.globalAlpha=1; }
+      else if(e.k==="txt"){ ctx.globalAlpha=Math.min(1,(1-p)*1.6); ctx.font="bold "+e.size+"px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.lineWidth=4; ctx.strokeStyle="#1B2E1F"; ctx.strokeText(e.text,e.x,e.y); ctx.fillStyle=e.color; ctx.fillText(e.text,e.x,e.y); ctx.globalAlpha=1; }
+    }
+    if(stick){ ctx.strokeStyle="rgba(255,255,255,0.5)"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(stick.ox,stick.oy,50,0,Math.PI*2); ctx.stroke();
+      const dx=stick.x-stick.ox, dy=stick.y-stick.oy, m=Math.hypot(dx,dy)||1, k=Math.min(m,50)/m;
+      ctx.fillStyle="rgba(255,255,255,0.6)"; ctx.beginPath(); ctx.arc(stick.ox+dx*k,stick.oy+dy*k,16,0,Math.PI*2); ctx.fill(); }
+  }
+  function updateHud(){
+    if(!G) return;
+    const p=G.f[0], n=G.f.filter(f=>f.alive).length, left=Math.max(0,Math.ceil(ZONE_DELAY+ZONE_TIME-G.t));
+    const zone=left?"FINAL ZONE IN "+left+"s":"FINAL ZONE";
+    const win=G.f.find(f=>f.alive);
+    if(G.over){ hud.textContent="MATCH OVER — "+(win?(win.isPlayer?"you win!":"winner: "+win.name):"no survivors")+" · you placed #"+G.place; return; }
+    hud.textContent=G.playerOut
+      ? "SPECTATING — you placed #"+G.place+" · ALIVE "+n+"/"+G.f.length+" · "+zone
+      : "ALIVE "+n+"/"+G.f.length+" · "+p.name+" HP "+Math.max(0,Math.ceil(p.hp))+"/"+Math.ceil(p.maxhp)+" · "+zone;
+  }
+  function frame(ts){
+    if(!G){ raf=0; return; }
+    const dt=Math.min(0.05,(ts-last)/1000||0); last=ts;
+    step(dt); draw();
+    if(ts-hudAt>250){ hudAt=ts; updateHud(); }
+    raf=G&&!G.over?requestAnimationFrame(frame):0;
+  }
+  function podiumHtml(){
+    const top=[...G.f].sort((a,b)=>a.place-b.place).slice(0,3);
+    const order=top.length>=3?[1,0,2]:top.map((_,i)=>i); // 2nd, 1st, 3rd
+    return order.map(i=>{
+      const f=top[i], rank=i+1;
+      const disc=`<span class="mono" style="background:${esc(tcolor(f.types[0]))}">${esc(f.name.charAt(0))}</span>`;
+      const art=SHOW_SPRITES?`<img src="${esc(spriteUrl(f.id))}" alt="" data-fb="${esc(SPRITE_URL(f.id))}" data-disc="${esc(disc)}">`:disc;
+      return `<div class="pod pod-${rank}${f.isPlayer?" you":""}">${art}<span class="pod-name">${esc(f.name)}</span><div class="pod-block">${rank===1?'<img class="medal" src="assets/arena/medal.webp" alt="">':""}#${rank}</div></div>`;
+    }).join("");
+  }
+  function setOverlay(msg,again,podium){ msgEl.textContent=msg; podiumEl.innerHTML=podium||""; againBtn.hidden=!again; overlay.hidden=false; }
+  function finish(){
+    cancelAnimationFrame(raf); raf=0; draw(); updateHud(); skipBtn.hidden=true;
+    setOverlay(G.win?"VICTORY! You are the last one standing.":"Knocked out — you placed #"+G.place+" of "+G.f.length+".",true,podiumHtml());
+    startBtn.disabled=false;
+  }
+  function stop(){ cancelAnimationFrame(raf); raf=0; G=null; stick=null; for(const k in keys) keys[k]=false; startBtn.disabled=false; skipBtn.hidden=true; draw(); }
+
+  async function start(){
+    stop(); startBtn.disabled=true; setOverlay("Loading fighters…",false); hud.textContent="";
+    const pid=Number(sel.value), arena=chosenArena();
+    getBg(arena); ["wisp","fireball","waterwisp","iceball","shadowball","purplewisp","leaf1","leftclaw","rightclaw"].forEach(getFx);
+    const ids=[pid,...ROSTER.map(r=>r[0]).filter(i=>i!==pid).sort(()=>Math.random()-.5).slice(0,11)];
+    const res=await Promise.allSettled(ids.map(i=>loadDexDetail(i)));
+    let details=res.map(r=>r.status==="fulfilled"?r.value:null);
+    let note="";
+    if(!details[0]){ // no live data for the chosen fighter: play with the built-in sample species
+      const own=DEX_SAMPLE.find(s=>s.id===pid)||DEX_SAMPLE[0];
+      details=[own,...DEX_SAMPLE.filter(s=>s!==own)]; note=" (offline: sample fighters)";
+    } else {
+      details=details.filter(Boolean);
+      for(const s of DEX_SAMPLE){ if(details.length>=5) break; if(!details.some(d=>d.id===s.id)) details.push(s); }
+    }
+    G=newGame(details,arena); overlay.hidden=true; last=performance.now(); hudAt=0;
+    hud.textContent="Fight!"+note;
+    raf=requestAnimationFrame(frame);
+  }
+
+  podiumEl.addEventListener("error",e=>{ const im=e.target; if(!im||im.tagName!=="IMG"||!im.dataset.fb) return; if(im.dataset.tried){ im.outerHTML=im.dataset.disc; } else { im.dataset.tried="1"; im.src=im.dataset.fb; } },true);
+  startBtn.addEventListener("click",start);
+  againBtn.addEventListener("click",start);
+  skipBtn.addEventListener("click",()=>{ for(let i=0;G&&!G.over&&i<8000;i++) step(0.05); });
+  arenaSel.addEventListener("change",()=>{ if(!G) draw(); });
+  document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{ if(t.dataset.view!=="arena") stop(); else if(!G) draw(); }));
+  const arenaActive=()=>document.getElementById("view-arena").classList.contains("active");
+  window.addEventListener("keydown",e=>{
+    if(!arenaActive()) return;
+    const k=e.key.toLowerCase();
+    if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(k)){ keys[k]=true; if(G&&!G.over&&k.startsWith("arrow")) e.preventDefault(); }
+  });
+  window.addEventListener("keyup",e=>{ keys[e.key.toLowerCase()]=false; });
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]; };
+  cv.addEventListener("pointerdown",e=>{ const [x,y]=pos(e); stick={ox:x,oy:y,x,y}; try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
+  cv.addEventListener("pointermove",e=>{ if(stick){ const [x,y]=pos(e); stick.x=x; stick.y=y; } });
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>cv.addEventListener(ev,()=>{ stick=null; }));
+  setOverlay("Pick a fighter and press START. Drag on the arena (or use WASD / arrow keys) to move — your fighter attacks on its own.",false);
+  draw();
+  // test hook (used by tests/arena.test.js)
+  window.__arena={ step, setInput:(x,y)=>{ testInput=(x==null)?null:[x,y]; }, get state(){ return G&&{over:G.over,win:G.win,place:G.place,playerOut:G.playerOut,arena:G.arena,alive:G.f.filter(f=>f.alive).length,total:G.f.length,player:{x:G.f[0].x,y:G.f[0].y,hp:G.f[0].hp}}; } };
+})();
+
+loadSets();
+</script>
+</body>
+</html>

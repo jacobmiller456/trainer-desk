@@ -26,8 +26,17 @@ const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
 check('sitemap lists every route', JSON.stringify(locs) === JSON.stringify(Object.values(routes).map(r => 'https://www.trainerdesk.net' + r.path)), locs);
 check('robots.txt points at the sitemap', /Sitemap: https:\/\/www\.trainerdesk\.net\/sitemap\.xml/.test(read('robots.txt')));
 const vercel = JSON.parse(read('vercel.json'));
-const rw = new RegExp('^' + vercel.rewrites[0].source.replace(/^\//, '\\/') + '$');
-check('vercel rewrites cover the tab paths', ['/go', '/tcg', '/pokedex', '/arena'].every(p => rw.test(p)) && !rw.test('/assets/x'));
+check('cleanUrls on, so /tcg is served from tcg.html', vercel.cleanUrls === true);
+const { execFileSync } = require('child_process');
+let fresh = true; try { execFileSync('node', [path.join(root, 'scripts/tab-pages.mjs'), '--check'], { stdio: 'pipe' }); } catch (e) { fresh = false; }
+check('generated tab pages are up to date with index.html', fresh);
+const imgFor = { today: 'og-image.jpg', go: 'og-go.jpg', tcg: 'og-tcg.jpg', dex: 'og-pokedex.jpg', arena: 'og-arena.jpg' };
+for (const [k, r] of Object.entries(routes)) {
+  const file = r.path === '/' ? 'index.html' : r.path.slice(1) + '.html';
+  const h = read(file);
+  const og = (h.match(/<meta property="og:image" content="([^"]+)"/) || [])[1];
+  check(`${file}: own social card + title in raw HTML`, og === 'https://www.trainerdesk.net/assets/' + imgFor[k] && h.includes('<title>' + r.title.replace(/&/g, '&amp;') + '</title>') && fs.existsSync(path.join(root, 'assets', imgFor[k])), og);
+}
 const man = JSON.parse(read('site.webmanifest'));
 check('manifest icons exist', man.icons.every(i => fs.existsSync(path.join(root, i.src))) && fs.existsSync(path.join(root, 'apple-touch-icon.png')));
 check('404 page exists and is noindex', /noindex/.test(read('404.html')));
@@ -36,7 +45,8 @@ check('404 page exists and is noindex', /noindex/.test(read('404.html')));
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.xml': 'application/xml', '.txt': 'text/plain' };
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
-  if (p === '/' || rw.test(p)) p = '/index.html';
+  if (p === '/') p = '/index.html';
+  else if (!path.extname(p) && fs.existsSync(path.join(root, p + '.html'))) p = p + '.html'; // Vercel cleanUrls
   const f = path.join(root, p);
   if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404, { 'Content-Type': 'text/html' }); return res.end(read('404.html')); }
   res.writeHead(200, { 'Content-Type': types[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
@@ -55,6 +65,8 @@ server.listen(0, async () => {
   check('share image is 1200x630', dims.join('x') === '1200x630', dims);
   check('/ opens Today with the home title + canonical', (await page.isVisible('#view-today')) && (await page.title()) === routes.today.title && (await canon()) === 'https://www.trainerdesk.net/');
 
+  const raw = await (await page.request.get(base + '/tcg')).text();
+  check('link previewers get the TCG card without running JS', raw.includes('assets/og-tcg.jpg') && raw.includes('<title>' + routes.tcg.title.replace(/&/g, '&amp;') + '</title>'));
   await page.goto(base + '/tcg');
   check('/tcg opens the TCG tab directly', await page.isVisible('#view-tcg'));
   check('/tcg has its own title, description, canonical', (await page.title()) === routes.tcg.title && (await page.getAttribute('meta[name="description"]', 'content')) === routes.tcg.desc && (await canon()) === 'https://www.trainerdesk.net/tcg');

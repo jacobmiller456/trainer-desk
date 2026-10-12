@@ -1685,11 +1685,11 @@ dexDetail.addEventListener("click",e=>{ if(e.target.closest("#dex-close")) close
    title, description and canonical link, so search engines can index and link straight to a tab. ---- */
 const SITE_URL="https://www.trainerdesk.net";
 const ROUTES={
-  today:{path:"/",title:"Trainer Desk: Pokémon GO Events, TCG Card Prices & Pokédex",desc:"Free, unofficial Pokémon fan hub: GO event and Community Day countdowns, TCG card prices with a digital binder, a searchable Pokédex and a pixel battle mini-game."},
-  go:{path:"/go",title:"Pokémon GO Events & Community Day Countdown | Trainer Desk",desc:"Live countdowns for current and upcoming Pokémon GO events, plus this month's Community Day: featured Pokémon, shinies, bonuses and times in your timezone."},
-  tcg:{path:"/tcg",title:"Pokémon TCG Card Prices, Sets & Digital Binder | Trainer Desk",desc:"Browse Pokémon TCG sets and cards with TCGplayer and Cardmarket market prices, sort by value, track set completion and build a free digital binder."},
-  dex:{path:"/pokedex",title:"Pokédex: Types, Base Stats & Abilities | Trainer Desk",desc:"Search every Pokémon by name, number or generation and see types, base stats, abilities, height and weight in a fast, mobile-friendly Pokédex."},
-  arena:{path:"/arena",title:"Pixel Arena: Free Pokémon Battle Royale Mini-Game | Trainer Desk",desc:"Pick a Pokémon and survive a shrinking zone against 11 rivals in this free pixel-art battle royale mini-game. Type matchups and base stats decide the fight."}
+  today:{path:"/",title:"Trainer Desk: Pokémon GO Events, TCG Card Prices & Pokédex",desc:"Free, unofficial Pokémon fan hub: GO event and Community Day countdowns, TCG card prices with a digital binder, a searchable Pokédex and a pixel battle mini-game.",img:"og-image.jpg"},
+  go:{path:"/go",title:"Pokémon GO Events & Community Day Countdown | Trainer Desk",desc:"Live countdowns for current and upcoming Pokémon GO events, plus this month's Community Day: featured Pokémon, shinies, bonuses and times in your timezone.",img:"og-go.jpg"},
+  tcg:{path:"/tcg",title:"Pokémon TCG Card Prices, Sets & Digital Binder | Trainer Desk",desc:"Browse Pokémon TCG sets and cards with TCGplayer and Cardmarket market prices, sort by value, track set completion and build a free digital binder.",img:"og-tcg.jpg"},
+  dex:{path:"/pokedex",title:"Pokédex: Types, Base Stats & Abilities | Trainer Desk",desc:"Search every Pokémon by name, number or generation and see types, base stats, abilities, height and weight in a fast, mobile-friendly Pokédex.",img:"og-pokedex.jpg"},
+  arena:{path:"/arena",title:"Pixel Arena: Free Pokémon Battle Royale Mini-Game | Trainer Desk",desc:"Pick a Pokémon and survive a shrinking zone against 11 rivals in this free pixel-art battle royale mini-game. Type matchups and base stats decide the fight.",img:"og-arena.jpg"}
 };
 const canRoute=/^https?:$/.test(location.protocol);
 function viewFromPath(p){
@@ -1705,6 +1705,7 @@ function setMeta(view){
   set('meta[property="og:url"]',"content",url);
   set('meta[property="og:title"]',"content",r.title); set('meta[name="twitter:title"]',"content",r.title);
   set('meta[property="og:description"]',"content",r.desc); set('meta[name="twitter:description"]',"content",r.desc);
+  set('meta[property="og:image"]',"content",SITE_URL+"/assets/"+r.img); set('meta[name="twitter:image"]',"content",SITE_URL+"/assets/"+r.img);
 }
 function activateView(view,push){
   const t=document.querySelector('.tab[data-view="'+view+'"]'); if(!t) return;

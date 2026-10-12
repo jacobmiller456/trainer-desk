@@ -8,6 +8,7 @@ Unofficial Pokémon GO + TCG + Pokédex info site, Pokémon Emerald (GBA) look.
 - `npm run dev` → http://localhost:3000
 - `npm test` → Playwright suites incl. mobile layout checks (network is mocked/aborted; no live calls)
 - `npm run test:mobile` → just the mobile checks
+- `npm run pages` → after ANY edit to `index.html`, regenerate `go.html`, `tcg.html`, `pokedex.html`, `arena.html` (copies with per-tab title/description/social card; `npm test` fails if they're stale). Never edit those four files by hand. Social card images: `python3 scripts/make-og-images.py`.
 - Deploy = push to `main` (Vercel project `trainer-desk-4n8w`, www.trainerdesk.net; see HANDOFF.md)
 
 ## Mobile-first (required on every change)
