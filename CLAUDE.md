@@ -10,6 +10,7 @@ Unofficial Pokémon GO + TCG + Pokédex info site, Pokémon Emerald (GBA) look.
 - `npm run test:mobile` → just the mobile checks
 - `npm run pages` → after ANY edit to `index.html`, regenerate `go.html`, `tcg.html`, `pokedex.html`, `arena.html` (copies with per-tab title/description/social card; `npm test` fails if they're stale). Never edit those four files by hand. Social card images: `python3 scripts/make-og-images.py`.
 - `npm run static-pages` → regenerate the static pages — 1,025 Pokémon pages (`pokedex/<slug>.html`), 176 TCG set pages (`tcg/<slug>.html`), the set index (`tcg/sets.html`) and `sitemap.xml` — from `data/pokedex.json` + `data/tcg.json` (`scripts/build-pages.mjs`, styles in `assets/dex-page.css`). Rerun after changing the builder, the CSS, `ROUTES` or `SHOW_SPRITES`. Never edit generated files by hand; `npm test` fails if they're stale. `npm run data` re-downloads both open datasets first (a GitHub Action does this weekly and commits the result).
+- `prices/` is written daily by `.github/workflows/prices.yml` (`scripts/snapshot-prices.mjs`, card price history for the sparklines). Don't edit it by hand; don't add it to `.vercelignore` (the site reads it).
 - Deploy = push to `main` (Vercel project `trainer-desk-4n8w`, www.trainerdesk.net; see HANDOFF.md)
 
 ## Mobile-first (required on every change)

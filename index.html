@@ -199,6 +199,11 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .tb-src{ font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
 .tb-date{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
 .tb-hint{ font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); }
+.tb-spark{ display:flex; align-items:center; gap:5px; line-height:1; font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
+.tback:has(.tb-spark){ gap:5px; }
+.tb-spark svg{ display:block; overflow:visible; }
+.tb-spark polyline{ fill:none; stroke:var(--forest-light); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+.tb-spark.up span{ color:#2F7A3A; } .tb-spark.down polyline{ stroke:#C0392B; } .tb-spark.down span{ color:#A93226; }
 .tcard .imgwrap{ position:relative; aspect-ratio:245/342; background:var(--parchment-2); display:grid; place-items:center; overflow:hidden; border-bottom:3px solid var(--forest-dark); }
 .tcard .imgwrap img{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; }
 @supports not (aspect-ratio:1/1){ /* older iPhones: keep the card shape with the padding trick */
@@ -1099,10 +1104,37 @@ async function loadTcgdexPrice(c){
 // Back of a card: price (or why there isn't one). In TCGdex mode the price is looked up only when the card is flipped.
 function backInner(c){
   if(c.sample) return `<div class="tb-src">Sample card — no price</div>`;
-  if(c.price) return `<div class="tb-price">${esc(fmtPrice(c.price))}</div><div class="tb-src">${esc(c.price.src)} market price</div>${c.price.at?`<div class="tb-date">Updated ${esc(c.price.at)}</div>`:""}`;
+  if(c.price) return `<div class="tb-price">${esc(fmtPrice(c.price))}</div><div class="tb-src">${esc(c.price.src)} market price</div>${sparkline(c)||(c.price.at?`<div class="tb-date">Updated ${esc(c.price.at)}</div>`:"")}`;
   if(c.priceState==="fail") return `<div class="tb-src">Couldn't load the price</div><div class="tb-date">Flip again to retry</div>`;
   if(tcgSource==="tcgdex"&&c.priceState===undefined) return `<div class="tb-src">Loading price…</div>`;
   return `<div class="tb-src">No price listed</div>`;
+}
+/* ---- Price history sparklines: daily TCGplayer prices saved by .github/workflows/prices.yml into prices/<month>/<set>.json.
+   Only for the main source (pokemontcg.io card ids); quietly absent if the files can't load. ---- */
+const PRICE_HIST_MONTHS=3; let priceHistIndex=null; const priceHist=new Map(); // card id -> [[day, usd], ...]
+async function loadPriceHistory(setId){
+  if(tcgSource!=="ptcg"||!setId||setId==="sample"||location.protocol==="file:") return;
+  try{
+    if(!priceHistIndex){ const r=await fetchWithTimeout("prices/latest.json",6000); if(!r.ok) throw new Error(r.status); priceHistIndex=await r.json(); }
+    const months=Object.keys(priceHistIndex.months||{}).sort().filter(m=>(priceHistIndex.months[m]||[]).includes(setId)).slice(-PRICE_HIST_MONTHS);
+    const files=await Promise.all(months.map(m=>fetchWithTimeout(`prices/${m}/${encodeURIComponent(setId)}.json?v=${encodeURIComponent(priceHistIndex.updated||"")}`,6000).then(r=>r.ok?r.json():null).catch(()=>null)));
+    const hist={};
+    files.forEach(f=>{ if(!f||!Array.isArray(f.days)||!f.cards) return;
+      Object.entries(f.cards).forEach(([id,vals])=>{ if(!Array.isArray(vals)) return; f.days.forEach((d,i)=>{ const v=vals[i]; if(typeof v==="number"&&v>0) (hist[id]=hist[id]||[]).push([d,v]); }); }); });
+    Object.entries(hist).forEach(([id,pts])=>priceHist.set(id,pts));
+    allCards.forEach(c=>{ if(hist[c.id]) paintBackFor(c); });
+  }catch(e){ /* no history yet or offline: card backs just show today's price */ }
+}
+function sparkline(c){
+  const pts=c.price&&c.price.cur==="USD"&&priceHist.get(c.id);
+  if(!pts||pts.length<2) return "";
+  const vals=pts.map(p=>p[1]), lo=Math.min(...vals), hi=Math.max(...vals), W=60, H=20, n=vals.length;
+  const xy=vals.map((v,i)=>`${(i*(W-4)/(n-1)+2).toFixed(1)},${(hi===lo?H/2:H-2-(v-lo)/(hi-lo)*(H-4)).toFixed(1)}`).join(" ");
+  const first=vals[0], last=vals[n-1], pct=Math.round((last-first)/first*100), cls=pct>0?"up":pct<0?"down":"flat";
+  const days=Math.max(1,Math.round((Date.parse(pts[n-1][0])-Date.parse(pts[0][0]))/864e5));
+  return `<div class="tb-spark ${cls}" role="img" aria-label="Price over ${days} days: $${first.toFixed(2)} to $${last.toFixed(2)}">
+    <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true"><polyline points="${xy}"/></svg>
+    <span>${days}d ${pct>0?"▲ +":pct<0?"▼ ":""}${pct}%</span></div>`;
 }
 function paintBackFor(c){
   const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
@@ -1169,7 +1201,7 @@ async function loadCards(setId){
   const showBulk=()=>{ loadBtn.hidden=tcgSource!=="tcgdex"; };
   const src=tcgSource, tag=src==="tcgdex"?" · via TCGdex":"";
   const cachedCards=tcgCacheGet("cards-v3-"+src+"-"+setId);
-  if(cachedCards){ allCards=cachedCards.map(c=>src==="tcgdex"?applyCachedPrice(c):c); statusEl.textContent=allCards.length+" cards"+tag; showBulk(); renderCards(); return; }
+  if(cachedCards){ allCards=cachedCards.map(c=>src==="tcgdex"?applyCachedPrice(c):c); statusEl.textContent=allCards.length+" cards"+tag; showBulk(); renderCards(); loadPriceHistory(setId); return; }
   statusEl.textContent="Loading cards…";
   try{
     allCards=await fetchCards(src,setId);
@@ -1177,6 +1209,7 @@ async function loadCards(setId){
     statusEl.textContent=allCards.length+" cards"+tag;
     showBulk();
     renderCards();
+    loadPriceHistory(setId);
   }catch(err){
     if(src==="ptcg") return switchToBackup();
     showOffline();
