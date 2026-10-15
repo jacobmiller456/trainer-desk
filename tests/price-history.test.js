@@ -14,12 +14,23 @@ async function scriptChecks() {
   check('setOf keeps dashes inside set ids', S.setOf('sv3pt5-1') === 'sv3pt5' && S.setOf('swsh12pt5gg-GG01') === 'swsh12pt5gg');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-prices-'));
   const cards = Array.from({ length: 6 }, (_, i) => ({ id: (i < 4 ? 'sv1-' : 'me2-') + (i + 1), tcgplayer: i === 5 ? undefined : { prices: { normal: { market: i + 1 } } } }));
-  const fake = (pages) => async url => { const p = +new URL(url).searchParams.get('page'); return { ok: true, json: async () => ({ data: pages[p - 1] || [], totalCount: 6 }) }; };
-  const run = (day, mult, pages) => S.snapshot({ dir, now: new Date(day + 'T08:00:00Z'), fetchImpl: fake(pages.map(pg => pg.map(c => c.tcgplayer ? { ...c, tcgplayer: { prices: { normal: { market: c.tcgplayer.prices.normal.market * mult } } } } : c))), delay: 0, minCards: 3, log: () => {} });
-  await run('2026-10-30', 1, [cards.slice(0, 3), cards.slice(3)]);
-  await run('2026-10-31', 2, [cards.slice(0, 3), cards.slice(3)]);
-  await run('2026-10-31', 3, [cards.slice(0, 3), cards.slice(3)]); // same-day rerun replaces the column
-  await run('2026-11-01', 1, [cards.slice(1, 3), cards.slice(3)]); // sv1-1 no longer listed
+  // fake API: /sets lists sv1 + me2 + bad1; /cards?q=set.id:X pages 2 per page; bad1 always 502s; me2 fails once (then retried)
+  let me2Fails = 0;
+  const fake = (list, opts = {}) => async url => {
+    const u = new URL(url), sp = u.searchParams;
+    if (u.pathname.endsWith('/sets')) return { ok: true, json: async () => ({ data: [{ id: 'bad1' }, { id: 'me2' }, { id: 'sv1' }] }) };
+    const set = sp.get('q').split(':')[1], page = +sp.get('page');
+    if (set === 'bad1' || (set === 'me2' && opts.flaky && me2Fails++ < 5)) return { ok: false, status: 502 };
+    const all = list.filter(c => c.id.startsWith(set + '-'));
+    return { ok: true, json: async () => ({ data: all.slice((page - 1) * 250, page * 250), totalCount: all.length }) };
+  };
+  const logs = [];
+  const run = (day, mult, list, opts) => S.snapshot({ dir, dataFile: path.join(dir, 'none.json'), now: new Date(day + 'T08:00:00Z'), fetchImpl: fake(list.map(c => c.tcgplayer ? { ...c, tcgplayer: { prices: { normal: { market: c.tcgplayer.prices.normal.market * mult } } } } : c), opts), delay: 0, fast: true, minCards: 3, log: m => logs.push(m) });
+  const r1 = await run('2026-10-30', 1, cards, { flaky: true });
+  check('a failing set is retried, then skipped without failing the run', JSON.stringify(r1.failed) === '["bad1"]' && r1.sets === 2 && logs.some(l => /me2 failed.*will retry/.test(l)) && logs.some(l => /bad1 failed.*skipped today/.test(l)), { r1, logs });
+  await run('2026-10-31', 2, cards);
+  await run('2026-10-31', 3, cards); // same-day rerun replaces the column
+  await run('2026-11-01', 1, cards.slice(1)); // sv1-1 no longer listed
   const oct = JSON.parse(fs.readFileSync(path.join(dir, '2026-10/sv1.json'), 'utf8'));
   const nov = JSON.parse(fs.readFileSync(path.join(dir, '2026-11/sv1.json'), 'utf8'));
   check('month file: one column per day, reruns replace today', JSON.stringify(oct.days) === '["2026-10-30","2026-10-31"]' && JSON.stringify(oct.cards['sv1-2']) === '[2,6]', oct);
@@ -28,7 +39,7 @@ async function scriptChecks() {
   check('unpriced cards are skipped', !me2.cards['me2-6'] && me2.cards['me2-5'][0] === 5);
   const idx = JSON.parse(fs.readFileSync(path.join(dir, 'latest.json'), 'utf8'));
   check('latest.json lists sets per month', JSON.stringify(idx.months) === '{"2026-10":["me2","sv1"],"2026-11":["me2","sv1"]}', idx);
-  let threw = false; try { await S.snapshot({ dir, fetchImpl: fake([[]]), delay: 0, log: () => {} }); } catch (e) { threw = /keeping the previous files/.test(e.message); }
+  let threw = false; try { await S.snapshot({ dir, dataFile: path.join(dir, 'none.json'), fetchImpl: fake([]), delay: 0, fast: true, log: () => {} }); } catch (e) { threw = /keeping the previous files/.test(e.message); }
   check('API trouble (too few prices): refuses to write', threw && fs.readdirSync(dir).length === 3);
   fs.rmSync(dir, { recursive: true });
 }
