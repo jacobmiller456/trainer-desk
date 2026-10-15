@@ -11,6 +11,9 @@ const GIF = Buffer.from('R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAE
 async function scriptChecks() {
   const S = await import('../scripts/snapshot-prices.mjs');
   check('usdPrice: first variant with market, else mid', S.usdPrice({ tcgplayer: { prices: { normal: { mid: 0.5 }, holofoil: { market: 3 } } } }) === 0.5 && S.usdPrice({ tcgplayer: { prices: { holofoil: { market: 2.345 } } } }) === 2.35 && S.usdPrice({}) === null);
+  const plan = S.planSets([{ id: 'old1', rel: '2001-01-01' }, { id: 'old2', rel: '2003-01-01' }, { id: 'new1', rel: '2026-03-01' }, { id: 'new2', rel: '2026-09-01' }, { id: 'done', rel: '2026-10-01' }, { id: 'bad id', rel: '' }],
+    { day: '2026-10-15', last: id => ({ old1: '2026-10-14', old2: '', done: '2026-10-15', new1: '2026-10-14' })[id] || '' });
+  check('planSets: skips saved-today, recent sets first, then stalest', JSON.stringify(plan) === '["new2","new1","old2","old1"]', plan);
   check('setOf keeps dashes inside set ids', S.setOf('sv3pt5-1') === 'sv3pt5' && S.setOf('swsh12pt5gg-GG01') === 'swsh12pt5gg');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-prices-'));
   const cards = Array.from({ length: 6 }, (_, i) => ({ id: (i < 4 ? 'sv1-' : 'me2-') + (i + 1), tcgplayer: i === 5 ? undefined : { prices: { normal: { market: i + 1 } } } }));
@@ -29,18 +32,19 @@ async function scriptChecks() {
   const r1 = await run('2026-10-30', 1, cards, { flaky: true });
   check('a failing set is retried, then skipped without failing the run', JSON.stringify(r1.failed) === '["bad1"]' && r1.sets === 2 && logs.some(l => /me2 failed.*will retry/.test(l)) && logs.some(l => /bad1 failed.*skipped today/.test(l)), { r1, logs });
   await run('2026-10-31', 2, cards);
-  await run('2026-10-31', 3, cards); // same-day rerun replaces the column
+  const again = await run('2026-10-31', 3, cards); // same-day rerun: everything already saved today
   await run('2026-11-01', 1, cards.slice(1)); // sv1-1 no longer listed
   const oct = JSON.parse(fs.readFileSync(path.join(dir, '2026-10/sv1.json'), 'utf8'));
   const nov = JSON.parse(fs.readFileSync(path.join(dir, '2026-11/sv1.json'), 'utf8'));
-  check('month file: one column per day, reruns replace today', JSON.stringify(oct.days) === '["2026-10-30","2026-10-31"]' && JSON.stringify(oct.cards['sv1-2']) === '[2,6]', oct);
+  check('month file: one column per day; a second run the same day skips saved sets', again.sets === 0 && JSON.stringify(oct.days) === '["2026-10-30","2026-10-31"]' && JSON.stringify(oct.cards['sv1-2']) === '[2,4]', { again, oct });
+  check('mergeDay replaces a column it already has', JSON.stringify(S.mergeDay({ days: ['d1'], cards: { a: [1], b: [2] } }, 'd1', { a: 5 }).cards) === '{"a":[5],"b":[null]}');
   check('new month starts a new file, past month untouched', JSON.stringify(nov.days) === '["2026-11-01"]' && !nov.cards['sv1-1'] && nov.cards['sv1-3'][0] === 3);
   const me2 = JSON.parse(fs.readFileSync(path.join(dir, '2026-10/me2.json'), 'utf8'));
   check('unpriced cards are skipped', !me2.cards['me2-6'] && me2.cards['me2-5'][0] === 5);
   const idx = JSON.parse(fs.readFileSync(path.join(dir, 'latest.json'), 'utf8'));
   check('latest.json lists sets per month', JSON.stringify(idx.months) === '{"2026-10":["me2","sv1"],"2026-11":["me2","sv1"]}', idx);
-  let threw = false; try { await S.snapshot({ dir, dataFile: path.join(dir, 'none.json'), fetchImpl: fake([]), delay: 0, fast: true, log: () => {} }); } catch (e) { threw = /keeping the previous files/.test(e.message); }
-  check('API trouble (too few prices): refuses to write', threw && fs.readdirSync(dir).length === 3);
+  let threw = false; try { await S.snapshot({ dir, dataFile: path.join(dir, 'none.json'), fetchImpl: async u => new URL(u).pathname.endsWith('/sets') ? { ok: true, json: async () => ({ data: [{ id: 'x1' }, { id: 'x2' }, { id: 'x3' }] }) } : { ok: false, status: 502 }, delay: 0, fast: true, log: () => {} }); } catch (e) { threw = /keeping the previous files/.test(e.message); }
+  check('API trouble (most sets fail): refuses to write', threw && fs.readdirSync(dir).length === 3);
   fs.rmSync(dir, { recursive: true });
 }
 

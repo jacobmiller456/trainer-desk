@@ -1,11 +1,13 @@
 name: Daily card price snapshot
 
-# Once a day: save every card's TCGplayer market price (from pokemontcg.io) into prices/<month>/<set>.json for the
+# Daily (in up to three runs): save every card's TCGplayer market price (from pokemontcg.io) into prices/<month>/<set>.json for the
 # price-history sparklines on card backs, then commit (the push to main redeploys the site). Can also be run by hand.
 # Optional repo secret POKEMONTCG_API_KEY raises the API's rate limit; without it the job just runs slower.
 on:
   schedule:
-    - cron: '41 7 * * *'   # daily 07:41 UTC
+    - cron: '41 7 * * *'   # three runs each morning (UTC): without an API key one run covers ~95 sets in its 40 minutes;
+    - cron: '41 8 * * *'   # each run skips sets already saved today, so together they cover every set
+    - cron: '41 9 * * *'
   workflow_dispatch:
 
 permissions:

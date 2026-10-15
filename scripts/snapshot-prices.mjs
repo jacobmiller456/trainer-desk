@@ -38,7 +38,7 @@ export function mergeDay(file, day, prices) {
 export const stringify = f => '{"days":' + JSON.stringify(f.days) + ',"cards":{\n' +
   Object.keys(f.cards).sort().map(id => JSON.stringify(id) + ':' + JSON.stringify(f.cards[id])).join(',\n') + '\n}}\n';
 
-async function getJSON(url, { key, fetchImpl, tries = 5 }) {
+async function getJSON(url, { key, fetchImpl, tries = 3 }) {
   for (let a = 1; a <= tries; a++) {
     try {
       const r = await fetchImpl(url, { headers: key ? { 'X-Api-Key': key } : {}, signal: AbortSignal.timeout(60000) });
@@ -49,11 +49,25 @@ async function getJSON(url, { key, fetchImpl, tries = 5 }) {
 }
 let backoffScale = 1; // tests set this to 0
 
-// Set ids: from data/tcg.json (refreshed weekly) when present, else from the API.
-async function setIds(opts, dataFile) {
-  try { const ids = JSON.parse(fs.readFileSync(dataFile, 'utf8')).map(s => s.id).filter(Boolean).reverse(); if (ids.length > 100) return ids; } catch (e) {} // newest first
-  const j = await getJSON(`${API}/sets?pageSize=250&select=id`, opts);
-  return (j.data || []).map(s => s.id).reverse();
+// Sets with release dates: from data/tcg.json (refreshed weekly) when present, else from the API (newest last).
+async function setList(opts, dataFile) {
+  try { const l = JSON.parse(fs.readFileSync(dataFile, 'utf8')).filter(s => s && s.id).map(s => ({ id: s.id, rel: s.releaseDate || '' })); if (l.length > 100) return l; } catch (e) {}
+  const j = await getJSON(`${API}/sets?pageSize=250&select=id,releaseDate`, opts);
+  return (j.data || []).map(s => ({ id: s.id, rel: (s.releaseDate || '').replace(/\//g, '-') }));
+}
+// Last day a set was saved (this month or last), '' if never.
+function lastSaved(dir, id, month, prevMonth) {
+  for (const m of [month, prevMonth]) { try { const d = JSON.parse(fs.readFileSync(path.join(dir, m, id + '.json'), 'utf8')).days; if (d && d.length) return d[d.length - 1]; } catch (e) {} }
+  return '';
+}
+// Order for one run: skip sets already saved today; sets released in the last 2 years first (most looked at), then the
+// rest by how long since they were last saved, so a few runs a day (see prices.yml) cover every set.
+export function planSets(list, { day, last }) {
+  const recentFrom = String(+day.slice(0, 4) - 2) + day.slice(4);
+  return list.filter(s => /^[a-z0-9.]+$/i.test(s.id) && last(s.id) !== day)
+    .map(s => ({ ...s, recent: s.rel >= recentFrom ? 1 : 0, last: last(s.id) }))
+    .sort((a, b) => b.recent - a.recent || a.last.localeCompare(b.last) || b.rel.localeCompare(a.rel))
+    .map(s => s.id);
 }
 
 // One set per request (like the site itself): a bad set is retried at the end and then skipped, not fatal.
@@ -62,7 +76,12 @@ export async function snapshot({ dir = path.join(root, 'prices'), dataFile = pat
   backoffScale = fast ? 0 : 1;
   const wait = delay ?? (key ? 300 : 2100); // no key: the API allows ~30 requests a minute
   const opts = { key, fetchImpl };
-  const ids = (await setIds(opts, dataFile)).filter(id => /^[a-z0-9.]+$/i.test(id));
+  const day = now.toISOString().slice(0, 10), month = day.slice(0, 7);
+  const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)).toISOString().slice(0, 7);
+  const all = await setList(opts, dataFile);
+  const ids = planSets(all, { day, last: id => lastSaved(dir, id, month, prev) });
+  log(`${ids.length} of ${all.length} sets to fetch today`);
+  if (!ids.length) { log('every set is already saved today'); return { priced: 0, sets: 0, failed: [] }; }
   const bySet = {};
   let priced = 0, failed = [];
   const fetchSet = async id => {
@@ -86,8 +105,9 @@ export async function snapshot({ dir = path.join(root, 'prices'), dataFile = pat
     }
     if (!failed.length) break;
   }
-  if (priced < minCards) throw new Error(`only ${priced} priced cards (${failed.length} sets failed); keeping the previous files`);
-  const day = now.toISOString().slice(0, 10), month = day.slice(0, 7);
+  // API trouble: most sets failed, or a big run came back nearly empty. Fail the job (visible in Actions) and write nothing.
+  if ((failed.length > 1 && failed.length >= ids.length / 2) || (ids.length >= 50 && priced < minCards)) throw new Error(`only ${priced} priced cards (${failed.length} of ${ids.length} sets failed); keeping the previous files`);
+  if (!priced) { log(`no prices fetched this run${failed.length ? ` (${failed.join(' ')} failed)` : ''}`); return { priced: 0, sets: 0, failed }; }
   fs.mkdirSync(path.join(dir, month), { recursive: true });
   for (const [set, prices] of Object.entries(bySet)) {
     const fp = path.join(dir, month, set + '.json');
@@ -98,7 +118,7 @@ export async function snapshot({ dir = path.join(root, 'prices'), dataFile = pat
   for (const m of fs.readdirSync(dir).filter(m => /^\d{4}-\d{2}$/.test(m)).sort())
     months[m] = fs.readdirSync(path.join(dir, m)).filter(f => f.endsWith('.json')).map(f => f.slice(0, -5)).sort();
   fs.writeFileSync(path.join(dir, 'latest.json'), JSON.stringify({ updated: now.toISOString(), months }) + '\n');
-  log(`prices ${day}: ${priced} priced cards in ${Object.keys(bySet).length} of ${ids.length} sets${failed.length ? `, ${failed.length} skipped: ${failed.join(' ')}` : ''}`);
+  log(`prices ${day}: ${priced} priced cards in ${Object.keys(bySet).length} of ${ids.length} sets fetched this run${failed.length ? `, ${failed.length} skipped: ${failed.join(' ')}` : ''}`);
   return { priced, sets: Object.keys(bySet).length, failed };
 }
 
