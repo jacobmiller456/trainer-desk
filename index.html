@@ -167,6 +167,22 @@ select,input[type=text]{
 select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .status{ font-family:var(--font-retro); font-size:15px; color:var(--parchment); }
 
+/* ---- GO type checker ---- */
+.tc{ padding:16px; margin-bottom:22px; }
+.tc-intro, .tc-msg, .tc-foot{ margin:0 0 10px; font-size:15px; }
+.tc-foot{ margin:12px 0 0; font-size:14px; color:var(--ink-soft,rgba(27,46,31,.68)); }
+.tc-msg:empty{ display:none; }
+.tc-form{ display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.tc-form input, .tc-form select{ min-width:0; width:100%; min-height:48px; }
+.tc-types{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.tc-row{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px 0; border-top:2px dashed var(--parchment-2); }
+.tc-row h3{ flex:0 0 100%; margin:0; font-family:var(--font-retro); font-size:18px; font-weight:400; }
+.tc-mult{ font-variant-numeric:tabular-nums; }
+.tc-chip{ display:inline-block; padding:3px 10px; border-radius:3px; color:#fff; font-size:14px; font-weight:700; text-transform:capitalize; text-shadow:0 1px 1px rgba(0,0,0,.4); }
+.tc-best{ margin:4px 0 8px; font-size:16px; }
+.tc-link{ display:inline-flex; align-items:center; min-height:44px; color:var(--forest-dark); font-weight:700; }
+@media(min-width:640px){ .tc-form{ flex-direction:row; } .tc-form input{ flex:1 1 220px; } .tc-types{ flex:1 1 320px; } }
+
 .card-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:16px; }
 .tcard{ perspective:900px; cursor:pointer; transition:.15s; -webkit-tap-highlight-color:transparent; }
 .tcard:hover{ transform:translateY(-3px); }
@@ -552,6 +568,21 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
   <div class="sec-label">▸ COMING UP</div>
   <div class="ev-grid" id="upcoming-events"></div>
+
+  <div class="sec-label">▸ TYPE CHECKER</div>
+  <section class="pixel-box tc" id="type-checker" aria-label="Pokémon GO type checker">
+    <p class="tc-intro">Pick a raid boss or any Pokémon (or choose its types) to see what hits it hard in Pokémon GO.</p>
+    <form class="tc-form" id="tc-form" autocomplete="off">
+      <input type="text" id="tc-name" list="tc-names" placeholder="Pokémon name…" aria-label="Pokémon name" enterkeyhint="go">
+      <div class="tc-types">
+        <select id="tc-t1" aria-label="First type"></select>
+        <select id="tc-t2" aria-label="Second type"></select>
+      </div>
+    </form>
+    <p class="tc-msg" id="tc-msg" aria-live="polite"></p>
+    <div id="tc-out" aria-live="polite"></div>
+    <p class="tc-foot">GO damage multipliers: super effective ×1.6, not very effective ×0.625, and "immune" types take ×0.39 instead of nothing. Two types multiply together.</p>
+  </section>
 
   <div class="pixel-box note">
     <b>Live data:</b> event titles, dates, and types are pulled automatically from the community-maintained <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> feed and refresh every 15 minutes. Each card links back to the original source for full details. If the feed can't be reached, sample data renders instead so the layout still works.
@@ -2567,6 +2598,77 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   draw();
   // test hook (used by tests/arena.test.js)
   window.__arena={ step, setInput:(x,y)=>{ testInput=(x==null)?null:[x,y]; }, get state(){ return G&&{over:G.over,win:G.win,place:G.place,playerOut:G.playerOut,arena:G.arena,alive:G.f.filter(f=>f.alive).length,total:G.f.length,player:{x:G.f[0].x,y:G.f[0].y,hp:G.f[0].hp}}; } };
+})();
+
+/* ============================================================
+   GO TYPE CHECKER (GO tab). Pick a Pokémon (names + types from assets/pokedex-names.json) or two types
+   and see weaknesses/resistances with GO multipliers. Type chart is game fact data; works offline (types only).
+   ============================================================ */
+const TYPE_LIST=["normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"];
+// attacker -> [super effective against], [not very effective against], [no effect in the main games]
+const TYPE_CHART={
+  normal:[[],["rock","steel"],["ghost"]], fire:[["grass","ice","bug","steel"],["fire","water","rock","dragon"],[]],
+  water:[["fire","ground","rock"],["water","grass","dragon"],[]], electric:[["water","flying"],["electric","grass","dragon"],["ground"]],
+  grass:[["water","ground","rock"],["fire","grass","poison","flying","bug","dragon","steel"],[]], ice:[["grass","ground","flying","dragon"],["fire","water","ice","steel"],[]],
+  fighting:[["normal","ice","rock","dark","steel"],["poison","flying","psychic","bug","fairy"],["ghost"]], poison:[["grass","fairy"],["poison","ground","rock","ghost"],["steel"]],
+  ground:[["fire","electric","poison","rock","steel"],["grass","bug"],["flying"]], flying:[["grass","fighting","bug"],["electric","rock","steel"],[]],
+  psychic:[["fighting","poison"],["psychic","steel"],["dark"]], bug:[["grass","psychic","dark"],["fire","fighting","poison","flying","ghost","steel","fairy"],[]],
+  rock:[["fire","ice","flying","bug"],["fighting","ground","steel"],[]], ghost:[["psychic","ghost"],["dark"],["normal"]],
+  dragon:[["dragon"],["steel"],["fairy"]], dark:[["psychic","ghost"],["fighting","dark","fairy"],[]],
+  steel:[["ice","rock","fairy"],["fire","water","electric","steel"],[]], fairy:[["fighting","dragon","dark"],["fire","poison","steel"],[]]
+};
+const GO_MULT={se:1.6,nve:0.625,imm:0.390625};
+function goTypeMult(atk,defTypes){
+  const [se,nve,imm]=TYPE_CHART[atk]; let m=1;
+  defTypes.forEach(d=>{ m*=se.includes(d)?GO_MULT.se:nve.includes(d)?GO_MULT.nve:imm.includes(d)?GO_MULT.imm:1; });
+  return Math.round(m*1e4)/1e4;
+}
+(function(){
+  const box=document.getElementById("type-checker"); if(!box) return;
+  const nameIn=document.getElementById("tc-name"), t1=document.getElementById("tc-t1"), t2=document.getElementById("tc-t2"),
+    out=document.getElementById("tc-out"), msg=document.getElementById("tc-msg");
+  const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+  const opts=(first)=>`<option value="">${first}</option>`+TYPE_LIST.map(t=>`<option value="${t}">${cap(t)}</option>`).join("");
+  t1.innerHTML=opts("Type…"); t2.innerHTML=opts("(no 2nd type)");
+  let names=null, picked=null;
+  const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/♀/g,"f").replace(/♂/g,"m").replace(/[^a-z0-9]/g,"");
+  const chip=t=>`<span class="tc-chip" style="background:${DEX_TYPE_COLORS[t]||"#888"}">${esc(t)}</span>`;
+  const fmt=m=>"×"+(m===0.3906?"0.39":m===0.2441?"0.244":String(m));
+
+  function render(){
+    const types=[t1.value,t2.value].filter(Boolean).filter((t,i,a)=>a.indexOf(t)===i);
+    if(!types.length){ out.innerHTML=""; return; }
+    const groups={};
+    TYPE_LIST.forEach(a=>{ const m=goTypeMult(a,types); if(m!==1)(groups[m]=groups[m]||[]).push(a); });
+    const ms=Object.keys(groups).map(Number).sort((a,b)=>b-a);
+    const weak=ms.filter(m=>m>1), res=ms.filter(m=>m<1);
+    const row=(label,m)=>`<div class="tc-row" data-mult="${m}"><h3>${label} <span class="tc-mult">${fmt(m)}</span></h3>${groups[m].map(chip).join("")}</div>`;
+    const who=picked?esc(picked[1]):types.map(cap).join(" / ")+"-type Pokémon";
+    out.innerHTML=`<p class="tc-best"><b>${who}</b> ${picked?`(${types.map(cap).join(" / ")}) `:""}is weakest to <b>${groups[weak[0]]?groups[weak[0]].map(cap).join(", "):"nothing"}</b> attacks.</p>
+      ${weak.map(m=>row(m>2?"Double weak":"Weak to",m)).join("")}
+      ${res.map(m=>row(m<0.3?"Triple resists":m<0.5?"Double resists":"Resists",m)).join("")}
+      ${picked&&picked[4]?`<a class="tc-link" href="/pokedex/${esc(picked[4])}">See ${esc(picked[1])}'s Pokédex page →</a>`:""}`;
+  }
+  function fromName(){
+    if(!names){ if(nameIn.value.trim()) msg.textContent="Pokémon names couldn't load, so pick the types instead."; return; }
+    const q=norm(nameIn.value); if(!q) return;
+    const p=names.find(n=>norm(n[1])===q); if(!p) return;
+    picked=p; msg.textContent=""; t1.value=p[2][0]||""; t2.value=p[2][1]||""; render();
+  }
+  nameIn.addEventListener("input",fromName);
+  document.getElementById("tc-form").addEventListener("submit",e=>{ e.preventDefault(); fromName(); if(!picked&&names&&nameIn.value.trim()) msg.textContent="Not found. Pick a name from the list."; nameIn.blur(); });
+  [t1,t2].forEach(s=>s.addEventListener("change",()=>{ picked=null; nameIn.value=""; msg.textContent=""; render(); }));
+  (async function(){
+    try{
+      if(location.protocol==="file:") throw new Error("local preview");
+      const r=await fetchWithTimeout("assets/pokedex-names.json",8000); if(!r.ok) throw new Error(r.status);
+      const j=await r.json(); if(!Array.isArray(j)||j.length<100) throw new Error("bad list");
+      names=j;
+      const dl=document.createElement("datalist"); dl.id="tc-names"; dl.innerHTML=names.map(n=>`<option value="${esc(n[1])}">`).join(""); document.body.appendChild(dl);
+      if(nameIn.value.trim()) fromName();
+    }catch(e){ nameIn.placeholder="Names offline: pick types below"; }
+  })();
+  window.__types={ mult:goTypeMult, get picked(){ return picked; } };
 })();
 
 loadSets();
