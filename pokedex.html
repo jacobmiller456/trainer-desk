@@ -181,6 +181,26 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .tc-mult{ font-variant-numeric:tabular-nums; }
 .tc-chip{ display:inline-block; padding:3px 10px; border-radius:3px; color:#fff; font-size:14px; font-weight:700; text-transform:capitalize; text-shadow:0 1px 1px rgba(0,0,0,.4); }
 .tc-best{ margin:4px 0 8px; font-size:16px; }
+.raid-tier{ margin:0 0 14px; }
+.raid-tier summary{ display:flex; align-items:center; gap:8px; min-height:44px; margin:0 0 6px; cursor:pointer; font-family:var(--font-pixel); font-size:11px; letter-spacing:.04em; color:var(--gold); list-style:none; }
+.raid-tier summary::-webkit-details-marker{ display:none; }
+.raid-tier summary::before{ content:"▸"; transition:transform .2s; }
+.raid-tier[open] summary::before{ transform:rotate(90deg); }
+.raid-count{ font-family:var(--font-retro); font-size:16px; color:var(--parchment); letter-spacing:0; }
+.raid-grid{ display:grid; grid-template-columns:1fr; gap:10px; }
+@media(min-width:640px){ .raid-grid{ grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); } }
+.raid{ display:grid; grid-template-columns:64px 1fr; gap:4px 12px; align-items:center; padding:10px 12px; }
+.raid-art{ grid-row:span 2; width:64px; height:64px; display:grid; place-items:center; background:var(--parchment-2); border:2px solid var(--forest-dark); border-radius:4px; overflow:hidden; }
+.raid-art img{ width:64px; height:64px; image-rendering:pixelated; }
+.raid-art .mono{ width:100%; height:100%; display:grid; place-items:center; color:#fff; font:800 26px ui-monospace,monospace; }
+.raid-name{ margin:0; font-size:16px; font-weight:800; line-height:1.2; }
+.raid-name .shiny{ font-size:14px; font-weight:400; }
+.raid-meta{ margin:0; font-size:14px; color:var(--ink-soft,rgba(27,46,31,.68)); }
+.raid-meta b{ color:var(--ink); }
+.raid-row{ grid-column:1/-1; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+.raid-btn{ margin-top:0; }
+.raid-note{ font-size:14px; color:var(--parchment); margin:4px 0 0; }
+.raid-note a{ color:var(--gold); }
 .tc-link{ display:inline-flex; align-items:center; min-height:44px; color:var(--forest-dark); font-weight:700; }
 @media(min-width:640px){ .tc-form{ flex-direction:row; } .tc-form input{ flex:1 1 220px; } .tc-types{ flex:1 1 320px; } }
 
@@ -574,6 +594,9 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
   <div class="sec-label">▸ COMING UP</div>
   <div class="ev-grid" id="upcoming-events"></div>
+
+  <div class="sec-label">▸ RAID BOSSES</div>
+  <div id="raid-box"></div>
 
   <div class="sec-label">▸ TYPE CHECKER</div>
   <section class="pixel-box tc" id="type-checker" aria-label="Pokémon GO type checker">
@@ -2692,7 +2715,7 @@ function goTypeMult(atk,defTypes){
   nameIn.addEventListener("input",fromName);
   document.getElementById("tc-form").addEventListener("submit",e=>{ e.preventDefault(); fromName(); if(!picked&&names&&nameIn.value.trim()) msg.textContent="Not found. Pick a name from the list."; nameIn.blur(); });
   [t1,t2].forEach(s=>s.addEventListener("change",()=>{ picked=null; nameIn.value=""; msg.textContent=""; render(); }));
-  (async function(){
+  window.tcNamesReady=(async function(){
     try{
       if(location.protocol==="file:") throw new Error("local preview");
       const r=await fetchWithTimeout("assets/pokedex-names.json",8000); if(!r.ok) throw new Error(r.status);
@@ -2700,9 +2723,92 @@ function goTypeMult(atk,defTypes){
       names=j;
       const dl=document.createElement("datalist"); dl.id="tc-names"; dl.innerHTML=names.map(n=>`<option value="${esc(n[1])}">`).join(""); document.body.appendChild(dl);
       if(nameIn.value.trim()) fromName();
-    }catch(e){ nameIn.placeholder="Names offline: pick types below"; }
+      return names;
+    }catch(e){ nameIn.placeholder="Names offline: pick types below"; return null; }
   })();
+  // Used by the raid boss cards: show a boss (any name, its own types) in the checker and scroll to it.
+  window.tcShow=(label,types,slug)=>{
+    picked=[0,label,types,0,slug||""]; nameIn.value=label; msg.textContent="";
+    t1.value=types[0]||""; t2.value=types[1]||""; render();
+    box.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+  };
   window.__types={ mult:goTypeMult, get picked(){ return picked; } };
+})();
+
+/* ============================================================
+   RAID BOSSES (GO tab), from ScrapedDuck's raids feed (structured fields only: name, tier, types, CP, weather, shiny).
+   Sprites hotlinked from PokéAPI when the name matches a Pokédex entry (respects SHOW_SPRITES); otherwise a type-coloured
+   letter. COUNTERS fills the type checker. If the feed can't load, a note points to the type checker instead.
+   ============================================================ */
+const RAID_URLS=[
+  "https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/raids.json",
+  "https://cdn.jsdelivr.net/gh/bigfoott/ScrapedDuck@data/raids.json"
+];
+(function(){
+  const box=document.getElementById("raid-box"); if(!box) return;
+  const TIER_ORDER=["5-Star Raids","Mega Raids","Shadow Raids","3-Star Raids","1-Star Raids"];
+  const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+  const credit=`<p class="raid-note">Current bosses from the community <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener">ScrapedDuck</a> feed (data from <a href="https://leekduck.com/raid-bosses/" target="_blank" rel="noopener">LeekDuck</a>). CP shown is the catch range (weather-boosted in brackets).</p>`;
+  let bosses=[];
+  const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+  function dexMatch(names,name){
+    if(!names) return null;
+    const tries=[name,name.replace(/\s*\([^)]*\)\s*$/,"").replace(/^(Mega|Primal|Shadow)\s+/i,"").replace(/\s+[XY]$/,"")]; // "Shadow Landorus (Incarnate)" -> Landorus
+    for(const t of tries){ const q=norm(t); const p=names.find(n=>norm(n[1])===q); if(p) return p; }
+    return null;
+  }
+  function best(types){
+    let top=1, out=[];
+    TYPE_LIST.forEach(a=>{ const m=goTypeMult(a,types); if(m>top+1e-9){ top=m; out=[a]; } else if(Math.abs(m-top)<1e-9&&m>1) out.push(a); });
+    return out;
+  }
+  function render(names){
+    if(!bosses.length){ box.innerHTML=`<div class="pixel-box tc"><p class="tc-intro">Raid bosses couldn't load right now. You can still pick any Pokémon in the <a href="#type-checker">type checker</a> below.</p></div>`; return; }
+    const tiers=[...new Set(bosses.map(b=>b.tier))].sort((a,b)=>{ const i=TIER_ORDER.indexOf(a), j=TIER_ORDER.indexOf(b); return (i<0?99:i)-(j<0?99:j); });
+    // top tiers open; 3-star / 1-star start folded so the GO tab stays short on phones
+    const open=t=>/^(5|6)-Star|Mega|Primal|Elite|Legendary/i.test(t)||tiers.length<3;
+    box.innerHTML=tiers.map(t=>{ const n=bosses.filter(b=>b.tier===t).length, label=esc(t.replace(/\s*Raids?$/i,"").toUpperCase());
+      return `<details class="raid-tier"${open(t)?" open":""}><summary>${label} <span class="raid-count">(${n})</span></summary><div class="raid-grid">${
+      bosses.filter(b=>b.tier===t).map(b=>{
+        const p=dexMatch(names,b.name), col=DEX_TYPE_COLORS[b.types[0]]||"#888";
+        const mono=`<span class="mono" style="background:${col}" aria-hidden="true">${esc(b.name.replace(/^(Mega|Primal|Shadow|Galarian|Alolan|Hisuian|Paldean)\s+/i,"").charAt(0))}</span>`;
+        const art=SHOW_SPRITES&&p&&p[0]<=1025?`<img src="${SPRITE_URL(p[0])}" alt="" width="64" height="64" loading="lazy" data-mono="1">`:mono;
+        const cp=b.cp?`CP <b>${b.cp[0]}–${b.cp[1]}</b>${b.cpb?` (${b.cpb[0]}–${b.cpb[1]})`:""}`:"";
+        const bw=best(b.types);
+        return `<div class="raid pixel-box" data-boss="${esc(b.name)}">
+          <div class="raid-art">${art}</div>
+          <p class="raid-name">${esc(b.name)}${b.shiny?` <span class="shiny" title="Can be shiny">✨</span>`:""}</p>
+          <div>${b.types.map(x=>`<span class="tc-chip" style="background:${DEX_TYPE_COLORS[x]||"#888"}">${esc(x)}</span>`).join(" ")}</div>
+          <div class="raid-row"><p class="raid-meta">${cp}${b.weather.length?`${cp?" · ":""}Boosted: ${esc(b.weather.map(cap).join(", "))}`:""}<br>Use <b>${esc(bw.map(cap).join(", ")||"any")}</b> attacks</p>
+            <button type="button" class="today-btn raid-btn" data-counters="${esc(b.name)}">COUNTERS</button></div>
+        </div>`; }).join("")}</div></details>`; }).join("")+credit;
+    box.querySelectorAll("img[data-mono]").forEach(img=>img.addEventListener("error",()=>{ const b=bosses.find(x=>x.name===img.closest(".raid").dataset.boss); img.outerHTML=`<span class="mono" style="background:${DEX_TYPE_COLORS[b&&b.types[0]]||"#888"}" aria-hidden="true">${esc((b?b.name:"?").charAt(0))}</span>`; },{once:true}));
+    box.querySelectorAll("[data-counters]").forEach(btn=>btn.addEventListener("click",()=>{
+      const b=bosses.find(x=>x.name===btn.dataset.counters); if(!b||typeof window.tcShow!=="function") return;
+      const p=dexMatch(names,b.name); window.tcShow(b.name,b.types,p&&p[0]<=1025?p[4]:"");
+    }));
+  }
+  function clean(list){
+    const range=r=>r&&Number.isFinite(r.min)&&Number.isFinite(r.max)?[r.min|0,r.max|0]:null;
+    return (Array.isArray(list)?list:[]).map(r=>{
+      if(!r||typeof r.name!=="string"||!r.name.trim()) return null;
+      const types=(Array.isArray(r.types)?r.types:[]).map(t=>String(t&&t.name||t).toLowerCase()).filter(t=>TYPE_LIST.includes(t)).slice(0,2);
+      if(!types.length) return null;
+      return { name:r.name.trim().slice(0,60), tier:typeof r.tier==="string"&&r.tier.trim()?r.tier.trim().slice(0,40):"Raids", types,
+        cp:range(r.combatPower&&r.combatPower.normal), cpb:range(r.combatPower&&r.combatPower.boosted), shiny:!!r.canBeShiny,
+        weather:(Array.isArray(r.boostedWeather)?r.boostedWeather:[]).map(w=>String(w&&w.name||w).toLowerCase()).filter(w=>/^[a-z ]{2,20}$/.test(w)).slice(0,3) };
+    }).filter(Boolean);
+  }
+  (async function(){
+    box.innerHTML='<p class="raid-note">Loading raid bosses…</p>';
+    for(const u of RAID_URLS){
+      try{ const r=await fetchWithTimeout(u,6000); if(!r.ok) throw new Error(r.status); bosses=clean(await r.json()); if(bosses.length) break; }catch(e){}
+    }
+    render(null);
+    const names=await (window.tcNamesReady||Promise.resolve(null)).catch(()=>null);
+    if(names&&bosses.length) render(names); // second pass adds sprites once the Pokédex name list is in
+  })();
+  window.__raids={ get bosses(){ return bosses; } };
 })();
 
 loadSets();
