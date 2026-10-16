@@ -210,7 +210,7 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .tflip{ position:relative; -webkit-transform-style:preserve-3d; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.4,.2,.2,1); }
 .tcard.flipped .tflip{ transform:rotateY(180deg); }
 .tface{ backface-visibility:hidden; -webkit-backface-visibility:hidden; overflow:hidden; }
-.tfront{ -webkit-transform:rotateY(0deg); transform:rotateY(0deg); } /* iOS Safari: a hidden-backface face needs its own transform or it may not paint */
+.tfront{ -webkit-transform:rotateY(0deg); transform:rotateY(0deg); position:relative; } /* iOS Safari: a hidden-backface face needs its own transform or it may not paint */
 .tback{ position:absolute; inset:0; transform:rotateY(180deg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center; padding:12px;
   background:linear-gradient(160deg,var(--parchment),var(--parchment-2)); }
 .tb-name{ font-size:13.5px; font-weight:800; color:var(--ink); }
@@ -219,6 +219,46 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .tb-src{ font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
 .tb-date{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
 .tb-hint{ font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); }
+.tc-zoom{ position:absolute; top:2px; right:2px; z-index:3; width:44px; height:44px; padding:0; border:0; background:none; cursor:pointer; display:grid; place-items:center; }
+.tc-zoom span{ display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:rgba(27,67,50,.85); color:#fff; font-size:17px; line-height:1; box-shadow:0 1px 3px rgba(0,0,0,.4); }
+.tc-zoom:focus-visible span{ outline:3px solid var(--gold); }
+.cdd{ width:100%; max-width:min(560px,100%); max-height:100dvh; height:100dvh; margin:0 auto; padding:0; border:0; background:var(--parchment); color:var(--ink); }
+.cdd::backdrop{ background:rgba(10,25,18,.75); }
+.cdd[open]{ display:flex; flex-direction:column; }
+@media(min-width:600px){ .cdd{ height:auto; max-height:92dvh; margin:4dvh auto; border:3px solid var(--forest-dark); border-radius:6px; } }
+.cdd-bar{ display:flex; align-items:center; gap:6px; padding:6px 8px; background:var(--forest-dark); }
+.cdd-btn{ min-width:44px; min-height:44px; border:3px solid var(--forest); border-radius:4px; background:var(--forest); color:var(--parchment); font-size:16px; cursor:pointer; }
+.cdd-btn:disabled{ opacity:.4; cursor:default; }
+.cdd-close{ margin-left:auto; background:var(--gold); color:var(--forest-dark); border-color:var(--gold-dark); }
+.cdd-pos{ font-family:var(--font-retro); font-size:16px; color:var(--parchment); min-width:5ch; text-align:center; }
+.cdd-body{ overflow-y:auto; touch-action:pan-y; padding:16px; display:flex; flex-direction:column; gap:14px; overscroll-behavior:contain; }
+.cdd-art{ align-self:center; width:min(100%,300px); aspect-ratio:245/342; border-radius:12px; background:var(--parchment-2); box-shadow:0 6px 18px rgba(0,0,0,.3); }
+.cdd-art img{ display:block; width:100%; height:100%; object-fit:contain; border-radius:12px; }
+.cdd-art .placeholder, .cdd-art svg{ width:100%; height:100%; }
+.cdd h2{ margin:0; font-size:22px; line-height:1.2; }
+.cdd-facts{ display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:0; font-size:15px; }
+.cdd-facts dt{ color:var(--ink-soft,rgba(27,46,31,.68)); }
+.cdd-facts dd{ margin:0; }
+.cdd-price{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; }
+.cdd-price b{ font-family:var(--font-retro); font-size:40px; font-weight:400; line-height:1; color:var(--forest-dark); }
+.cdd-price span{ font-size:14px; color:var(--ink-soft,rgba(27,46,31,.68)); }
+.cdd-chart{ position:relative; }
+.cdd-chart svg{ display:block; width:100%; height:auto; touch-action:pan-y; }
+.cdd-chart .grid{ stroke:rgba(27,46,31,.15); stroke-width:1; }
+.cdd-chart .ax{ font:12px system-ui,sans-serif; fill:rgba(27,46,31,.7); }
+.cdd-chart .area{ fill:var(--meadow); opacity:.25; }
+.cdd-chart .line{ fill:none; stroke:var(--forest-light); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
+.cdd-chart .dot{ fill:var(--forest-dark); stroke:var(--parchment); stroke-width:2; }
+.cdd-chart .xh{ stroke:var(--forest-dark); stroke-width:1; stroke-dasharray:3 3; }
+.cdd-tip{ position:absolute; top:0; transform:translateX(-50%); padding:4px 8px; border-radius:4px; background:var(--forest-dark); color:var(--parchment); font-size:13px; white-space:nowrap; pointer-events:none; }
+.cdd-sum{ margin:6px 0 0; font-size:14px; }
+.cdd-sum .up{ color:#2F7A3A; } .cdd-sum .down{ color:#A93226; }
+.cdd details summary{ min-height:44px; display:flex; align-items:center; cursor:pointer; font-size:14px; }
+.cdd table{ border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; }
+.cdd td{ padding:2px 14px 2px 0; }
+.cdd-actions{ display:flex; flex-wrap:wrap; gap:8px; }
+.cdd-actions .today-btn{ margin-top:0; }
+.cdd-note{ margin:0; font-size:13px; color:var(--ink-soft,rgba(27,46,31,.68)); }
 .tb-spark{ display:flex; align-items:center; gap:5px; line-height:1; font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
 .tback:has(.tb-spark){ gap:5px; }
 .tb-spark svg{ display:block; overflow:visible; }
@@ -660,6 +700,16 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     </div>
     <p class="pack-stats" id="pack-stats"></p>
   </div>
+
+  <dialog class="cdd" id="card-detail" aria-labelledby="cdd-name">
+    <div class="cdd-bar">
+      <button type="button" class="cdd-btn" id="cdd-prev" aria-label="Previous card">◀</button>
+      <span class="cdd-pos" id="cdd-pos"></span>
+      <button type="button" class="cdd-btn" id="cdd-next" aria-label="Next card">▶</button>
+      <button type="button" class="cdd-btn cdd-close" id="cdd-close" aria-label="Close">✕</button>
+    </div>
+    <div class="cdd-body" id="cdd-body"></div>
+  </dialog>
 
   <div id="tcg-binder" hidden>
     <div class="binder-shared pixel-box" id="binder-shared" hidden>
@@ -1123,6 +1173,7 @@ async function loadTcgdexPrice(c){
   c.price=p||null;
   c.priceState=p?"ok":"none";
   updatePriceStatus(); updateSetValue(); paintBackFor(c); bulkCheck();
+  if(detailId===c.id) refreshCardDetail();
 }
 // Back of a card: price (or why there isn't one). In TCGdex mode the price is looked up only when the card is flipped.
 function backInner(c){
@@ -1146,6 +1197,7 @@ async function loadPriceHistory(setId){
       Object.entries(f.cards).forEach(([id,vals])=>{ if(!Array.isArray(vals)) return; f.days.forEach((d,i)=>{ const v=vals[i]; if(typeof v==="number"&&v>0) (hist[id]=hist[id]||[]).push([d,v]); }); }); });
     Object.entries(hist).forEach(([id,pts])=>priceHist.set(id,pts));
     allCards.forEach(c=>{ if(hist[c.id]) paintBackFor(c); });
+    if(typeof refreshCardDetail==="function") refreshCardDetail();
   }catch(e){ /* no history yet or offline: card backs just show today's price */ }
 }
 function sparkline(c){
@@ -1158,6 +1210,114 @@ function sparkline(c){
   return `<div class="tb-spark ${cls}" role="img" aria-label="Price over ${days} days: $${first.toFixed(2)} to $${last.toFixed(2)}">
     <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true"><polyline points="${xy}"/></svg>
     <span>${days}d ${pct>0?"▲ +":pct<0?"▼ ":""}${pct}%</span></div>`;
+}
+/* ---- Card detail view: big image (hotlinked), facts, price + history chart, binder/share; ◀ ▶ walk the current grid order.
+   Deep link: /tcg?set=<setId>&card=<cardId>. No attack or flavor text, ever. ---- */
+let detailList=[], detailId=null, linkedCardDone=false;
+const cddEl=document.getElementById("card-detail"), cddBody=document.getElementById("cdd-body");
+const fmtDay=d=>{ const t=new Date(d+"T12:00:00Z"); return isNaN(t)?d:t.toLocaleDateString(undefined,{month:"short",day:"numeric"}); };
+function largeImg(c){
+  const im=c.images; if(!im) return null;
+  if(im.large) return im.large;
+  if(/^https:\/\/images\.pokemontcg\.io\/.+\.png$/.test(im.small)&&!/_hires\.png$/.test(im.small)) return im.small.replace(/\.png$/,"_hires.png");
+  return im.small;
+}
+function priceChart(pts){
+  const W=320, H=150, L=46, R=10, T=22, B=24, vals=pts.map(p=>p[1]), n=pts.length;
+  let lo=Math.min(...vals), hi=Math.max(...vals); if(hi===lo){ lo*=0.9; hi*=1.1; }
+  const x=i=>L+(n===1?0:i*(W-L-R)/(n-1)), y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
+  const line=pts.map((p,i)=>`${x(i).toFixed(1)},${y(p[1]).toFixed(1)}`).join(" ");
+  const area=`${x(0).toFixed(1)},${H-B} ${line} ${x(n-1).toFixed(1)},${H-B}`;
+  const f=v=>"$"+(v>=100?v.toFixed(0):v.toFixed(2));
+  const first=vals[0], last=vals[n-1], pct=Math.round((last-first)/first*100);
+  const sum=`Since ${fmtDay(pts[0][0])}: ${f(first)} → ${f(last)} <span class="${pct>0?"up":pct<0?"down":""}">(${pct>0?"▲ +":pct<0?"▼ ":""}${pct}%)</span> · low ${f(Math.min(...vals))} · high ${f(Math.max(...vals))}`;
+  return `<div class="cdd-chart" data-n="${n}">
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(sum.replace(/<[^>]+>/g,""))}">
+      <line class="grid" x1="${L}" x2="${W-R}" y1="${y(hi).toFixed(1)}" y2="${y(hi).toFixed(1)}"/><line class="grid" x1="${L}" x2="${W-R}" y1="${y(lo).toFixed(1)}" y2="${y(lo).toFixed(1)}"/>
+      <text class="ax" x="${L-6}" y="${(y(hi)+4).toFixed(1)}" text-anchor="end">${f(hi)}</text><text class="ax" x="${L-6}" y="${(y(lo)+4).toFixed(1)}" text-anchor="end">${f(lo)}</text>
+      <text class="ax" x="${L}" y="${H-6}">${esc(fmtDay(pts[0][0]))}</text><text class="ax" x="${W-R}" y="${H-6}" text-anchor="end">${esc(fmtDay(pts[n-1][0]))}</text>
+      <polygon class="area" points="${area}"/><polyline class="line" points="${line}"/>
+      <circle class="dot" cx="${x(n-1).toFixed(1)}" cy="${y(last).toFixed(1)}" r="4"/>
+      <line class="xh" x1="0" x2="0" y1="${T}" y2="${H-B}" visibility="hidden"/><circle class="dot hv" r="4" visibility="hidden"/>
+      <rect x="${L}" y="0" width="${W-L-R}" height="${H}" fill="transparent" class="hit"/>
+    </svg>
+    <div class="cdd-tip" hidden></div>
+    <p class="cdd-sum">${sum}</p>
+    <details><summary>Show price table</summary><table><tbody>${pts.slice().reverse().map(p=>`<tr><td>${esc(fmtDay(p[0]))}</td><td>${f(p[1])}</td></tr>`).join("")}</tbody></table></details>
+  </div>`;
+}
+function wireChart(pts){
+  const wrap=cddBody.querySelector(".cdd-chart"); if(!wrap) return;
+  const svg=wrap.querySelector("svg"), tip=wrap.querySelector(".cdd-tip"), xh=svg.querySelector(".xh"), hv=svg.querySelector(".hv");
+  const W=320, L=46, R=10, n=pts.length, line=svg.querySelector(".line").getAttribute("points").split(" ").map(s=>s.split(",").map(Number));
+  const show=e=>{
+    const r=svg.getBoundingClientRect(), vx=(e.clientX-r.left)*W/r.width;
+    const i=Math.max(0,Math.min(n-1,Math.round((vx-L)/((W-L-R)/Math.max(1,n-1)))));
+    const [px,py]=line[i];
+    xh.setAttribute("x1",px); xh.setAttribute("x2",px); xh.setAttribute("visibility","visible");
+    hv.setAttribute("cx",px); hv.setAttribute("cy",py); hv.setAttribute("visibility","visible");
+    tip.hidden=false; tip.textContent=`${fmtDay(pts[i][0])} · $${pts[i][1].toFixed(2)}`;
+    tip.style.left=Math.max(50,Math.min(r.width-50,px*r.width/W))+"px";
+  };
+  const hide=()=>{ xh.setAttribute("visibility","hidden"); hv.setAttribute("visibility","hidden"); tip.hidden=true; };
+  svg.addEventListener("pointermove",show); svg.addEventListener("pointerdown",show); svg.addEventListener("pointerleave",hide);
+}
+function renderCardDetail(){
+  const c=allCards.find(x=>x.id===detailId); if(!c){ closeCardDetail(); return; }
+  const i=detailList.findIndex(x=>x.id===c.id);
+  document.getElementById("cdd-pos").textContent=i>=0?`${i+1} / ${detailList.length}`:"";
+  document.getElementById("cdd-prev").disabled=i<=0; document.getElementById("cdd-next").disabled=i<0||i>=detailList.length-1;
+  const opt=setSel.options[setSel.selectedIndex], setName=opt?opt.textContent.replace(/\s*\(\d{4}\)$/,""):"";
+  const img=largeImg(c), pts=c.price&&c.price.cur==="USD"&&priceHist.get(c.id);
+  const facts=[["Set",setName],["Number",c.number?`#${c.number}${c.printedTotal?` of ${c.printedTotal}`:""}`:""],["Rarity",c.rarity||""],
+    ["Card type",[c.supertype,(c.types||[]).join(" / ")].filter(Boolean).join(" · ")],["HP",c.hp||""],["Illustrator",c.artist||""]].filter(f=>f[1]);
+  const inB=typeof binderHas==="function"&&binderHas(c.id);
+  cddBody.innerHTML=`
+    <div class="cdd-art${rarityTier(c.rarity)>=3?" holo tilt":""}">${img?`<img src="${esc(img)}" alt="${esc(c.name)}" draggable="false" data-small="${esc(c.images.small)}">`:placeholderCardSVG(c)}</div>
+    <h2 id="cdd-name">${esc(c.name)}</h2>
+    <dl class="cdd-facts">${facts.map(f=>`<dt>${f[0]}</dt><dd>${esc(String(f[1]))}</dd>`).join("")}</dl>
+    <div class="cdd-price">${c.price?`<b>${esc(fmtPrice(c.price))}</b><span>${esc(c.price.src)} market price${c.price.at?` · updated ${esc(c.price.at)}`:""}</span>`:`<span>${tcgSource==="tcgdex"&&c.priceState===undefined?"Loading price…":"No price listed"}</span>`}</div>
+    ${pts&&pts.length>=2?priceChart(pts):`<p class="cdd-note">${c.price&&tcgSource!=="tcgdex"?"Price history builds up from our daily price saves; the chart appears once this card has two or more days.":"Price history is only kept for prices from the main card source (TCGplayer, US dollars)."}</p>`}
+    <div class="cdd-actions">
+      <button type="button" class="today-btn" id="cdd-binder">${inB?"✓ IN BINDER":"+ ADD TO BINDER"}</button>
+      <button type="button" class="today-btn" id="cdd-share">SHARE</button>
+    </div>
+    <p class="cdd-note">Card image from ${tcgSource==="tcgdex"?"TCGdex":"the Pokémon TCG API"}. Swipe or use ◀ ▶ to see other cards.</p>`;
+  const im=cddBody.querySelector(".cdd-art img");
+  if(im) im.addEventListener("error",()=>{ if(im.dataset.small&&im.src!==im.dataset.small) im.src=im.dataset.small; else im.closest(".cdd-art").innerHTML=placeholderCardSVG(c); });
+  if(pts&&pts.length>=2) wireChart(pts);
+  document.getElementById("cdd-binder").addEventListener("click",e=>{ if(!window.binderToggleCard) return; const on=window.binderToggleCard(c); e.currentTarget.textContent=on?"✓ IN BINDER":"+ ADD TO BINDER"; });
+  document.getElementById("cdd-share").addEventListener("click",async()=>{
+    const url=`${location.origin}/tcg?set=${encodeURIComponent(setSel.value)}&card=${encodeURIComponent(c.id)}`;
+    try{ if(navigator.share){ await navigator.share({title:c.name+" · Trainer Desk",url}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+    try{ await navigator.clipboard.writeText(url); toast("Link copied"); }catch(e){ toast(url); }
+  });
+  if(tcgSource==="tcgdex"&&!c.sample&&c.priceState===undefined) queuePrice(c);
+}
+function openCardDetail(id){
+  if(!cddEl||!allCards.some(c=>c.id===id)) return;
+  detailId=id; renderCardDetail(); cddBody.scrollTop=0;
+  if(!cddEl.open){ try{ cddEl.showModal(); }catch(e){ cddEl.setAttribute("open",""); } }
+}
+function closeCardDetail(){ detailId=null; if(cddEl&&cddEl.open){ try{ cddEl.close(); }catch(e){ cddEl.removeAttribute("open"); } } }
+function stepCardDetail(d){ const i=detailList.findIndex(x=>x.id===detailId); const n=detailList[i+d]; if(i>=0&&n){ detailId=n.id; renderCardDetail(); cddBody.scrollTop=0; } }
+function refreshCardDetail(){ if(detailId&&cddEl&&cddEl.open) renderCardDetail(); }
+function openLinkedCard(){
+  if(linkedCardDone) return; linkedCardDone=true;
+  let id=null; try{ id=new URLSearchParams(location.search).get("card"); }catch(e){}
+  if(id&&allCards.some(c=>c.id===id)) openCardDetail(id);
+}
+if(cddEl){
+  document.getElementById("cdd-close").addEventListener("click",closeCardDetail);
+  document.getElementById("cdd-prev").addEventListener("click",()=>stepCardDetail(-1));
+  document.getElementById("cdd-next").addEventListener("click",()=>stepCardDetail(1));
+  cddEl.addEventListener("close",()=>{ detailId=null; });
+  cddEl.addEventListener("click",e=>{ if(e.target===cddEl) closeCardDetail(); }); // tap on the backdrop
+  cddEl.addEventListener("keydown",e=>{ if(e.key==="ArrowLeft") stepCardDetail(-1); else if(e.key==="ArrowRight") stepCardDetail(1); });
+  let sx=null, sy=0;
+  cddBody.addEventListener("pointerdown",e=>{ if(e.target.closest(".cdd-chart")) return; sx=e.clientX; sy=e.clientY; });
+  cddBody.addEventListener("pointercancel",()=>{ sx=null; });
+  cddBody.addEventListener("pointerup",e=>{ if(sx==null) return; const dx=e.clientX-sx, dy=e.clientY-sy; sx=null; if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5) stepCardDetail(dx<0?1:-1); });
 }
 function paintBackFor(c){
   const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
@@ -1180,13 +1340,15 @@ async function fetchCards(src,setId){
     if(!Array.isArray(j.cards)) throw new Error("no cards");
     return j.cards.map(c=>{
       const p=priceGet(c.id); // prices looked up in the last 6h are applied immediately
-      return {id:c.id,name:c.name,number:c.localId,rarity:null,hp:null,images:c.image?{small:c.image+"/low.webp"}:null,price:p||null,priceState:p===null?undefined:(p?"ok":"none")};
+      return {id:c.id,name:c.name,number:c.localId,rarity:null,hp:null,images:c.image?{small:c.image+"/low.webp",large:c.image+"/high.webp"}:null,price:p||null,priceState:p===null?undefined:(p?"ok":"none")};
     });
   }
   const r=await fetchWithTimeout(`${API}/cards?q=set.id:${setId}&orderBy=number&pageSize=250`,TCG_TIMEOUT);
   if(!r.ok) throw new Error(r.status);
   const j=await r.json();
-  return j.data.map(c=>({id:c.id,name:c.name,number:c.number,rarity:c.rarity,hp:c.hp,images:c.images?{small:c.images.small}:null,price:cardPrice(c)}));
+  // facts only for the detail view (never attack or flavor text)
+  return j.data.map(c=>({id:c.id,name:c.name,number:c.number,rarity:c.rarity,hp:c.hp,images:c.images?{small:c.images.small,large:c.images.large||null}:null,price:cardPrice(c),
+    supertype:c.supertype||"",types:Array.isArray(c.types)?c.types.slice(0,3):[],artist:typeof c.artist==="string"?c.artist.slice(0,60):"",printedTotal:c.set&&c.set.printedTotal||0}));
 }
 async function switchToBackup(){
   tcgSource="tcgdex"; tcgCacheSet("source","tcgdex");
@@ -1223,16 +1385,17 @@ async function loadCards(setId){
   if(setId==="sample"){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; return; }
   const showBulk=()=>{ loadBtn.hidden=tcgSource!=="tcgdex"; };
   const src=tcgSource, tag=src==="tcgdex"?" · via TCGdex":"";
-  const cachedCards=tcgCacheGet("cards-v3-"+src+"-"+setId);
-  if(cachedCards){ allCards=cachedCards.map(c=>src==="tcgdex"?applyCachedPrice(c):c); statusEl.textContent=allCards.length+" cards"+tag; showBulk(); renderCards(); loadPriceHistory(setId); return; }
+  const cachedCards=tcgCacheGet("cards-v4-"+src+"-"+setId);
+  if(cachedCards){ allCards=cachedCards.map(c=>src==="tcgdex"?applyCachedPrice(c):c); statusEl.textContent=allCards.length+" cards"+tag; showBulk(); renderCards(); loadPriceHistory(setId); openLinkedCard(); return; }
   statusEl.textContent="Loading cards…";
   try{
     allCards=await fetchCards(src,setId);
-    tcgCacheSet("cards-v3-"+src+"-"+setId,allCards);
+    tcgCacheSet("cards-v4-"+src+"-"+setId,allCards);
     statusEl.textContent=allCards.length+" cards"+tag;
     showBulk();
     renderCards();
     loadPriceHistory(setId);
+    openLinkedCard();
   }catch(err){
     if(src==="ptcg") return switchToBackup();
     showOffline();
@@ -1272,12 +1435,14 @@ sortEl.addEventListener("change",()=>renderCards());
 function renderCards(){
   const q=searchEl.value.trim().toLowerCase();
   const list=sortedCards(q?allCards.filter(c=>c.name.toLowerCase().includes(q)):allCards);
+  detailList=list.filter(c=>!c.sample);
   if(!list.length){ grid.innerHTML=""; emptyEl.style.display="block"; emptyEl.textContent="No cards match that filter."; return; }
   emptyEl.style.display="none";
   grid.innerHTML=list.map(c=>`
     <div class="tcard" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(c.name)} — flip to see price" data-id="${esc(c.id)}">
       <div class="tflip">
         <div class="tface tfront pixel-box">
+          ${c.sample?"":`<button type="button" class="tc-zoom" data-zoom="${esc(c.id)}" aria-label="Open ${esc(c.name)} details"><span aria-hidden="true">⤢</span></button>`}
           <div class="imgwrap${rarityTier(c.rarity)>=3?" holo":""}">
             ${c.images?`<img class="card-img" data-src="${esc(c.images.small)}"${/\.webp$/.test(c.images.small)?` data-alt="${esc(c.images.small.replace(/\.webp$/,".png"))}"`:""} alt="${esc(c.name)}" decoding="async">`:placeholderCardSVG(c)}
           </div>
@@ -1316,7 +1481,10 @@ grid.addEventListener("error",e=>{
   const card=im.closest(".tcard"), c=card&&allCards.find(x=>x.id===card.dataset.id);
   const wrap=im.closest(".imgwrap"); if(wrap) wrap.innerHTML=placeholderCardSVG(c||{name:im.alt||"?"});
 },true);
-grid.addEventListener("click",e=>{ const el=e.target.closest(".tcard"); if(el) toggleCard(el); });
+grid.addEventListener("click",e=>{
+  const z=e.target.closest("[data-zoom]"); if(z){ e.stopPropagation(); openCardDetail(z.dataset.zoom); return; }
+  const el=e.target.closest(".tcard"); if(el) toggleCard(el);
+});
 grid.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("tcard")){ e.preventDefault(); toggleCard(e.target); } });
 setSel.addEventListener("change",e=>loadCards(e.target.value));
 searchEl.addEventListener("input",()=>renderCards());
@@ -1566,6 +1734,14 @@ function toast(msg){
   // tab click handlers are attached later in the script, so open the shared binder once everything is wired up
   if(openShared()) setTimeout(()=>{ const t=document.querySelector('.tab[data-view="tcg"]'); if(t) t.click(); showView("binder"); },0);
   // test hook
+  window.binderToggleCard=c=>{ // used by the card detail view; returns true if the card is now in the binder
+    const b=binderActive(), i=b.cards.findIndex(x=>x.id===c.id);
+    if(i>=0){ b.cards.splice(i,1); toast("Removed from "+b.name); }
+    else{ const sn=snapshot(c); if(!sn) return false; b.cards.push(sn); toast("Added to "+b.name+" ("+b.cards.length+")"); }
+    binderSave(); updateCount();
+    const gb=grid.querySelector(`[data-add="${CSS.escape(c.id)}"]`); if(gb){ gb.textContent=addBtnLabel(c.id); gb.classList.toggle("in",binderHas(c.id)); }
+    return binderHas(c.id);
+  };
   window.binderAddCards=list=>{ // used by the pack opener
     const b=binderActive(); let added=0;
     list.forEach(c=>{ if(b.cards.some(x=>x.id===c.id)) return; const sn=snapshot(c); if(sn){ b.cards.push(sn); added++; } });
