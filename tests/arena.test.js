@@ -52,7 +52,8 @@ async function run(mode) {
   const x1 = (await page.evaluate(() => window.__arena.state)).player.x;
   check(`${mode}: arrow key moves the player`, x1 < x0 - 5, { x0, x1 });
 
-  // drag on the canvas (touch/mouse joystick) moves the player
+  // drag on the canvas (joystick control mode) moves the player
+  await page.selectOption('#arena-ctrl', 'stick');
   const box = await page.locator('#arena-canvas').boundingBox();
   const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
   const y0 = (await page.evaluate(() => window.__arena.state)).player.y;

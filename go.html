@@ -818,6 +818,9 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <label class="arena-field">ARENA
       <select id="arena-map" aria-label="Arena"></select>
     </label>
+    <label class="arena-field">CONTROLS
+      <select id="arena-ctrl" aria-label="Touch controls"><option value="tap">Tap to move</option><option value="stick">Drag joystick</option></select>
+    </label>
     <button type="button" class="arena-btn" id="arena-start"><img src="assets/arena/pokeball.webp" alt="" width="20" height="20"> START</button>
   </div>
   <div class="arena-wrap">
@@ -2620,10 +2623,20 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     return {f,shots:[],orbs:[],fx:[],dying:[],t:0,orbT:4,over:false,win:false,place:0,playerOut:false,arena,kos:0,dmg:0,tOut:0,mode:"free",counted:false,spUsed:0};
   }
 
+  // Touch controls: "tap" = tap/hold a spot and the fighter walks there (follows a held finger); "stick" = drag joystick.
+  const STICK_R=32;
+  let ctrlMode="tap", target=null;
   function inputVec(){
-    if(stick){ const dx=stick.x-stick.ox, dy=stick.y-stick.oy, m=Math.hypot(dx,dy); if(m>6){ const k=Math.min(m,50)/50/m; return [dx*k,dy*k]; } return [0,0]; }
     const x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0), y=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
-    const m=Math.hypot(x,y); return m?[x/m,y/m]:[0,0];
+    if(x||y){ target=null; const m=Math.hypot(x,y); return [x/m,y/m]; }
+    if(stick){ const dx=stick.x-stick.ox, dy=stick.y-stick.oy, m=Math.hypot(dx,dy); if(m>4){ const k=Math.min(m,STICK_R)/STICK_R/m; return [dx*k,dy*k]; } return [0,0]; }
+    if(target&&G){
+      const p=G.f[0], dx=target.x-p.x, dy=target.y-p.y, d=Math.hypot(dx,dy);
+      if(d<6&&!target.held){ target=null; return [0,0]; }
+      if(d<6) return [0,0];
+      const k=Math.min(1,d/24)/d; return [dx*k,dy*k];
+    }
+    return [0,0];
   }
   let testInput=null;
 
@@ -2696,7 +2709,10 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     for(const f of alive){
       let vx=0,vy=0;
       const ne=nearestEnemy(f,G.f);
-      if(f.isPlayer){ [vx,vy]=testInput||inputVec(); }
+      if(f.isPlayer){
+        [vx,vy]=testInput||inputVec();
+        if(!testInput&&Math.hypot(vx,vy)<0.1&&zoneDist(f)>zr-18){ const dc=Math.hypot(f.x-CX,f.y-CY)||1; vx=(CX-f.x)/dc*0.8; vy=(CY-f.y)/dc*0.8; } // zone assist: idle player drifts back in
+      }
       else{
         const dc=Math.hypot(f.x-CX,f.y-CY);
         f.wt-=dt; if(f.wt<=0){ f.wander+=(rnd()-.5)*1.6; f.wt=0.8+rnd(); if(rnd()<.2) f.strafe*=-1; }
@@ -2834,8 +2850,9 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       else if(e.k==="slash"){ const l=getFx("leftclaw"), r=getFx("rightclaw"); ctx.globalAlpha=1-p; if(l) ctx.drawImage(l,e.x-34,e.y-30); if(r) ctx.drawImage(r,e.x-2,e.y-30); ctx.globalAlpha=1; }
       else if(e.k==="txt"){ ctx.globalAlpha=Math.min(1,(1-p)*1.6); ctx.font="bold "+e.size+"px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.lineWidth=4; ctx.strokeStyle="#1B2E1F"; ctx.strokeText(e.text,e.x,e.y); ctx.fillStyle=e.color; ctx.fillText(e.text,e.x,e.y); ctx.globalAlpha=1; }
     }
-    if(stick){ ctx.strokeStyle="rgba(255,255,255,0.5)"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(stick.ox,stick.oy,50,0,Math.PI*2); ctx.stroke();
-      const dx=stick.x-stick.ox, dy=stick.y-stick.oy, m=Math.hypot(dx,dy)||1, k=Math.min(m,50)/m;
+    if(target&&G&&!G.over){ const pulse=REDUCED?0:Math.sin(performance.now()/120)*2; ctx.strokeStyle="rgba(255,201,74,0.9)"; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(target.x,target.y+10,12+pulse,5+pulse/2,0,0,Math.PI*2); ctx.stroke(); }
+    if(stick){ ctx.strokeStyle="rgba(255,255,255,0.5)"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(stick.ox,stick.oy,STICK_R,0,Math.PI*2); ctx.stroke();
+      const dx=stick.x-stick.ox, dy=stick.y-stick.oy, m=Math.hypot(dx,dy)||1, k=Math.min(m,STICK_R)/m;
       ctx.fillStyle="rgba(255,255,255,0.6)"; ctx.beginPath(); ctx.arc(stick.ox+dx*k,stick.oy+dy*k,16,0,Math.PI*2); ctx.fill(); }
   }
   function updateHud(){
@@ -2961,7 +2978,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       </dl>
       ${bestF?`<p>${bestF.w?"Best fighter":"Most played"}: <b>${esc(rosterName(bestF.id))}</b> · ${bestF.w?`${bestF.w} win${bestF.w===1?"":"s"} in `:""}${bestF.p} match${bestF.p===1?"":"es"}. Saved on this device only.</p>`:""}`;
   }
-  function stop(){ cancelAnimationFrame(raf); raf=0; G=null; stick=null; for(const k in keys) keys[k]=false; startBtn.disabled=false; skipBtn.hidden=true; draw(); updateSpecial(); }
+  function stop(){ cancelAnimationFrame(raf); raf=0; G=null; stick=null; target=null; for(const k in keys) keys[k]=false; startBtn.disabled=false; skipBtn.hidden=true; draw(); updateSpecial(); }
 
   let lastMode="free";
   async function start(mode){
@@ -2985,7 +3002,9 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     // a daily run only counts with the real line-up: all 12 fighters loaded, in the planned order
     const fullLineup=!!plan&&details.length===ids.length&&details.every((d,i)=>d&&d.id===ids[i]);
     G=newGame(details,arena); G.mode=mode; G.practice=mode==="daily"&&(doneToday||!fullLineup); overlay.hidden=true; last=performance.now(); hudAt=0;
-    updateSpecial(); { const sp=G.f[0].sp; toast(`Your special: ${SPECIAL_NAME[sp]} — ${SPECIAL_HELP[sp]}. Tap SPECIAL when it's charged.`); }
+    updateSpecial();
+    { const r=(spBtn||cv).getBoundingClientRect(); if(r.bottom>innerHeight||cv.getBoundingClientRect().top<0) (spBtn||cv).scrollIntoView({block:"end",behavior:REDUCED?"auto":"smooth"}); } // bring the arena + SPECIAL on screen (phones)
+    { const sp=G.f[0].sp; toast(`Your special: ${SPECIAL_NAME[sp]} — ${SPECIAL_HELP[sp]}. Tap SPECIAL when it's charged.`); }
     hud.textContent=(mode==="daily"?(!fullLineup?"Couldn't load today's fighters, so this run is practice only. ":G.practice?"Daily practice — not counted. ":"Daily Challenge #"+dailyNum()+" — fight! "):"Fight!")+note;
     raf=requestAnimationFrame(frame);
   }
@@ -3005,13 +3024,18 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   });
   window.addEventListener("keyup",e=>{ keys[e.key.toLowerCase()]=false; });
   const pos=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]; };
-  cv.addEventListener("pointerdown",e=>{ const [x,y]=pos(e); stick={ox:x,oy:y,x,y}; try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
-  cv.addEventListener("pointermove",e=>{ if(stick){ const [x,y]=pos(e); stick.x=x; stick.y=y; } });
-  ["pointerup","pointercancel","pointerleave"].forEach(ev=>cv.addEventListener(ev,()=>{ stick=null; }));
-  setOverlay("Pick a fighter and press START, or play today's Daily Challenge. Drag on the arena (or use WASD / arrow keys) to move — your fighter attacks on its own. Tap SPECIAL (or Space) when it's charged.",false);
+  const setTarget=(x,y,held)=>{ target={x:clamp(x,RAD,W-RAD),y:clamp(y-10,TOP,H-RAD),held}; }; // aim at the feet, inside the floor
+  cv.addEventListener("pointerdown",e=>{ const [x,y]=pos(e); try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+    if(ctrlMode==="stick"){ stick={ox:x,oy:y,x,y}; target=null; } else setTarget(x,y,true); });
+  cv.addEventListener("pointermove",e=>{ const [x,y]=pos(e); if(stick){ stick.x=x; stick.y=y; } else if(target&&target.held) setTarget(x,y,true); });
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>cv.addEventListener(ev,()=>{ stick=null; if(target) target.held=false; }));
+  const ctrlSel=document.getElementById("arena-ctrl");
+  try{ const v=localStorage.getItem("td-arena-ctrl"); if(v==="stick"||v==="tap") ctrlMode=v; }catch(e){}
+  if(ctrlSel){ ctrlSel.value=ctrlMode; ctrlSel.addEventListener("change",()=>{ ctrlMode=ctrlSel.value==="stick"?"stick":"tap"; stick=null; target=null; try{ localStorage.setItem("td-arena-ctrl",ctrlMode); }catch(e){} }); }
+  setOverlay("Pick a fighter and press START, or play today's Daily Challenge. Tap the arena where you want to go (or hold and your fighter follows your finger; WASD / arrow keys on a keyboard). Your fighter attacks on its own. Tap SPECIAL (or Space) when it's charged.",false);
   draw(); renderDaily(); renderRecord();
   // test hook (used by tests/arena.test.js)
-  window.__arena={ step, dailyPlan, shareText, special:()=>!!(G&&useSpecial(G.f[0])), useSpecialFor:i=>!!(G&&G.f[i]&&useSpecial(G.f[i])), get fighters(){ return G&&G.f; }, setInput:(x,y)=>{ testInput=(x==null)?null:[x,y]; }, get state(){ return G&&{over:G.over,win:G.win,place:G.place,playerOut:G.playerOut,arena:G.arena,alive:G.f.filter(f=>f.alive).length,total:G.f.length,mode:G.mode,practice:!!G.practice,kos:G.kos,dmg:G.dmg,ids:G.f.map(f=>f.id),spUsed:G.spUsed,aiSp:G.aiSp||0,player:{x:G.f[0].x,y:G.f[0].y,hp:G.f[0].hp,id:G.f[0].id,sp:G.f[0].sp,spT:G.f[0].spT,phase:G.f[0].phase}}; } };
+  window.__arena={ step, dailyPlan, shareText, special:()=>!!(G&&useSpecial(G.f[0])), useSpecialFor:i=>!!(G&&G.f[i]&&useSpecial(G.f[i])), get fighters(){ return G&&G.f; }, setInput:(x,y)=>{ testInput=(x==null)?null:[x,y]; }, get state(){ return G&&{over:G.over,win:G.win,place:G.place,playerOut:G.playerOut,arena:G.arena,alive:G.f.filter(f=>f.alive).length,total:G.f.length,mode:G.mode,practice:!!G.practice,kos:G.kos,dmg:G.dmg,ids:G.f.map(f=>f.id),target:target&&{x:target.x,y:target.y},ctrl:ctrlMode,spUsed:G.spUsed,aiSp:G.aiSp||0,player:{x:G.f[0].x,y:G.f[0].y,hp:G.f[0].hp,id:G.f[0].id,sp:G.f[0].sp,spT:G.f[0].spT,phase:G.f[0].phase}}; } };
 })();
 
 /* ============================================================
