@@ -130,3 +130,6 @@ Deployed on Vercel (project `trainer-desk-4n8w`), connected to this repo
 through the GitHub integration: every push to `main` deploys to
 production at www.trainerdesk.net, and other branches get preview URLs.
 Run `npm test` before pushing.
+
+- **Daily Challenge:** one shared match per UTC day (numbered from Oct 17 2026). `dailyPlan(day)` picks the fighter, 11 rivals and arena from a seeded generator, and the match itself uses a seeded `rnd()` (instead of `Math.random`) so everyone gets the same line-up and spawns; your moves still decide the result. The first finish counts (`td-arena-daily-v1`) and gets a spoiler-free share text (e.g. `Pixel Arena Daily #3 🥈 2nd/12 · 3 KOs · 52s`); later runs that day are labelled practice. A run only counts if all 12 planned fighters load from PokéAPI; the offline sample line-up is always practice.
+- **Trainer record:** saved on this device (`td-arena-stats-v1`): matches, wins and win rate, best place, total KOs, win streak, daily streak, and best (or most played) fighter. Each match shows a result card with placing, KOs, damage dealt and time survived. Nothing to buy or win. Covered by `tests/arena-daily.test.js`.

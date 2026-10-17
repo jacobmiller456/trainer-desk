@@ -419,6 +419,18 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 @media(max-width:400px){ .arena-overlay{ font-size:17px; gap:8px; padding:12px; } }
 
 .arena-overlay p{ margin:0; }
+.arena-daily, .arena-result, .arena-record{ max-width:480px; margin:0 auto 16px; padding:12px 14px; }
+.arena-result, .arena-record{ margin-top:12px; }
+.arena-daily h3, .arena-record h3, .arena-result h3{ margin:0 0 6px; font-family:var(--font-pixel); font-size:11px; letter-spacing:.04em; color:var(--forest-dark); }
+.arena-daily p, .arena-result p{ margin:0 0 8px; font-size:15px; }
+.arena-daily .arena-btn, .arena-result .arena-btn{ margin-top:2px; }
+.arena-btns{ display:flex; flex-wrap:wrap; gap:8px; }
+.arena-stats{ display:grid; grid-template-columns:repeat(2,1fr); gap:6px 12px; margin:0; }
+@media(min-width:420px){ .arena-stats{ grid-template-columns:repeat(4,1fr); } }
+.arena-stats div{ display:flex; flex-direction:column; }
+.arena-stats dt{ font-size:13px; color:var(--ink-soft,rgba(27,46,31,.68)); }
+.arena-stats dd{ margin:0; font-family:var(--font-retro); font-size:24px; line-height:1.1; color:var(--forest-dark); }
+.arena-record p{ margin:8px 0 0; font-size:14px; }
 .arena-hud{ max-width:480px; margin:10px auto 0; font-family:var(--font-retro); font-size:18px; color:var(--parchment); min-height:1.4em; }
 
 /* ---- today ---- */
@@ -789,6 +801,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <h1>PIXEL ARENA</h1>
     <p>Solo battle royale. Pick a fighter and outlast the computer-controlled rivals as the red zone closes in. Type matchups matter — water beats fire, and so on.</p>
   </div>
+  <section class="pixel-box arena-daily" id="arena-daily" aria-label="Daily challenge"></section>
   <div class="arena-controls">
     <label class="arena-field">YOUR FIGHTER
       <select id="arena-fighter" aria-label="Your fighter"></select>
@@ -804,6 +817,8 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   </div>
   <div class="arena-hud" id="arena-hud"></div>
   <button type="button" class="arena-btn" id="arena-skip" hidden>SKIP TO RESULT</button>
+  <div class="pixel-box arena-result" id="arena-result" hidden aria-live="polite"></div>
+  <section class="pixel-box arena-record" id="arena-record" aria-label="Your trainer record"></section>
   <div class="pixel-box note">
     <b>Unofficial fan minigame.</b> Fighter stats and types come from <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>; sprites are hotlinked from PokéAPI's sprite repository and belong to their respective owners. Not affiliated with or endorsed by Nintendo, Game Freak, Creatures Inc., or The Pokémon Company International. Free to play, no ads.
   </div>
@@ -2536,6 +2551,9 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   arenaSel.innerHTML='<option value="daily">Arena: today\'s pick</option>'+ARENAS.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("");
 
   let G=null, raf=0, last=0, hudAt=0, stick=null;
+  // Randomness: Math.random in free play; a seeded generator in the Daily Challenge so everyone gets the same line-up.
+  let rnd=Math.random;
+  const mulberry=a=>()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
   const keys={}, sprites=new Map(), bgs=new Map(), fxImgs=new Map();
 
   // Black/White-era sprites (static) up to gen 5, otherwise the default front sprite; always hotlinked, never copied.
@@ -2574,15 +2592,15 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       dmg:7+Math.max(s.attack||50,s["special-attack"]||50)*0.12,
       def:1/(1+(((s.defense||50)+(s["special-defense"]||50))/2)/120),
       speed:60+Math.min(spd,130)*0.45,
-      cool:clamp(1.3-spd/200,0.6,1.2), t:Math.random()*0.8,
-      alive:true, flash:0, strafe:Math.random()<0.5?1:-1, wander:Math.random()*6.28, wt:0, place:0, atk:null
+      cool:clamp(1.3-spd/200,0.6,1.2), t:rnd()*0.8,
+      alive:true, flash:0, strafe:rnd()<0.5?1:-1, wander:rnd()*6.28, wt:0, place:0, atk:null
     };
   }
   function newGame(details,arena){
-    const n=details.length, off=Math.random()*6.28;
+    const n=details.length, off=rnd()*6.28;
     const f=details.map((d,i)=>makeFighter(d,i===0,i,n,off));
     f.forEach(x=>{ x.hp=x.maxhp; });
-    return {f,shots:[],orbs:[],fx:[],dying:[],t:0,orbT:4,over:false,win:false,place:0,playerOut:false,arena};
+    return {f,shots:[],orbs:[],fx:[],dying:[],t:0,orbT:4,over:false,win:false,place:0,playerOut:false,arena,kos:0,dmg:0,tOut:0,mode:"free",counted:false};
   }
 
   function inputVec(){
@@ -2600,13 +2618,15 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   }
   function burst(x,y,color,n,speed,life){
     if(REDUCED) n=Math.ceil(n/3);
-    for(let i=0;i<n;i++){ const a=Math.random()*6.28, v=speed*(0.4+Math.random()*0.8); G.fx.push({k:"p",x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:0,max:life*(0.7+Math.random()*0.5),color,size:2+Math.random()*3}); }
+    for(let i=0;i<n;i++){ const a=rnd()*6.28, v=speed*(0.4+rnd()*0.8); G.fx.push({k:"p",x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:0,max:life*(0.7+rnd()*0.5),color,size:2+rnd()*3}); }
   }
   function popup(x,y,text,color,size){ G.fx.push({k:"txt",x,y,vy:-34,t:0,max:0.8,text,color,size}); }
 
   function hit(s,f){
     const m=typeMult(s.type,f.types), dmg=s.owner.dmg*m*f.def;
+    if(s.owner.isPlayer) G.dmg+=Math.min(dmg,Math.max(0,f.hp));
     f.hp-=dmg; f.flash=0.12;
+    if(f.hp<=0&&!f.koBy){ f.koBy=s.owner; if(s.owner.isPlayer) G.kos++; }
     burst(f.x,f.y-6,tcolor(s.type),m>1?9:6,90,0.4);
     const big=m>1, small=m<1;
     popup(f.x,f.y-RAD-10,"-"+Math.max(1,Math.round(dmg))+(big?"!":""),big?"#FFD43B":small?"#B8C4BC":"#FFFFFF",big?22:small?15:18);
@@ -2623,7 +2643,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       if(f.isPlayer){ [vx,vy]=testInput||inputVec(); }
       else{
         const dc=Math.hypot(f.x-CX,f.y-CY);
-        f.wt-=dt; if(f.wt<=0){ f.wander+=(Math.random()-.5)*1.6; f.wt=0.8+Math.random(); if(Math.random()<.2) f.strafe*=-1; }
+        f.wt-=dt; if(f.wt<=0){ f.wander+=(rnd()-.5)*1.6; f.wt=0.8+rnd(); if(rnd()<.2) f.strafe*=-1; }
         if(zoneDist(f)>zr-34){ vx=(CX-f.x)/(dc||1); vy=(CY-f.y)/(dc||1); }
         else if(ne){
           const dx=(ne.o.x-f.x)/ne.d, dy=(ne.o.y-f.y)/ne.d;
@@ -2666,7 +2686,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     G.shots=G.shots.filter(s=>s.life>0&&s.x>-10&&s.x<W+10&&s.y>-10&&s.y<H+10);
     G.orbT-=dt;
     if(G.orbT<=0&&G.orbs.length<3){
-      G.orbT=7; const a=Math.random()*6.28, r=Math.random()*Math.max(20,zr-40);
+      G.orbT=7; const a=rnd()*6.28, r=rnd()*Math.max(20,zr-40);
       G.orbs.push({x:CX+Math.cos(a)*r,y:CY+Math.sin(a)*r*ELL});
     }
     for(const f of alive){
@@ -2689,10 +2709,10 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       });
     }
     const player=G.f[0], remaining=G.f.filter(f=>f.alive);
-    if(!player.alive&&!G.playerOut){ G.playerOut=true; G.place=player.place; skipBtn.hidden=false; }
+    if(!player.alive&&!G.playerOut){ G.playerOut=true; G.place=player.place; G.tOut=G.t; skipBtn.hidden=false; }
     if(remaining.length<=1){
       G.over=true; G.win=player.alive; if(remaining[0]) remaining[0].place=1;
-      if(player.alive) G.place=1;
+      if(player.alive){ G.place=1; G.tOut=G.t; }
       finish();
     }
   }
@@ -2787,14 +2807,94 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     cancelAnimationFrame(raf); raf=0; draw(); updateHud(); skipBtn.hidden=true;
     setOverlay(G.win?"VICTORY! You are the last one standing.":"Knocked out — you placed #"+G.place+" of "+G.f.length+".",true,podiumHtml());
     startBtn.disabled=false;
+    recordResult(G); renderResult(G); renderDaily(); renderRecord();
+  }
+
+  /* ---- Daily Challenge + trainer record (saved in this browser only) ---- */
+  const REC_KEY="td-arena-stats-v1", DAILY_KEY="td-arena-daily-v1", DAILY_EPOCH=Math.floor(Date.UTC(2026,9,17)/864e5);
+  const utcDay=()=>Math.floor(Date.now()/864e5), dailyNum=()=>utcDay()-DAILY_EPOCH+1;
+  const loadJ=(k,d)=>{ try{ const v=JSON.parse(localStorage.getItem(k)||"null"); return v&&typeof v==="object"?v:d; }catch(e){ return d; } };
+  const saveJ=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+  const freshRec=()=>({played:0,wins:0,kos:0,best:0,streak:0,bestStreak:0,by:{},dStreak:0,dBest:0,dLast:-1});
+  const medal=p=>p===1?"🥇":p===2?"🥈":p===3?"🥉":"#"+p;
+  const ord=p=>p+(p%10===1&&p%100!==11?"st":p%10===2&&p%100!==12?"nd":p%10===3&&p%100!==13?"rd":"th");
+  function dailyPlan(day){
+    const r=mulberry((day*2654435761)>>>0);
+    const pool=ROSTER.map(x=>x[0]);
+    const fighter=pool[Math.floor(r()*pool.length)];
+    const rest=pool.filter(i=>i!==fighter);
+    for(let i=rest.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [rest[i],rest[j]]=[rest[j],rest[i]]; }
+    return {day,fighter,rivals:rest.slice(0,11),arena:ARENAS[Math.floor(r()*ARENAS.length)].id,seed:(day*40503+17)>>>0};
+  }
+  const rosterName=id=>{ const r=ROSTER.find(x=>x[0]===id); return r?prettyName(r[1]):"#"+id; };
+  function recordResult(g){
+    if(g.counted) return; g.counted=true;
+    const rec=Object.assign(freshRec(),loadJ(REC_KEY,{}));
+    rec.played++; rec.kos+=g.kos; if(g.win){ rec.wins++; rec.streak++; rec.bestStreak=Math.max(rec.bestStreak,rec.streak); } else rec.streak=0;
+    rec.best=rec.best?Math.min(rec.best,g.place):g.place;
+    const me=g.f[0], b=rec.by[me.id]||{p:0,w:0}; b.p++; if(g.win) b.w++; rec.by[me.id]=b;
+    if(g.mode==="daily"&&!g.practice){
+      const d=utcDay();
+      saveJ(DAILY_KEY,{day:d,place:g.place,of:g.f.length,kos:g.kos,time:Math.round(g.tOut),win:g.win,fighter:me.name});
+      rec.dStreak=rec.dLast===d-1?rec.dStreak+1:(rec.dLast===d?rec.dStreak:1); rec.dBest=Math.max(rec.dBest,rec.dStreak); rec.dLast=d;
+    }
+    saveJ(REC_KEY,rec);
+  }
+  function shareText(r){ return `Pixel Arena Daily #${dailyNum()} ${medal(r.place)} ${ord(r.place)}/${r.of} · ${r.kos} KO${r.kos===1?"":"s"} · ${r.time}s\nhttps://www.trainerdesk.net/arena`; }
+  async function share(r){
+    const text=shareText(r);
+    try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+    try{ await navigator.clipboard.writeText(text); toast("Result copied — paste it anywhere"); }catch(e){ toast(text.replace(/\n/g," ")); }
+  }
+  const resultEl=document.getElementById("arena-result"), dailyEl=document.getElementById("arena-daily"), recordEl=document.getElementById("arena-record");
+  function renderResult(g){
+    if(!resultEl) return;
+    const today=loadJ(DAILY_KEY,null), official=g.mode==="daily"&&!g.practice&&today&&today.day===utcDay();
+    resultEl.hidden=false;
+    resultEl.innerHTML=`<h3>${g.mode==="daily"?(g.practice?"PRACTICE RUN (NOT COUNTED)":"DAILY CHALLENGE #"+dailyNum()):"MATCH RESULT"}</h3>
+      <dl class="arena-stats"><div><dt>Placed</dt><dd>${medal(g.place)} ${ord(g.place)}</dd></div><div><dt>KOs</dt><dd>${g.kos}</dd></div><div><dt>Damage</dt><dd>${Math.round(g.dmg)}</dd></div><div><dt>Survived</dt><dd>${Math.round(g.tOut)}s</dd></div></dl>
+      ${official?`<div class="arena-btns" style="margin-top:10px"><button type="button" class="arena-btn" id="arena-share">SHARE RESULT</button></div>`:""}`;
+    const sb=document.getElementById("arena-share"); if(sb) sb.addEventListener("click",()=>share(today));
+  }
+  function renderDaily(){
+    if(!dailyEl) return;
+    const p=dailyPlan(utcDay()), done=loadJ(DAILY_KEY,null), played=done&&done.day===utcDay();
+    const an=(ARENAS.find(a=>a.id===p.arena)||{}).name||p.arena;
+    dailyEl.innerHTML=`<h3>▸ DAILY CHALLENGE #${dailyNum()}</h3>
+      <p>Everyone gets the same match today: you're <b>${esc(rosterName(p.fighter))}</b> at <b>${esc(an)}</b> against the same 11 rivals. ${played?"":"Your first finish counts."}</p>
+      ${played?`<p>Today: <b>${medal(done.place)} ${ord(done.place)} of ${done.of}</b> · ${done.kos} KO${done.kos===1?"":"s"} · ${done.time}s. Next challenge <span class="cd" data-t="${new Date((utcDay()+1)*864e5).toISOString()}" data-pre="in"></span></p>`:""}
+      <div class="arena-btns">
+        <button type="button" class="arena-btn" id="arena-daily-go">${played?"PRACTICE (NOT COUNTED)":"PLAY TODAY'S CHALLENGE"}</button>
+        ${played?`<button type="button" class="arena-btn alt" id="arena-daily-share">SHARE</button>`:""}
+      </div>`;
+    document.getElementById("arena-daily-go").addEventListener("click",()=>start("daily"));
+    const sh=document.getElementById("arena-daily-share"); if(sh) sh.addEventListener("click",()=>share(done));
+    if(typeof tickCountdowns==="function") tickCountdowns();
+  }
+  function renderRecord(){
+    if(!recordEl) return;
+    const r=Object.assign(freshRec(),loadJ(REC_KEY,{}));
+    if(!r.played){ recordEl.innerHTML=`<h3>▸ YOUR TRAINER RECORD</h3><p class="today-meta" style="margin:0">Finish a match to start your record. It's saved on this device only.</p>`; return; }
+    let bestF=null; for(const [id,v] of Object.entries(r.by)){ if(!bestF||v.w>bestF.w||(v.w===bestF.w&&v.p>bestF.p)) bestF={id:+id,...v}; }
+    recordEl.innerHTML=`<h3>▸ YOUR TRAINER RECORD</h3>
+      <dl class="arena-stats">
+        <div><dt>Matches</dt><dd>${r.played}</dd></div><div><dt>Wins</dt><dd>${r.wins} <small style="font-size:16px">(${Math.round(r.wins/r.played*100)}%)</small></dd></div>
+        <div><dt>Best place</dt><dd>${medal(r.best)}</dd></div><div><dt>Total KOs</dt><dd>${r.kos}</dd></div>
+        <div><dt>Win streak</dt><dd>${r.streak} <small style="font-size:16px">(best ${r.bestStreak})</small></dd></div><div><dt>Daily streak</dt><dd>${r.dLast>=utcDay()-1?r.dStreak:0} <small style="font-size:16px">(best ${r.dBest})</small></dd></div>
+      </dl>
+      ${bestF?`<p>${bestF.w?"Best fighter":"Most played"}: <b>${esc(rosterName(bestF.id))}</b> · ${bestF.w?`${bestF.w} win${bestF.w===1?"":"s"} in `:""}${bestF.p} match${bestF.p===1?"":"es"}. Saved on this device only.</p>`:""}`;
   }
   function stop(){ cancelAnimationFrame(raf); raf=0; G=null; stick=null; for(const k in keys) keys[k]=false; startBtn.disabled=false; skipBtn.hidden=true; draw(); }
 
-  async function start(){
-    stop(); startBtn.disabled=true; setOverlay("Loading fighters…",false); hud.textContent="";
-    const pid=Number(sel.value), arena=chosenArena();
+  let lastMode="free";
+  async function start(mode){
+    mode=mode==="daily"?"daily":"free"; lastMode=mode;
+    stop(); startBtn.disabled=true; setOverlay("Loading fighters…",false); hud.textContent=""; if(resultEl) resultEl.hidden=true;
+    const plan=mode==="daily"?dailyPlan(utcDay()):null, doneToday=(loadJ(DAILY_KEY,{}).day===utcDay());
+    rnd=plan?mulberry(plan.seed):Math.random;
+    const pid=plan?plan.fighter:Number(sel.value), arena=plan?plan.arena:chosenArena();
     getBg(arena); ["wisp","fireball","waterwisp","iceball","shadowball","purplewisp","leaf1","leftclaw","rightclaw"].forEach(getFx);
-    const ids=[pid,...ROSTER.map(r=>r[0]).filter(i=>i!==pid).sort(()=>Math.random()-.5).slice(0,11)];
+    const ids=plan?[pid,...plan.rivals]:[pid,...ROSTER.map(r=>r[0]).filter(i=>i!==pid).sort(()=>Math.random()-.5).slice(0,11)];
     const res=await Promise.allSettled(ids.map(i=>loadDexDetail(i)));
     let details=res.map(r=>r.status==="fulfilled"?r.value:null);
     let note="";
@@ -2805,14 +2905,16 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       details=details.filter(Boolean);
       for(const s of DEX_SAMPLE){ if(details.length>=5) break; if(!details.some(d=>d.id===s.id)) details.push(s); }
     }
-    G=newGame(details,arena); overlay.hidden=true; last=performance.now(); hudAt=0;
-    hud.textContent="Fight!"+note;
+    // a daily run only counts with the real line-up: all 12 fighters loaded, in the planned order
+    const fullLineup=!!plan&&details.length===ids.length&&details.every((d,i)=>d&&d.id===ids[i]);
+    G=newGame(details,arena); G.mode=mode; G.practice=mode==="daily"&&(doneToday||!fullLineup); overlay.hidden=true; last=performance.now(); hudAt=0;
+    hud.textContent=(mode==="daily"?(!fullLineup?"Couldn't load today's fighters, so this run is practice only. ":G.practice?"Daily practice — not counted. ":"Daily Challenge #"+dailyNum()+" — fight! "):"Fight!")+note;
     raf=requestAnimationFrame(frame);
   }
 
   podiumEl.addEventListener("error",e=>{ const im=e.target; if(!im||im.tagName!=="IMG"||!im.dataset.fb) return; if(im.dataset.tried){ im.outerHTML=im.dataset.disc; } else { im.dataset.tried="1"; im.src=im.dataset.fb; } },true);
-  startBtn.addEventListener("click",start);
-  againBtn.addEventListener("click",start);
+  startBtn.addEventListener("click",()=>start("free"));
+  againBtn.addEventListener("click",()=>start(lastMode));
   skipBtn.addEventListener("click",()=>{ for(let i=0;G&&!G.over&&i<8000;i++) step(0.05); });
   arenaSel.addEventListener("change",()=>{ if(!G) draw(); });
   document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{ if(t.dataset.view!=="arena") stop(); else if(!G) draw(); }));
@@ -2827,10 +2929,10 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   cv.addEventListener("pointerdown",e=>{ const [x,y]=pos(e); stick={ox:x,oy:y,x,y}; try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
   cv.addEventListener("pointermove",e=>{ if(stick){ const [x,y]=pos(e); stick.x=x; stick.y=y; } });
   ["pointerup","pointercancel","pointerleave"].forEach(ev=>cv.addEventListener(ev,()=>{ stick=null; }));
-  setOverlay("Pick a fighter and press START. Drag on the arena (or use WASD / arrow keys) to move — your fighter attacks on its own.",false);
-  draw();
+  setOverlay("Pick a fighter and press START, or play today's Daily Challenge. Drag on the arena (or use WASD / arrow keys) to move — your fighter attacks on its own.",false);
+  draw(); renderDaily(); renderRecord();
   // test hook (used by tests/arena.test.js)
-  window.__arena={ step, setInput:(x,y)=>{ testInput=(x==null)?null:[x,y]; }, get state(){ return G&&{over:G.over,win:G.win,place:G.place,playerOut:G.playerOut,arena:G.arena,alive:G.f.filter(f=>f.alive).length,total:G.f.length,player:{x:G.f[0].x,y:G.f[0].y,hp:G.f[0].hp}}; } };
+  window.__arena={ step, dailyPlan, shareText, setInput:(x,y)=>{ testInput=(x==null)?null:[x,y]; }, get state(){ return G&&{over:G.over,win:G.win,place:G.place,playerOut:G.playerOut,arena:G.arena,alive:G.f.filter(f=>f.alive).length,total:G.f.length,mode:G.mode,practice:!!G.practice,kos:G.kos,dmg:G.dmg,ids:G.f.map(f=>f.id),player:{x:G.f[0].x,y:G.f[0].y,hp:G.f[0].hp,id:G.f[0].id}}; } };
 })();
 
 /* ============================================================
