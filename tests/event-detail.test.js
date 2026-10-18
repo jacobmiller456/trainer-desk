@@ -15,6 +15,10 @@ const EVENTS = [
     start: day(-5) + 'T10:00:00.000', end: day(40) + 'T20:00:00.000', extraData: { promocodes: ['ADIDASXPOKEMON', 'bad code!'], generic: { hasFieldResearchTasks: true } } },
   { eventID: 'sandile-hatch', name: 'Sandile Hatch Day', eventType: 'event', link: 'https://leekduck.com/events/sandile/',
     start: day(4) + 'T11:00:00.000', end: day(4) + 'T17:00:00.000', extraData: { generic: {} } },
+  { eventID: 'halloween-2026-part-1', name: 'Pokémon GO Halloween 2026 Part I', eventType: 'event', link: 'https://leekduck.com/events/h/',
+    start: day(6) + 'T10:00:00.000', end: day(10) + 'T10:00:00.000', extraData: { generic: {} } },
+  { eventID: 'minior-showers-test-2099', name: 'Minior Showers: Test', eventType: 'event', link: 'https://leekduck.com/events/m/',
+    start: day(7) + 'T17:00:00.000', end: day(9) + 'T23:59:00.000', extraData: { generic: {} } },
   { eventID: 'gbl', name: 'Great League', eventType: 'go-battle-league', link: 'https://leekduck.com/events/gbl/',
     start: day(1) + 'T20:00:00.000Z', end: day(8) + 'T20:00:00.000Z', extraData: { generic: {} } },
 ];
@@ -31,7 +35,7 @@ async function open(b, base, path = '/go') {
     return r.abort();
   });
   await page.goto(base + path);
-  await page.waitForFunction(() => document.querySelectorAll('#active-events .ev-more, #upcoming-events .ev-more').length === 5, null, { timeout: 15000 });
+  await page.waitForFunction(() => document.querySelectorAll('#active-events .ev-more, #upcoming-events .ev-more').length === 7, null, { timeout: 15000 });
   return { ctx, page };
 }
 const body = page => page.textContent('#evd-body');
@@ -67,11 +71,20 @@ const openEv = async (page, id) => { await page.click(`.ev-more[data-ev="${id}"]
   check('dialog title escaped', !(await page.$('#evd-name b')));
   await page.keyboard.press('Escape');
   await openEv(page, 'sandile-hatch'); t = await body(page);
-  check('plain event: name-based explainer (Hatch Day) instead of a generic line', /hatches from eggs far more often/.test(t), t.replace(/\s+/g, ' '));
+  check('plain event without notes: name-based explainer (Hatch Day) instead of a generic line', /hatches from eggs far more often/.test(t), t.replace(/\s+/g, ' '));
   check('plain event: Pokémon from the title with types, our Pokédex page and counters', /POKÉMON IN THIS EVENT/.test(t) && /Sandile/.test(t) && /ground/.test(t) && (await page.getAttribute('#evd-body .evd-mon-acts a', 'href')) === '/pokedex/sandile' && !!(await page.$('[data-evcounter="Sandile"]')), t.replace(/\s+/g, ' '));
   await page.click('#evd-close');
   await openEv(page, 'dialga-raids'); await page.waitForTimeout(300);
   check('no duplicate Pokémon section when the boss list already covers it', !/POKÉMON IN THIS EVENT/.test(await body(page)));
+  await page.click('#evd-close');
+  await openEv(page, 'halloween-2026-part-1'); t = await body(page);
+  check('hand-written notes shown for a known event, with checked date', /TRAINER DESK NOTES/.test(t) && /costumed Pikachu and Sinistea/i.test(t) && /Written by Trainer Desk/.test(t) && /checked/.test(t), t.replace(/\s+/g, ' ').slice(0, 400));
+  await page.click('#evd-close');
+  await openEv(page, 'minior-showers-test-2099'); t = await body(page);
+  check('pattern notes cover a recurring series (Minior Showers)', /TRAINER DESK NOTES/.test(t) && /5–9 p\.m\./.test(t));
+  await page.click('#evd-close');
+  await openEv(page, 'dialga-raids');
+  check('events without notes have no notes box', !/TRAINER DESK NOTES/.test(await body(page)));
   await page.click('#evd-close');
   await openEv(page, 'gbl'); t = await body(page);
   check('worldwide-time events say so', /same moment worldwide/.test(t));

@@ -155,6 +155,12 @@ header .wrap{display:flex; align-items:center; justify-content:space-between; mi
 .evd-mon-info{ display:flex; flex-direction:column; gap:4px; }
 .evd-mon-acts{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; }
 .evd-mon-acts .today-btn{ margin:0; }
+.evd-notes{ padding:12px 14px; background:var(--parchment-2); border:2px solid var(--forest-dark); border-radius:6px; }
+.evd-notes h4{ margin:10px 0 4px; font-size:15px; }
+.evd-notes ul{ margin:0; padding-left:20px; font-size:15px; }
+.evd-notes li{ margin:2px 0; }
+.evd-tip{ margin:10px 0 0; font-size:15px; }
+.evd-notes .cdd-note{ margin-top:10px; }
 .evd-flags{ margin:0; padding-left:20px; font-size:15px; }
 .evd-src{ display:inline-flex; align-items:center; min-height:44px; color:var(--forest-dark); font-size:14px; }
 .ev-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px; }
@@ -1057,6 +1063,72 @@ const EVENT_ABOUT={
   "twitch-drops":"Rewards you can claim by watching eligible streams during the window.",
   "event":"A limited-time in-game event, usually with themed spawns, research or bonuses while it runs."
 };
+/* ---- Hand-written event notes (Trainer Desk's own words; facts checked against the official announcement and
+   major fan coverage on the `checked` date). Keyed by ScrapedDuck eventID; EVENT_NOTE_PATTERNS covers recurring
+   series by name. Facts only, short lists, nothing copied. Leave out anything sources disagree on.
+   To add one: copy an entry, change the key to the event's ID (shown in the share link: /go?event=<id>). ---- */
+const EVENT_NOTES={
+  "fall-marathon-buddy-trek-2026":{checked:"2026-10-18",
+    summary:"A walking-focused week that marks Bramblin's debut and gives Mega Manectric a big upgrade.",
+    lists:[["What's new",["Bramblin arrives in the game for the first time.","Mega Manectric can reach Super Max level for the first time and gets the Charged Attack Discharge+."]],
+      ["Shiny odds",["Electrike has a better shiny chance during the event.","Hisuian Growlithe found with Incense has a better shiny chance from Oct 16 until the end."]],
+      ["GO Pass rewards",["Rank 10: Incense lasts 2 hours (not Daily Adventure Incense).","Rank 20: 5× Mega Energy from exploring with Electrike or Manectric as your buddy, once you've Mega Evolved Manectric at least once."]],
+      ["Free research",["A free four-step Timed Research gives XP and ends with Pikachu wearing a marathon visor."]]],
+    tip:"Set Electrike or Manectric as your buddy before you go out walking."},
+  "pokemon-tcg-30th-celebration":{checked:"2026-10-18",
+    summary:"A US-only retail event for the card game's 30th anniversary at participating Best Buy, GameStop and Target stores.",
+    lists:[["At participating stores",["Mega Gengar appears more often in Mega Raids.","Open the game while you're at the store to get a free three-step Timed Research with Gastly-family encounters, Gastly Candy and items."]],
+      ["Deadlines",["Pick up the research by Oct 20 at 10:00 p.m. local time; you then have until Nov 20 to finish it."]],
+      ["Gift card bonus",["Redeeming a Pokémon GO gift card bought at those retailers gives a Gengar Knit Cap avatar item (one per account)."]]],
+    tip:"You have to physically visit a participating US store to get the research."},
+  "halloween-2026-part-1":{checked:"2026-10-18",
+    summary:"Part one of this year's Halloween event, with three new costumed Pokémon and spooky spawns.",
+    lists:[["New costumes",["Pikachu in a hat and capelet, Zubat in a top hat and Sinistea with a bow make their debut. All three can be shiny."]],
+      ["In the wild",["Top-hat Zubat, Duskull and Piplup in a Halloween costume, with Drifblim in a costume as a rarer find."]],
+      ["Raids",["Costumed Pikachu and Sinistea in one-star raids."]],
+      ["Event GO Pass",["Rank 10: 2× Candy for catching Pokémon (3× with Deluxe).","Rank 20: 2× Stardust for catching Pokémon (3× with Deluxe). The pass covers both parts of Halloween."]]],
+    tip:"One-star raids are easy to solo, so they're a quick way to hunt the shiny costumes."},
+  "halloween-2026-part-2":{checked:"2026-10-18",
+    summary:"Part two of Halloween: Greavard's shiny debut and a power-up for Mega Sableye.",
+    lists:[["What's new",["Shiny Greavard can be found for the first time.","Mega Sableye can reach the new Super Max Mega level."]],
+      ["Event GO Pass (carries on from Part I)",["Rank 10: 2× Candy for catching Pokémon (3× with Deluxe).","Rank 20: 2× Stardust for catching Pokémon (3× with Deluxe)."]]],
+    tip:"Mega Sableye raids are running in the Mega tier around the same time; check the raid bosses list above."},
+  "into-the-wild-2026":{checked:"2026-10-18",
+    summary:"The warm-up week for GO Wild Area, built around raids and Max Battles, with daily featured bosses.",
+    lists:[["Debuts",["Dynamax Regidrago in five-star Max Battles.","Dynamax Meltan through the event's GO Pass."]],
+      ["Daily highlights (6–7 p.m. local)",["Mon Nov 9: Crowned Sword Zacian raid hour.","Tue Nov 10: Crowned Shield Zamazenta raid hour."]],
+      ["Bonuses",["Remote Raid Pass limit raised to 30 (Nov 9–13), then no limit on Nov 14–15.","Shiny Gimmighoul can come from Coin Bags and shiny Meltan from Mystery Boxes."]],
+      ["GO Pass",["Free for everyone from Nov 9; the paid Deluxe track ends with a Silver Bottle Cap."]]],
+    tip:"Daily Discoveries are paused Nov 9–15, so plan around raids and Max Battles that week."},
+  "pokemon-go-wild-area-2026-global":{checked:"2026-10-18",
+    summary:"A worldwide weekend event (Nov 14–15, 10 a.m.–6 p.m. local). Free to join; an optional ticket adds extras.",
+    lists:[["Featured Max Battles",["Dynamax Dialga on Saturday, Dynamax Palkia on Sunday."]],
+      ["For everyone",["GO Safari Balls from PokéStops and Gyms.","Up to three free Raid Passes a day from Gym discs."]],
+      ["With a ticket (US$11.99 in the web store)",["A branching Special Research where you pick a Steel or Dragon path.","Better shiny odds and a higher daily Max Particle cap.","Incense can attract Latias and Latios."]]],
+    tip:"The ticket only adds bonuses; you can play the weekend for free."},
+  "season-24-twilight-trails":{checked:"2026-10-18",
+    summary:"The current season (Sep 8 – Dec 1), focused on Paldea Pokémon, new Mega Evolutions and Dynamax debuts.",
+    lists:[["Highlights",["Paldea arrivals including Maschiff.","Mega Staraptor and Mega Chandelure.","Dynamax Rhyhorn, Sneasel and Sizzlipede in Max Battles."]],
+      ["Season GO Pass milestones",["Rank 1: a guaranteed Candy XL from trades (Level 31+).","Rank 25: bigger Gift limits.","Rank 50: Daily Adventure Incense lasts twice as long.","Rank 75: more XP and Stardust from hatching Eggs."]],
+      ["Community Days this season",["Sep 12 (Classic), Oct 10 and Nov 21."]]],
+    tip:"Season milestone bonuses stay on until the season ends once you reach them."}
+};
+const EVENT_NOTE_PATTERNS=[
+  [/^minior-showers-/,{checked:"2026-10-18",
+    summary:"One of a series of short events timed to real meteor showers, where Minior shows up more often. Each shower features a different core colour.",
+    lists:[["During the shower",["Minior appears more often in the wild from 5–9 p.m. local time each day.","Shooting stars light up the in-game sky in the same evening window."]],
+      ["About Minior",["Rock/Flying type. Its Meteor Form has more Defense; its Core Form has more Attack. It changes form at half health in trainer battles."]]],
+    tip:"Play in the evening: that's when Minior is most common. Collecting every core colour means catching it in each shower."}]
+];
+function eventNote(ev){ if(EVENT_NOTES[ev._key]) return EVENT_NOTES[ev._key]; for(const [re,n] of EVENT_NOTE_PATTERNS) if(re.test(ev._key)) return n; return null; }
+function noteHtml(n){
+  const d=new Date(n.checked+"T12:00:00Z");
+  return `<section class="evd-sec evd-notes"><h3>TRAINER DESK NOTES</h3>
+    <p class="evd-about">${esc(n.summary)}</p>
+    ${n.lists.map(([h,items])=>`<h4>${esc(h)}</h4><ul>${items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`).join("")}
+    ${n.tip?`<p class="evd-tip">💡 ${esc(n.tip)}</p>`:""}
+    <p class="cdd-note">Written by Trainer Desk from the official announcement · checked ${esc(isNaN(d)?n.checked:d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}))}. Details can change, so check in game.</p></section>`;
+}
 // Explainers matched on the event name (checked before the per-type text). Our own words.
 const EVENT_NAME_ABOUT=[
   [/community day classic/i,"A replay of an earlier Community Day: the featured Pokémon is back in big numbers for a few hours, and evolving it during the window (or shortly after) teaches an exclusive move."],
@@ -1127,7 +1199,7 @@ async function openEventDetail(key){
     <p class="evd-when">${esc(ev._s.toLocaleString(undefined,o))} → ${esc(ev._e.toLocaleString(undefined,o))} (${esc(dur)})<br>
       <small>${isLocalTime(ev.start)?"Your local time (it happens at local time everywhere).":"Shown in your time zone (same moment worldwide)."}</small>
       ${ended?'<span class="cd-meta">This event has ended.</span>':`<span class="cd" data-t="${(live?ev._e:ev._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span>`}</p>
-    <p class="evd-about">${esc(eventAbout(ev))}</p>
+    ${eventNote(ev)?noteHtml(eventNote(ev)):`<p class="evd-about">${esc(eventAbout(ev))}</p>`}
     <div id="evd-extra"></div>
     ${x.spawns||x.research?`<ul class="evd-flags">${x.spawns?"<li>Has featured or boosted wild spawns</li>":""}${x.research?"<li>Has event Field Research tasks</li>":""}</ul>`:""}
     <div class="cdd-actions">

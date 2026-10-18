@@ -25,6 +25,7 @@ Most visitors are on phones. `tests/mobile.test.js` (part of `npm test`, and run
 - All fetches go through `fetchWithTimeout()` (6s abort by default; TCG calls use `TCG_TIMEOUT` 12s / `TCGDEX_TIMEOUT` 15s). Every live section MUST have an offline fallback; no section may render blank.
 - Data: ScrapedDuck (GO events), pokemontcg.io `API` const (cards/sets; automatic failover to TCGdex `TCGDEX`), Limitless TCG (tournaments), PokéAPI (`POKEAPI`, Pokédex, lazy-loaded on first tab open).
 - `UPCOMING_SETS` is hand-maintained; write blurbs in our own words.
+- `EVENT_NOTES` / `EVENT_NOTE_PATTERNS` (GO event notes) are hand-maintained the same way: facts from the official announcement in our own words, a `checked` date, nothing copied from LeekDuck or Niantic, and no automated fetching of Niantic/Scopely sites (their terms forbid bots).
 - Escape dynamic text with `esc()` in new code.
 - Do not remove `const API=...` (it was once dropped by a bad edit; `tests/tcg.test.js` guards it). After any edit run `npm test`.
 
