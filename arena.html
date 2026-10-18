@@ -1112,9 +1112,42 @@ const EVENT_NOTES={
     lists:[["Highlights",["Paldea arrivals including Maschiff.","Mega Staraptor and Mega Chandelure.","Dynamax Rhyhorn, Sneasel and Sizzlipede in Max Battles."]],
       ["Season GO Pass milestones",["Rank 1: a guaranteed Candy XL from trades (Level 31+).","Rank 25: bigger Gift limits.","Rank 50: Daily Adventure Incense lasts twice as long.","Rank 75: more XP and Stardust from hatching Eggs."]],
       ["Community Days this season",["Sep 12 (Classic), Oct 10 and Nov 21."]]],
-    tip:"Season milestone bonuses stay on until the season ends once you reach them."}
+    tip:"Season milestone bonuses stay on until the season ends once you reach them."},
+  "pokemon-go-city-safari-boston-2026-rescheduled":{checked:"2026-10-18",
+    summary:"Boston's City Safari was postponed by a nor'easter and now runs mostly as a global event, for people who already bought a ticket. No new tickets are sold.",
+    lists:[["How it works",["Ticket holders can play from anywhere, 10 a.m.–6 p.m. local time on Oct 24 and 25.","The wild encounters and bonuses planned for Boston run worldwide for ticket holders.","There's no Boston GO Stamp Rally this time."]],
+      ["If you're in Boston",["Extra Special Research for spinning PokéStops in Boston: up to nine Eevee encounters in an explorer hat per ticketed day, each with a Boston location background."]],
+      ["Refunds",["The buyer can ask in-app support for a refund until Oct 20 at 11:59 p.m. EST. It refunds the whole order and removes event access."]]],
+    tip:"Nothing to do if you're keeping your ticket: just play during the hours."},
+  "pokemon-go-wild-area-2026-sendai-japan":{checked:"2026-10-18",
+    summary:"An in-person ticketed GO Wild Area weekend in Sendai, Miyagi (Nov 6–8, 10 a.m.–6 p.m. local).",
+    lists:[["Featured",["Gigantamax Duraludon and Dynamax Dialga and Palkia.","Hisuian Sliggoo; Hisuian Goodra debuts at the in-person events.","Mighty Lapras is Sendai's headline pick; mighty Machamp in a modern jacket, Bastiodon and Kommo-o appear at all in-person events."]],
+      ["Also",["A Stamp Rally that has you exploring Miyagi Prefecture."]]],
+    tip:"Can't travel? The Global weekend on Nov 14–15 shares many of the same headliners."},
+  "pokemon-go-wild-area-2026-mexico-city":{checked:"2026-10-18",
+    summary:"An in-person ticketed GO Wild Area event in Mexico City, with one-day tickets for Nov 6, 7 or 8 (MXN$350 plus taxes and fees).",
+    lists:[["Featured",["Gigantamax Duraludon and Dynamax Dialga and Palkia.","Hisuian Sliggoo; Hisuian Goodra debuts at the in-person events.","Mighty Hawlucha is Mexico City's headline pick; mighty Machamp in a modern jacket, Bastiodon and Kommo-o appear at all in-person events.","Machamp in a modern jacket in three-star raids."]]],
+    tip:"Can't travel? The Global weekend on Nov 14–15 shares many of the same headliners."},
+  "go-pass-october-2026":{checked:"2026-10-18",
+    summary:"October's monthly GO Pass (Oct 6 – Nov 3). Rank up by playing to unlock rewards; the top prize is a Kyogre encounter.",
+    lists:[["Free track highlights",["A Kyogre encounter (it can be shiny, but that's not guaranteed).","Rare Candy XL, a Premium Battle Pass and a Lucky Egg along the way."]],
+      ["Deluxe (paid, US$7.99)",["Adds a Lucky Trinket: it turns a Great Friend into a Lucky Friend for one trade (use it by Nov 8).","Faster progress, a Super Incubator and extra encounters."]],
+      ["Milestone bonuses",["Rank 1: an extra Candy per trade.","Rank 25: bigger Gift limits.","Rank 50: Daily Adventure Incense lasts twice as long.","Rank 75: better rewards from hatching Eggs."]]],
+    tip:"Claim your rewards before the pass closes; check the in-game timer for the exact claim deadline."},
+  "pokemon-night-out-2026-twitch-drops":{checked:"2026-10-18",
+    summary:"Watch the official Pokémon Night Out broadcast on Twitch to get a code for exclusive Timed Research that rewards a baseball jersey for your avatar.",
+    lists:[["How to get it",["Link your Pokémon Trainer Central account to Twitch beforehand (see the official Twitch Drops help page).","Watch the broadcast on twitch.tv/Pokemon (starts 7:30 p.m. PDT on Oct 24) for 30 minutes. Keep the stream visible: minimising pauses the timer.","Claim the drop in Twitch, then get the code from rewards.pokemon.com (View Inventory → Show Code).","Redeem it on the official offer redemption page. One per account."]]],
+    tip:"The YouTube version of the show doesn't count; it has to be on Twitch."},
+  "pokemon-x-adidas-2026":{checked:"2026-10-18", hideCodes:true,
+    summary:"A store-based Timed Research for the adidas × Pokémon collection. It rewards an adidas jacket and cap for your avatar.",
+    lists:[["How to get it",["Open Pokémon GO while at a participating adidas or retail store to receive the research (available until Jan 15, 2027, 8 p.m. local).","Finish it by Feb 13, 2027. Tasks give XP, Stardust, a Lucario encounter and Lucario Mega Energy."]]],
+    tip:"We couldn't confirm a redeemable code for this one, so we don't list one."}
 };
 const EVENT_NOTE_PATTERNS=[
+  [/^pokemon-go-tour-alola-/,{checked:"2026-10-18",
+    summary:"GO Tour: Alola, the yearly big Tour event: in-person in Kaohsiung and Los Angeles (Feb 19–21, 2027), then a global weekend (Feb 27–28, 2027).",
+    lists:[["What we know so far",["Tickets aren't on sale yet; prices haven't been announced.","Featured Pokémon and bonuses haven't been revealed. Anything you've seen about specific Alola debuts is fan speculation for now."]]],
+    tip:"We'll update this once the official details are out."}],
   [/^minior-showers-/,{checked:"2026-10-18",
     summary:"One of a series of short events timed to real meteor showers, where Minior shows up more often. Each shower features a different core colour.",
     lists:[["During the shower",["Minior appears more often in the wild from 5–9 p.m. local time each day.","Shooting stars light up the in-game sky in the same evening window."]],
@@ -1231,7 +1264,7 @@ async function openEventDetail(key){
       return `<li>${art}<div class="evd-mon-info"><b>${esc(m.label)}</b>${m.regional?"":`<div>${p[2].map(t=>`<span class="tc-chip" style="background:${DEX_TYPE_COLORS[t]||"#888"}">${esc(t)}</span>`).join(" ")}</div>`}
         <div class="evd-mon-acts">${!m.regional&&p[0]<=1025?`<a class="evd-src" href="/pokedex/${esc(p[4])}">Pokédex page →</a>`:""}${m.regional?"":`<button type="button" class="today-btn" data-evcounter="${esc(p[1])}" data-types="${esc(p[2].join(","))}" data-slug="${esc(p[0]<=1025?p[4]:"")}">COUNTERS</button>`}</div></div></li>`; }).join("")}</ul></section>`);
   }
-  if(x.codes&&x.codes.length) parts.push(`<section class="evd-sec"><h3>PROMO CODE${x.codes.length>1?"S":""}</h3>${x.codes.map(c=>`<div class="evd-code"><code>${esc(c)}</code><button type="button" class="today-btn" data-code="${esc(c)}">COPY</button></div>`).join("")}<p class="cdd-note" style="margin-top:6px">Redeem in the game's shop or on the official offer redemption site.</p></section>`);
+  if(x.codes&&x.codes.length&&!(eventNote(ev)&&eventNote(ev).hideCodes)) parts.push(`<section class="evd-sec"><h3>PROMO CODE${x.codes.length>1?"S":""}</h3>${x.codes.map(c=>`<div class="evd-code"><code>${esc(c)}</code><button type="button" class="today-btn" data-code="${esc(c)}">COPY</button></div>`).join("")}<p class="cdd-note" style="margin-top:6px">Redeem in the game's shop or on the official offer redemption site.</p></section>`);
   const box=document.getElementById("evd-extra"); if(!box||!evdEl.open) return;
   box.innerHTML=parts.join("");
   box.querySelectorAll("img[data-mono]").forEach(im=>im.addEventListener("error",()=>{ im.outerHTML=im.dataset.mono; },{once:true}));
