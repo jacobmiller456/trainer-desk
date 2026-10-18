@@ -139,6 +139,20 @@ header .wrap{display:flex; align-items:center; justify-content:space-between; mi
 /* ---- event cards ---- */
 .ev-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
 .ev{ padding:16px; position:relative; }
+.ev-more{ display:inline-flex; align-items:center; min-height:44px; margin-top:8px; padding:0 14px; border:3px solid var(--forest-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); font-family:var(--font-pixel); font-size:10px; cursor:pointer; box-shadow:2px 2px 0 rgba(0,0,0,.25); }
+.evd-chip{ display:inline-block; align-self:flex-start; padding:3px 10px; border-radius:3px; color:#fff; font-family:var(--font-pixel); font-size:10px; }
+.evd-when{ margin:0; font-size:15px; }
+.evd-when .cd{ display:block; margin-top:2px; font-family:var(--font-retro); font-size:18px; color:var(--forest-dark); }
+.evd-about{ margin:0; font-size:15px; }
+.evd-sec h3{ margin:0 0 8px; font-family:var(--font-pixel); font-size:10px; letter-spacing:.04em; color:var(--forest-dark); }
+.evd-mons{ display:flex; flex-wrap:wrap; gap:10px; margin:0; padding:0; list-style:none; }
+.evd-mons li{ display:flex; align-items:center; gap:8px; padding:6px 10px 6px 6px; background:var(--parchment-2); border:2px solid var(--forest-dark); border-radius:4px; font-weight:700; }
+.evd-mons img, .evd-mons .mono{ width:48px; height:48px; image-rendering:pixelated; display:grid; place-items:center; border-radius:3px; color:#fff; font:800 20px ui-monospace,monospace; }
+.evd-mons .today-btn{ margin:0 0 0 4px; }
+.evd-code{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.evd-code code{ font:700 18px ui-monospace,Menlo,monospace; padding:6px 10px; background:var(--parchment-2); border:2px dashed var(--forest-dark); border-radius:4px; }
+.evd-flags{ margin:0; padding-left:20px; font-size:15px; }
+.evd-src{ display:inline-flex; align-items:center; min-height:44px; color:var(--forest-dark); font-size:14px; }
 .ev-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px; }
 .ev-type{
   font-family:var(--font-retro); font-size:13px; letter-spacing:0.04em; text-transform:uppercase;
@@ -674,6 +688,11 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <p class="tc-foot">GO damage multipliers: super effective ×1.6, not very effective ×0.625, and "immune" types take ×0.39 instead of nothing. Two types multiply together.</p>
   </section>
 
+  <dialog class="cdd" id="ev-detail" aria-labelledby="evd-name">
+    <div class="cdd-bar"><span class="cdd-pos">EVENT</span><button type="button" class="cdd-btn cdd-close" id="evd-close" aria-label="Close">✕</button></div>
+    <div class="cdd-body" id="evd-body"></div>
+  </dialog>
+
   <div class="pixel-box note">
     <b>Live data:</b> event titles, dates, and types are pulled automatically from the community-maintained <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> feed and refresh every 15 minutes. Each card links back to the original source for full details. If the feed can't be reached, sample data renders instead so the layout still works.
   </div>
@@ -925,6 +944,18 @@ function cdData(x){
     research:[...new Set(names(x.specialresearch))]
   };
 }
+// Other structured event facts from the feed (names, a short bonus line, promo codes, yes/no flags). No article text.
+function evExtra(x){
+  if(!x||typeof x!=="object") return null;
+  const mon=o=>o&&typeof o.name==="string"&&o.name.trim()?{name:o.name.trim().slice(0,60),shiny:!!o.canBeShiny}:null;
+  const rb=x.raidbattles||{}, sp=x.spotlight, g=x.generic||{};
+  return {
+    bosses:(Array.isArray(rb.bosses)?rb.bosses:[]).map(mon).filter(Boolean).slice(0,12),
+    spotlight:sp&&typeof sp==="object"?{mons:(Array.isArray(sp.list)&&sp.list.length?sp.list:[sp]).map(mon).filter(Boolean).slice(0,6),bonus:typeof sp.bonus==="string"?sp.bonus.trim().slice(0,80):""}:null,
+    codes:(Array.isArray(x.promocodes)?x.promocodes:[]).filter(c=>typeof c==="string"&&/^[A-Z0-9]{4,30}$/i.test(c)).slice(0,6),
+    spawns:!!g.hasSpawns, research:!!g.hasFieldResearchTasks
+  };
+}
 async function loadGoEvents(){
   for(const url of FEED_URLS){
     try{
@@ -933,11 +964,13 @@ async function loadGoEvents(){
       const j=await r.json();
       if(Array.isArray(j)&&j.length){
         GO_EVENTS=j.map(e=>({
+          id:typeof e.eventID==="string"?e.eventID.slice(0,120):"",
           title:e.name||e.title||"Untitled event",
           type:e.eventType||"event",
           start:e.start, end:e.end,
-          link:e.link||null,
-          cd:cdData(e.extraData&&e.extraData.communityday)
+          link:typeof e.link==="string"&&/^https:\/\//.test(e.link)?e.link:null,
+          cd:cdData(e.extraData&&e.extraData.communityday),
+          extra:evExtra(e.extraData)
         }));
         return;
       }
@@ -968,20 +1001,22 @@ function evCard(ev,isActive){
       <span class="ev-type">${st.label}</span>
       ${isActive?'<span class="ev-live"><span class="dot"></span>LIVE</span>':''}
     </div>
-    <h3>${ev.title}</h3>
+    <h3>${esc(ev.title)}</h3>
     <div class="when">
-      <span>${fmtRange(ev._s,ev._e)}</span>
+      <span>${esc(fmtRange(ev._s,ev._e))}</span>
       <span class="cd" data-t="${(isActive?ev._e:ev._s).toISOString()}" data-pre="${isActive?'ends in':'starts in'}"></span>
     </div>
-    ${ev.link?`<div style="margin-top:10px;"><a href="${ev.link}" target="_blank" rel="noopener" style="font-family:var(--font-retro);font-size:14px;color:var(--forest-dark);text-decoration:underline;">Full details on source site ↗</a></div>`:''}`;
+    <button type="button" class="ev-more" data-ev="${esc(ev._key)}">DETAILS</button>`;
+  el.querySelector(".ev-more").addEventListener("click",()=>openEventDetail(ev._key));
   return el;
 }
 function renderEvents(){
   const now=new Date();
   const evs=GO_EVENTS
     .filter(e=>e.start&&e.end)
-    .map(e=>({...e,_s:new Date(e.start),_e:new Date(e.end)}))
+    .map((e,i)=>({...e,_s:new Date(e.start),_e:new Date(e.end),_key:e.id||("ev"+i)}))
     .filter(e=>!isNaN(e._s)&&!isNaN(e._e));
+  shownEvents=evs;
   const active=evs.filter(e=>e._s<=now&&e._e>now).sort((a,b)=>a._e-b._e);
   const upcoming=evs.filter(e=>e._s>now).sort((a,b)=>a._s-b._s).slice(0,24);
   const aEl=document.getElementById("active-events");
@@ -993,7 +1028,105 @@ function renderEvents(){
   else uEl.innerHTML='<div class="empty pixel-box" style="grid-column:1/-1;">No upcoming events on the board yet.</div>';
   renderCommunityDay(evs);
   tickCountdowns();
+  openLinkedEvent();
 }
+
+/* ---- Event details (on our site): facts from the feed + our own short explainer per event type, add-to-calendar,
+   share link (/go?event=<id>). The source write-up stays credited and linked at the bottom. ---- */
+let shownEvents=[], linkedEventDone=false;
+const EVENT_ABOUT={
+  "community-day":"A few hours where one featured Pokémon appears far more often than usual, with bonuses for playing during the window.",
+  "raid-battles":"The listed Pokémon take over raids at gyms for the dates shown. Team up with other trainers to beat and catch them.",
+  "raid-hour":"For one hour, most gyms host raids of the featured boss at the same time. A good moment to group up.",
+  "raid-day":"A few hours with a featured raid boss at many gyms, usually with extra free raid passes or other raid bonuses.",
+  "pokemon-spotlight-hour":"For one hour, the featured Pokémon shows up much more often in the wild, with a bonus that applies only during the hour.",
+  "go-battle-league":"The trainer battle leagues and cups that are live for these dates.",
+  "research":"Timed or special research you can work through while it's available.",
+  "research-breakthrough":"The reward Pokémon you can get from 7-day Field Research breakthroughs during this period.",
+  "pokemon-go-tour":"A big ticketed celebration event, usually with an in-person part and a global part.",
+  "wild-area":"A large in-person event, with a global version for players at home.",
+  "city-safari":"An in-person event in one city, with exclusive spawns for visitors.",
+  "max-mondays":"Dynamax Pokémon featured at Power Spots on Monday evenings.",
+  "max-battles":"Dynamax or Gigantamax battles featured at Power Spots for these dates.",
+  "go-pass":"A pass that unlocks rewards as you earn points by playing during these dates.",
+  "season":"The current season: the backdrop for spawns, bonuses and events over the next few months.",
+  "twitch-drops":"Rewards you can claim by watching eligible streams during the window.",
+  "event":"A limited-time in-game event."
+};
+const isLocalTime=v=>typeof v==="string"&&!/(Z|[+-]\d\d:?\d\d)$/.test(v); // feed times without a zone happen at each player's local time
+function icsFor(ev){
+  const two=n=>String(n).padStart(2,"0");
+  const loc=isLocalTime(ev.start);
+  const f=(d,utc)=>(loc&&!utc)?`${d.getFullYear()}${two(d.getMonth()+1)}${two(d.getDate())}T${two(d.getHours())}${two(d.getMinutes())}00`
+    :`${d.getUTCFullYear()}${two(d.getUTCMonth()+1)}${two(d.getUTCDate())}T${two(d.getUTCHours())}${two(d.getUTCMinutes())}00Z`;
+  const clean=t=>String(t).replace(/[\r\n]+/g," ").replace(/([,;\\])/g,"\\$1");
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Trainer Desk//GO events//EN","BEGIN:VEVENT",
+    `UID:${clean(ev._key)}@trainerdesk.net`,`DTSTAMP:${f(new Date(),true)}`,`DTSTART:${f(ev._s)}`,`DTEND:${f(ev._e)}`,
+    `SUMMARY:${clean(ev.title)}`,`URL:https://www.trainerdesk.net/go?event=${encodeURIComponent(ev._key)}`,"END:VEVENT","END:VCALENDAR"].join("\r\n");
+}
+async function evMonsHtml(list,withCounters){
+  let names=null; try{ names=window.tcNamesReady?await window.tcNamesReady:null; }catch(e){}
+  const norm=t=>t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"");
+  const find=n=>{ if(!names) return null; const base=n.replace(/\s*\([^)]*\)\s*$/,"").replace(/^(Mega|Primal|Shadow|Dynamax|Gigantamax)\s+/i,""); return names.find(x=>norm(x[1])===norm(n))||names.find(x=>norm(x[1])===norm(base)); };
+  return `<ul class="evd-mons">${list.map(m=>{ const p=find(m.name), col=p?DEX_TYPE_COLORS[p[2][0]]||"#888":"#888", mono=`<span class="mono" style="background:${col}">${esc(m.name.charAt(0))}</span>`;
+    const art=SHOW_SPRITES&&p&&p[0]<=1025?`<img src="${SPRITE_URL(p[0])}" alt="" width="48" height="48" loading="lazy" data-mono="${esc(mono)}">`:mono;
+    return `<li>${art}<span>${esc(m.name)}${m.shiny?' <span title="Can be shiny">✨</span>':""}</span>${withCounters&&p?`<button type="button" class="today-btn" data-evcounter="${esc(m.name)}" data-types="${esc(p[2].join(","))}" data-slug="${esc(p[0]<=1025&&norm(p[1])===norm(m.name)?p[4]:"")}">COUNTERS</button>`:""}</li>`; }).join("")}</ul>`;
+}
+const evdEl=document.getElementById("ev-detail"), evdBody=document.getElementById("evd-body");
+async function openEventDetail(key){
+  const ev=shownEvents.find(e=>e._key===key); if(!ev||!evdEl) return;
+  const now=new Date(), live=ev._s<=now&&ev._e>now, ended=ev._e<=now, st=styleForType(ev.type), x=ev.extra||{};
+  const o={weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"};
+  const mins=Math.round((ev._e-ev._s)/6e4), dur=mins<120?`${mins} min`:mins<2880?`${Math.round(mins/60)} hours`:`${Math.round(mins/1440)} days`;
+  evdBody.innerHTML=`
+    <span class="evd-chip" style="background:${st.color}">${esc(st.label.toUpperCase())}</span>
+    <h2 id="evd-name">${esc(ev.title)}</h2>
+    <p class="evd-when">${esc(ev._s.toLocaleString(undefined,o))} → ${esc(ev._e.toLocaleString(undefined,o))} (${esc(dur)})<br>
+      <small>${isLocalTime(ev.start)?"Your local time (it happens at local time everywhere).":"Shown in your time zone (same moment worldwide)."}</small>
+      ${ended?'<span class="cd-meta">This event has ended.</span>':`<span class="cd" data-t="${(live?ev._e:ev._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span>`}</p>
+    <p class="evd-about">${esc(EVENT_ABOUT[ev.type]||EVENT_ABOUT.event)}</p>
+    <div id="evd-extra"></div>
+    ${x.spawns||x.research?`<ul class="evd-flags">${x.spawns?"<li>Has featured or boosted wild spawns</li>":""}${x.research?"<li>Has event Field Research tasks</li>":""}</ul>`:""}
+    <div class="cdd-actions">
+      ${ended?"":'<button type="button" class="today-btn" id="evd-cal">ADD TO CALENDAR</button>'}
+      <button type="button" class="today-btn" id="evd-share">SHARE</button>
+    </div>
+    <p class="cdd-note">Event facts from the community <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener">ScrapedDuck</a> feed, which gathers them from LeekDuck.${ev.link?` <a class="evd-src" href="${esc(ev.link)}" target="_blank" rel="noopener">Full write-up on LeekDuck ↗</a>`:""}</p>`;
+  if(!evdEl.open){ try{ evdEl.showModal(); }catch(e){ evdEl.setAttribute("open",""); } }
+  evdBody.scrollTop=0; if(typeof tickCountdowns==="function") tickCountdowns();
+  const cal=document.getElementById("evd-cal");
+  if(cal) cal.addEventListener("click",()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([icsFor(ev)],{type:"text/calendar"})); a.download=(ev._key||"event").replace(/[^a-z0-9-]+/gi,"-").slice(0,60)+".ics"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); });
+  document.getElementById("evd-share").addEventListener("click",async()=>{
+    const url=`${location.origin}/go?event=${encodeURIComponent(ev._key)}`;
+    try{ if(navigator.share){ await navigator.share({title:ev.title+" · Trainer Desk",url}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+    try{ await navigator.clipboard.writeText(url); toast("Link copied"); }catch(e){ toast(url); }
+  });
+  // extras that use the Pokédex name list (sprites, counters) fill in once it's there
+  const parts=[];
+  if(x.bosses&&x.bosses.length) parts.push(`<section class="evd-sec"><h3>RAID BOSS${x.bosses.length>1?"ES":""}</h3>${await evMonsHtml(x.bosses,true)}</section>`);
+  if(x.spotlight&&x.spotlight.mons.length) parts.push(`<section class="evd-sec"><h3>FEATURED POKÉMON</h3>${await evMonsHtml(x.spotlight.mons,false)}${x.spotlight.bonus?`<p class="evd-about" style="margin-top:8px">Bonus during the hour: <b>${esc(x.spotlight.bonus)}</b></p>`:""}</section>`);
+  if(x.codes&&x.codes.length) parts.push(`<section class="evd-sec"><h3>PROMO CODE${x.codes.length>1?"S":""}</h3>${x.codes.map(c=>`<div class="evd-code"><code>${esc(c)}</code><button type="button" class="today-btn" data-code="${esc(c)}">COPY</button></div>`).join("")}<p class="cdd-note" style="margin-top:6px">Redeem in the game's shop or on the official offer redemption site.</p></section>`);
+  const box=document.getElementById("evd-extra"); if(!box||!evdEl.open) return;
+  box.innerHTML=parts.join("");
+  box.querySelectorAll("img[data-mono]").forEach(im=>im.addEventListener("error",()=>{ im.outerHTML=im.dataset.mono; },{once:true}));
+  box.querySelectorAll("[data-code]").forEach(b=>b.addEventListener("click",async()=>{ try{ await navigator.clipboard.writeText(b.dataset.code); toast("Code copied"); }catch(e){ toast(b.dataset.code); } }));
+  box.querySelectorAll("[data-evcounter]").forEach(b=>b.addEventListener("click",()=>{
+    const raid=window.__raids&&window.__raids.bosses.find(r=>r.name===b.dataset.evcounter);
+    closeEventDetail(); if(window.tcShow) window.tcShow(b.dataset.evcounter,raid?raid.types:b.dataset.types.split(","),b.dataset.slug);
+  }));
+}
+function closeEventDetail(){ if(evdEl&&evdEl.open){ try{ evdEl.close(); }catch(e){ evdEl.removeAttribute("open"); } } }
+function openLinkedEvent(){
+  if(linkedEventDone||GO_EVENTS===SAMPLE_GO_EVENTS) return;
+  let id=null; try{ id=new URLSearchParams(location.search).get("event"); }catch(e){}
+  if(!id) return; linkedEventDone=true;
+  if(shownEvents.some(e=>e._key===id)) openEventDetail(id);
+}
+if(evdEl){
+  document.getElementById("evd-close").addEventListener("click",closeEventDetail);
+  evdEl.addEventListener("click",e=>{ if(e.target===evdEl) closeEventDetail(); });
+}
+
 const cdIds=new Map(); // Pokémon name -> PokéAPI id (or 0 when it can't be matched)
 async function cdMonId(name){
   if(cdIds.has(name)) return cdIds.get(name);
@@ -1035,7 +1168,7 @@ function renderCommunityDay(evs){
       ${mons}
       ${bonuses}
       ${cd.research.length?`<p class="cd-meta">Special Research: ${esc(cd.research.join(", "))}</p>`:""}
-      ${f.link?`<a class="cd-link" href="${esc(f.link)}" target="_blank" rel="noopener">FULL DETAILS ON LEEKDUCK ↗</a>`:""}
+      ${f.link?`<a class="evd-src" href="${esc(f.link)}" target="_blank" rel="noopener">Source: LeekDuck ↗</a>`:""}
     </div>
     ${others.length?`<div class="cd-next">Also scheduled:<ul>${others.map(e=>`<li>${esc(e._s.toLocaleDateString(undefined,{month:"short",day:"numeric"}))} — ${esc(e.title)}${e.cd&&e.cd.spawns.length?" ("+esc(e.cd.spawns.join(", "))+")":" (Pokémon TBA)"}</li>`).join("")}</ul></div>`:""}`;
   tickCountdowns();
