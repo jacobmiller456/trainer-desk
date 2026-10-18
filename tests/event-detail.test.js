@@ -13,6 +13,8 @@ const EVENTS = [
     start: day(2) + 'T18:00:00.000', end: day(2) + 'T19:00:00.000', extraData: { spotlight: { name: 'Stufful', canBeShiny: true, bonus: '2× Transfer Candy', list: [{ name: 'Stufful', canBeShiny: true }] }, generic: { hasSpawns: true } } },
   { eventID: 'promo', name: 'Some <b>Timed</b> Research', eventType: 'research', link: 'https://leekduck.com/events/promo/',
     start: day(-5) + 'T10:00:00.000', end: day(40) + 'T20:00:00.000', extraData: { promocodes: ['ADIDASXPOKEMON', 'bad code!'], generic: { hasFieldResearchTasks: true } } },
+  { eventID: 'sandile-hatch', name: 'Sandile Hatch Day', eventType: 'event', link: 'https://leekduck.com/events/sandile/',
+    start: day(4) + 'T11:00:00.000', end: day(4) + 'T17:00:00.000', extraData: { generic: {} } },
   { eventID: 'gbl', name: 'Great League', eventType: 'go-battle-league', link: 'https://leekduck.com/events/gbl/',
     start: day(1) + 'T20:00:00.000Z', end: day(8) + 'T20:00:00.000Z', extraData: { generic: {} } },
 ];
@@ -29,7 +31,7 @@ async function open(b, base, path = '/go') {
     return r.abort();
   });
   await page.goto(base + path);
-  await page.waitForFunction(() => document.querySelectorAll('#active-events .ev-more, #upcoming-events .ev-more').length === 4, null, { timeout: 15000 });
+  await page.waitForFunction(() => document.querySelectorAll('#active-events .ev-more, #upcoming-events .ev-more').length === 5, null, { timeout: 15000 });
   return { ctx, page };
 }
 const body = page => page.textContent('#evd-body');
@@ -46,7 +48,7 @@ const openEv = async (page, id) => { await page.click(`.ev-more[data-ev="${id}"]
   check('details dialog opens with type, title, dates, countdown and our explainer', await page.$eval('#ev-detail', d => d.open) && /RAID BATTLES/.test(t) && /Dialga in 5-star Raid Battles/.test(t) && /ends in/.test(t) && /Team up with other trainers/.test(t), t.replace(/\s+/g, ' '));
   check('local-time events say so', /Your local time/.test(t));
   check('raid boss listed (shiny marker) with COUNTERS', /RAID BOSS/.test(t) && /Dialga/.test(t) && !!(await page.$('#evd-body .evd-mons [title="Can be shiny"]')) && !!(await page.$('[data-evcounter="Dialga"]')));
-  check('source write-up credited at the bottom', (await page.getAttribute('#evd-body a.evd-src', 'href')) === 'https://leekduck.com/events/dialga-raids/' && /ScrapedDuck/.test(t));
+  check('no off-site link in the dialog; source credited in text', !(await page.$('#evd-body a[href^="http"]')) && /ScrapedDuck/.test(t) && /LeekDuck/.test(t));
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#evd-cal')]);
   const ics = require('fs').readFileSync(await dl.path(), 'utf8');
   check('ADD TO CALENDAR downloads an .ics with the event (local times have no Z)', /\.ics$/.test(dl.suggestedFilename()) && /BEGIN:VEVENT/.test(ics) && /SUMMARY:Dialga in 5-star Raid Battles/.test(ics) && /DTSTART:\d{8}T100000\r\n/.test(ics) && /go\?event=dialga-raids/.test(ics), ics);
@@ -64,6 +66,13 @@ const openEv = async (page, id) => { await page.click(`.ev-more[data-ev="${id}"]
   check('code copied', (await page.evaluate(() => navigator.clipboard.readText())) === 'ADIDASXPOKEMON');
   check('dialog title escaped', !(await page.$('#evd-name b')));
   await page.keyboard.press('Escape');
+  await openEv(page, 'sandile-hatch'); t = await body(page);
+  check('plain event: name-based explainer (Hatch Day) instead of a generic line', /hatches from eggs far more often/.test(t), t.replace(/\s+/g, ' '));
+  check('plain event: Pokémon from the title with types, our Pokédex page and counters', /POKÉMON IN THIS EVENT/.test(t) && /Sandile/.test(t) && /ground/.test(t) && (await page.getAttribute('#evd-body .evd-mon-acts a', 'href')) === '/pokedex/sandile' && !!(await page.$('[data-evcounter="Sandile"]')), t.replace(/\s+/g, ' '));
+  await page.click('#evd-close');
+  await openEv(page, 'dialga-raids'); await page.waitForTimeout(300);
+  check('no duplicate Pokémon section when the boss list already covers it', !/POKÉMON IN THIS EVENT/.test(await body(page)));
+  await page.click('#evd-close');
   await openEv(page, 'gbl'); t = await body(page);
   check('worldwide-time events say so', /same moment worldwide/.test(t));
   const lay = await page.evaluate(() => { const small = [...document.querySelectorAll('#ev-detail button, #ev-detail a.evd-src, .ev-more')].filter(e => { const r = e.getBoundingClientRect(); return r.width && r.height < 44; }).length; return { small, overflow: document.getElementById('evd-body').scrollWidth - document.getElementById('evd-body').clientWidth, page: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });

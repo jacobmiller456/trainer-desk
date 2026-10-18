@@ -56,7 +56,7 @@ async function run(mode) {
     check('disclaimer and research task text not imported', !/Long disclaimer/.test(box) && !/Secret task/.test(box));
     check('special research name shown once', (box.match(/Trickster's Trail/g) || []).length === 1);
     check('countdown running', /starts in \d/.test(box));
-    check('source credit link', (await page.getAttribute('.cd-card a.evd-src', 'href')) === 'https://leekduck.com/events/october-communityday2026/');
+    check('no off-site link in the Community Day box', !(await page.$('.cd-card a[href*="leekduck"]')));
     check('upcoming TBA Community Day in schedule', /November Community Day \(Pokémon TBA\)/.test(box));
     await page.waitForSelector('.cd-mon img', { timeout: 5000 }).catch(() => {});
     const src = await page.$eval('.cd-mon img', i => i.getAttribute('src')).catch(() => null);

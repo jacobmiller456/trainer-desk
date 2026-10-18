@@ -150,6 +150,11 @@ header .wrap{display:flex; align-items:center; justify-content:space-between; mi
 .evd-mons .today-btn{ margin:0 0 0 4px; }
 .evd-code{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
 .evd-code code{ font:700 18px ui-monospace,Menlo,monospace; padding:6px 10px; background:var(--parchment-2); border:2px dashed var(--forest-dark); border-radius:4px; }
+.evd-mons-full{ flex-direction:column; }
+.evd-mons-full li{ align-items:flex-start; }
+.evd-mon-info{ display:flex; flex-direction:column; gap:4px; }
+.evd-mon-acts{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; }
+.evd-mon-acts .today-btn{ margin:0; }
 .evd-flags{ margin:0; padding-left:20px; font-size:15px; }
 .evd-src{ display:inline-flex; align-items:center; min-height:44px; color:var(--forest-dark); font-size:14px; }
 .ev-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px; }
@@ -1050,8 +1055,47 @@ const EVENT_ABOUT={
   "go-pass":"A pass that unlocks rewards as you earn points by playing during these dates.",
   "season":"The current season: the backdrop for spawns, bonuses and events over the next few months.",
   "twitch-drops":"Rewards you can claim by watching eligible streams during the window.",
-  "event":"A limited-time in-game event."
+  "event":"A limited-time in-game event, usually with themed spawns, research or bonuses while it runs."
 };
+// Explainers matched on the event name (checked before the per-type text). Our own words.
+const EVENT_NAME_ABOUT=[
+  [/community day classic/i,"A replay of an earlier Community Day: the featured Pokémon is back in big numbers for a few hours, and evolving it during the window (or shortly after) teaches an exclusive move."],
+  [/hatch day/i,"For a few hours the featured Pokémon hatches from eggs far more often (usually from 2 km eggs), often with hatch bonuses. Fill your incubators before it starts and walk during the window."],
+  [/research day/i,"For a few hours, spinning PokéStops gives special Field Research tasks that reward encounters with the featured Pokémon. Spin as many stops as you can."],
+  [/raid day/i,"A few hours with the featured boss at most gyms, usually with extra free raid passes from spinning gym discs. Plan a route with friends."],
+  [/spotlight hour/i,"For one hour the featured Pokémon spawns far more often in the wild, plus a bonus that only applies during that hour."],
+  [/elite raid/i,"Elite raids appear at gyms at fixed times, need a group in person, and can't be joined with remote passes. Check the times and gather a team."],
+  [/shadow/i,"Shadow Pokémon are the Team GO Rocket versions: they hit harder but take more damage. Shadow raids need Purified Gems or a strong group."],
+  [/showcase/i,"PokéStop Showcases: enter your best Pokémon of the featured kind at a stop to compete for size-based rankings and rewards."],
+  [/max monday|dynamax|gigantamax|max battle/i,"Dynamax and Gigantamax Pokémon appear at Power Spots. Battle them with friends using Max Particles to catch them."],
+  [/go fest|go tour|safari zone|city safari|wild area/i,"A major ticketed event, often with an in-person part in one city and a global part for everyone else."],
+  [/battle league|great league|ultra league|master league|cup/i,"Trainer battles: the leagues and cups that are live for these dates. Check the CP limits and build your team."],
+  [/halloween/i,"The yearly Halloween event: Ghost-, Dark- and Poison-type Pokémon usually appear more often, often with costumed Pokémon and candy-themed bonuses."],
+  [/holiday|winter|festival of lights/i,"A seasonal holiday event, usually with themed and costumed Pokémon, Ice-type spawns and gift or egg bonuses."],
+  [/marathon|buddy/i,"An event built around walking with your buddy Pokémon, usually with bonuses for distance, buddy hearts or egg hatching."],
+  [/minior|meteor|showers/i,"A short themed event tied to a real-world meteor shower, usually with the featured Pokémon appearing more often."],
+  [/tcg|trading card/i,"A crossover with the Pokémon Trading Card Game, usually with themed research, avatar items or spawns."],
+  [/raid hour/i,"For one hour, most gyms host raids of the featured boss at the same time, so it's the easiest time to find a group."],
+  [/hour/i,"A one-hour window with a featured bonus or Pokémon. Set a reminder so you don't miss it."]
+];
+function eventAbout(ev){ for(const [re,t] of EVENT_NAME_ABOUT) if(re.test(ev.title)) return t; return EVENT_ABOUT[ev.type]||EVENT_ABOUT.event; }
+// Pokémon named in an event title, e.g. "Sandile Hatch Day" -> Sandile. Regional forms are named but not given base-form types.
+function titleMons(title,names){
+  if(!names||!title) return [];
+  const norm=t=>t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const T=" "+norm(title).replace(/[^a-z0-9.'♀♂-]+/g," ")+" ", out=[], seen=new Set();
+  const sorted=titleMons.cache||(titleMons.cache=names.filter(n=>n[1].length>=3).slice().sort((a,b)=>b[1].length-a[1].length));
+  let rest=T;
+  for(const n of sorted){
+    const key=" "+norm(n[1])+" "; const i=rest.indexOf(key); if(i<0) continue;
+    const before=rest.slice(0,i).trim().split(" ").pop()||"";
+    const regional=/^(galarian|alolan|hisuian|paldean)$/.test(before), form=/^(mega|primal|shadow|dynamax|gigantamax)$/.test(before);
+    if(!seen.has(n[0])){ seen.add(n[0]); out.push({p:n,regional,label:(regional||form?before.charAt(0).toUpperCase()+before.slice(1)+" ":"")+n[1],at:i}); }
+    rest=rest.slice(0,i)+" ".repeat(key.length)+rest.slice(i+key.length);
+    if(out.length>=6) break;
+  }
+  return out.sort((a,b)=>a.at-b.at);
+}
 const isLocalTime=v=>typeof v==="string"&&!/(Z|[+-]\d\d:?\d\d)$/.test(v); // feed times without a zone happen at each player's local time
 function icsFor(ev){
   const two=n=>String(n).padStart(2,"0");
@@ -1083,14 +1127,14 @@ async function openEventDetail(key){
     <p class="evd-when">${esc(ev._s.toLocaleString(undefined,o))} → ${esc(ev._e.toLocaleString(undefined,o))} (${esc(dur)})<br>
       <small>${isLocalTime(ev.start)?"Your local time (it happens at local time everywhere).":"Shown in your time zone (same moment worldwide)."}</small>
       ${ended?'<span class="cd-meta">This event has ended.</span>':`<span class="cd" data-t="${(live?ev._e:ev._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span>`}</p>
-    <p class="evd-about">${esc(EVENT_ABOUT[ev.type]||EVENT_ABOUT.event)}</p>
+    <p class="evd-about">${esc(eventAbout(ev))}</p>
     <div id="evd-extra"></div>
     ${x.spawns||x.research?`<ul class="evd-flags">${x.spawns?"<li>Has featured or boosted wild spawns</li>":""}${x.research?"<li>Has event Field Research tasks</li>":""}</ul>`:""}
     <div class="cdd-actions">
       ${ended?"":'<button type="button" class="today-btn" id="evd-cal">ADD TO CALENDAR</button>'}
       <button type="button" class="today-btn" id="evd-share">SHARE</button>
     </div>
-    <p class="cdd-note">Event facts from the community <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener">ScrapedDuck</a> feed, which gathers them from LeekDuck.${ev.link?` <a class="evd-src" href="${esc(ev.link)}" target="_blank" rel="noopener">Full write-up on LeekDuck ↗</a>`:""}</p>`;
+    <p class="cdd-note">Event dates and facts via the community ScrapedDuck feed (gathered by LeekDuck). Explanations written by Trainer Desk.</p>`;
   if(!evdEl.open){ try{ evdEl.showModal(); }catch(e){ evdEl.setAttribute("open",""); } }
   evdBody.scrollTop=0; if(typeof tickCountdowns==="function") tickCountdowns();
   const cal=document.getElementById("evd-cal");
@@ -1104,6 +1148,16 @@ async function openEventDetail(key){
   const parts=[];
   if(x.bosses&&x.bosses.length) parts.push(`<section class="evd-sec"><h3>RAID BOSS${x.bosses.length>1?"ES":""}</h3>${await evMonsHtml(x.bosses,true)}</section>`);
   if(x.spotlight&&x.spotlight.mons.length) parts.push(`<section class="evd-sec"><h3>FEATURED POKÉMON</h3>${await evMonsHtml(x.spotlight.mons,false)}${x.spotlight.bonus?`<p class="evd-about" style="margin-top:8px">Bonus during the hour: <b>${esc(x.spotlight.bonus)}</b></p>`:""}</section>`);
+  // Pokémon named in the title that the lists above don't already cover: sprite, types, our Pokédex page, counters
+  { let names=null; try{ names=window.tcNamesReady?await window.tcNamesReady:null; }catch(e){}
+    const base=t=>t.toLowerCase().replace(/\s*\([^)]*\)\s*/g," ").replace(/\b(mega|primal|shadow|dynamax|gigantamax)\b/g,"").replace(/\s+[xy]$/,"").replace(/[^a-z0-9]/g,"");
+    const listed=new Set([...(x.bosses||[]),...((x.spotlight&&x.spotlight.mons)||[])].map(m=>base(m.name)));
+    const tm=titleMons(ev.title,names).filter(m=>!listed.has(base(m.p[1])));
+    if(tm.length) parts.push(`<section class="evd-sec"><h3>POKÉMON IN THIS EVENT</h3><ul class="evd-mons evd-mons-full">${tm.map(m=>{ const p=m.p, col=DEX_TYPE_COLORS[p[2][0]]||"#888", mono=`<span class="mono" style="background:${col}">${esc(m.label.charAt(0))}</span>`;
+      const art=SHOW_SPRITES&&!m.regional&&p[0]<=1025?`<img src="${SPRITE_URL(p[0])}" alt="" width="48" height="48" loading="lazy" data-mono="${esc(mono)}">`:mono;
+      return `<li>${art}<div class="evd-mon-info"><b>${esc(m.label)}</b>${m.regional?"":`<div>${p[2].map(t=>`<span class="tc-chip" style="background:${DEX_TYPE_COLORS[t]||"#888"}">${esc(t)}</span>`).join(" ")}</div>`}
+        <div class="evd-mon-acts">${!m.regional&&p[0]<=1025?`<a class="evd-src" href="/pokedex/${esc(p[4])}">Pokédex page →</a>`:""}${m.regional?"":`<button type="button" class="today-btn" data-evcounter="${esc(p[1])}" data-types="${esc(p[2].join(","))}" data-slug="${esc(p[0]<=1025?p[4]:"")}">COUNTERS</button>`}</div></div></li>`; }).join("")}</ul></section>`);
+  }
   if(x.codes&&x.codes.length) parts.push(`<section class="evd-sec"><h3>PROMO CODE${x.codes.length>1?"S":""}</h3>${x.codes.map(c=>`<div class="evd-code"><code>${esc(c)}</code><button type="button" class="today-btn" data-code="${esc(c)}">COPY</button></div>`).join("")}<p class="cdd-note" style="margin-top:6px">Redeem in the game's shop or on the official offer redemption site.</p></section>`);
   const box=document.getElementById("evd-extra"); if(!box||!evdEl.open) return;
   box.innerHTML=parts.join("");
@@ -1167,7 +1221,6 @@ function renderCommunityDay(evs){
       ${mons}
       ${bonuses}
       ${cd.research.length?`<p class="cd-meta">Special Research: ${esc(cd.research.join(", "))}</p>`:""}
-      ${f.link?`<a class="evd-src" href="${esc(f.link)}" target="_blank" rel="noopener">Source: LeekDuck ↗</a>`:""}
     </div>
     ${others.length?`<div class="cd-next">Also scheduled:<ul>${others.map(e=>`<li>${esc(e._s.toLocaleDateString(undefined,{month:"short",day:"numeric"}))} — ${esc(e.title)}${e.cd&&e.cd.spawns.length?" ("+esc(e.cd.spawns.join(", "))+")":" (Pokémon TBA)"}</li>`).join("")}</ul></div>`:""}`;
   tickCountdowns();
