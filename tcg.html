@@ -663,6 +663,20 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
 /* ---- who's that pokémon ---- */
 .today-grid .puzzle-card{ grid-column:1/-1; }
+.today-grid .hub-card{ grid-column:1/-1; gap:6px; }
+.hub-top{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 12px; }
+.hub-streak{ font-family:var(--font-retro); font-size:18px; color:var(--forest-dark); background:var(--parchment-2); border:2px solid var(--gold-dark); border-radius:20px; padding:2px 10px; }
+.hub-streak.off{ border-color:var(--forest-light); color:var(--ink-soft); }
+.hub-list{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr; gap:0; }
+@media(min-width:760px){ .hub-list{ grid-template-columns:1fr 1fr; column-gap:24px; } }
+.hub-row{ display:grid; grid-template-columns:28px 1fr auto; align-items:center; gap:10px; min-height:58px; padding:6px 0; border-top:2px dashed var(--parchment-2); }
+.hub-icon{ font-size:20px; text-align:center; }
+.hub-text{ display:flex; flex-direction:column; min-width:0; }
+.hub-text b{ font-size:15px; line-height:1.25; }
+.hub-text small{ font-size:14px; color:var(--ink-soft); line-height:1.3; }
+.hub-up{ color:#2F7A3A; font-weight:700; }
+.hub-btn{ margin:0; align-self:center; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+.hub-done{ margin:4px 0 0; font-family:var(--font-retro); font-size:17px; color:var(--forest-dark); }
 .whos{ display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; }
 .whos-art{ flex:0 0 auto; }
 .whos-frame{ display:grid; place-items:center; width:160px; height:160px; overflow:hidden; background:radial-gradient(circle,#fff6d6,#f3ecd2 70%); border:3px solid var(--forest-dark); border-radius:6px; }
@@ -751,6 +765,12 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 :root[data-theme="dark"] .tourney-format{ color:var(--meadow); border-color:var(--meadow); }
 :root[data-theme="dark"] :is(.mv-pct,.cdd-sum .up,.tb-spark.up span){ color:#7DDB95; }
 :root[data-theme="dark"] :is(.mv-row.down .mv-pct,.cdd-sum .down,.tb-spark.down span){ color:#FF8F86; }
+:root[data-theme="dark"] a.today-btn{ color:var(--forest-dark); }
+:root[data-theme="dark"] .hub-row{ border-top-color:var(--card-2); }
+:root[data-theme="dark"] .hub-streak{ color:var(--gold); background:var(--card-2); }
+:root[data-theme="dark"] .hub-streak.off{ color:var(--ink-soft); }
+:root[data-theme="dark"] .hub-done{ color:var(--mint); }
+:root[data-theme="dark"] .hub-up{ color:#7DDB95; }
 :root[data-theme="dark"] .col-tile.on{ background:#3A3418; }
 :root[data-theme="dark"] .whos-frame, :root[data-theme="dark"] .cdd-art{ filter:brightness(.88); }
 :root[data-theme="dark"] a{ color:inherit; }
@@ -784,6 +804,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <p id="today-date"></p>
   </div>
   <div class="today-grid">
+    <section class="ev pixel-box hub-card" id="today-hub" aria-label="Your day"></section>
     <section class="ev pixel-box puzzle-card" id="today-puzzle"></section>
     <section class="ev pixel-box" id="today-event" aria-live="off"></section>
     <section class="ev pixel-box" id="today-cd"></section>
@@ -2527,6 +2548,7 @@ function confetti(host){
       save(STATS,s);
     }
     save(KEY,state); render();
+    if(state.done&&window.hubRender) window.hubRender();
     if(state.done&&state.won) confetti(el);
     else if(!state.done){ const i=document.getElementById("whos-input"); if(i) i.focus(); }
   }
@@ -3028,6 +3050,81 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   (async function wait(){ for(let i=0;i<40;i++){ await new Promise(r=>setTimeout(r,500)); if(GO_EVENTS&&GO_EVENTS.length&&GO_EVENTS!==SAMPLE_GO_EVENTS){ renderTodayEvent(); renderTodayCD(); return; } } renderTodayEvent(); renderTodayCD(); })();
 })();
 
+/* ============================================================
+   DAILY HUB ("YOUR DAY", top of the Today tab): today's two daily games + a combined streak, current raid bosses
+   you still need shiny (from My Collection), this week's top price riser, and collection progress. Reads data the
+   site already has (localStorage results, the raids feed, prices/movers.json); every row has a fallback.
+   ============================================================ */
+(function(){
+  const el=document.getElementById("today-hub"); if(!el) return;
+  const DAYS_KEY="td-hub-days-v1", today=()=>Math.floor(Date.now()/864e5);
+  const PUZZLE_EPOCH=Math.floor(Date.UTC(2026,9,12)/864e5), ARENA_EPOCH=Math.floor(Date.UTC(2026,9,17)/864e5);
+  const loadJ=(k,d)=>{ try{ const v=JSON.parse(localStorage.getItem(k)||"null"); return v==null?d:v; }catch(e){ return d; } };
+  const norm=t=>t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"");
+  const goTab=v=>{ const t=document.querySelector('.tab[data-view="'+v+'"]'); if(t) t.click(); };
+  let names=null, movers=null, moversTried=false;
+  // days with at least one daily game finished; seeded once from the puzzle's own win streak
+  function streak(puzzleDone,arenaDone){
+    let days=loadJ(DAYS_KEY,null);
+    if(!Array.isArray(days)){ days=[]; const ps=loadJ("td-whos-stats-v1",{}); if(ps&&ps.last>=0&&ps.streak>0) for(let d=ps.last-ps.streak+1;d<=ps.last;d++) days.push(d); }
+    const d0=today(); if((puzzleDone||arenaDone)&&!days.includes(d0)) days.push(d0);
+    days=[...new Set(days.filter(Number.isInteger))].sort((a,b)=>a-b).slice(-120);
+    try{ localStorage.setItem(DAYS_KEY,JSON.stringify(days)); }catch(e){}
+    const set=new Set(days); let d=set.has(d0)?d0:d0-1, n=0; while(set.has(d)){ n++; d--; }
+    return { n, doneToday:set.has(d0) };
+  }
+  function missingShinyRaids(){
+    const bosses=(window.__raids&&window.__raids.bosses)||[], col=loadJ("td-collection-v1",{}), shiny=new Set(Array.isArray(col.s)?col.s:[]);
+    if(!names||!bosses.length) return null;
+    const out=[], rank=t=>{ const i=["5-Star Raids","Mega Raids","Shadow Raids","3-Star Raids","1-Star Raids"].indexOf(t); return i<0?2:i; };
+    for(const b of bosses.slice().sort((x,y)=>rank(x.tier)-rank(y.tier))){ // biggest bosses first
+      if(/^(galarian|alolan|hisuian|paldean)\s/i.test(b.name)) continue;
+      const base=norm(b.name.replace(/\s*\([^)]*\)\s*$/,"").replace(/^(Mega|Primal|Shadow|Dynamax|Gigantamax)\s+/i,"").replace(/\s+[XY]$/,""));
+      const p=names.find(n=>norm(n[1])===base); if(p&&b.shiny&&!shiny.has(p[0])&&!out.some(o=>o.id===p[0])) out.push({id:p[0],name:b.name});
+    }
+    return out;
+  }
+  const row=(icon,html,btn)=>`<li class="hub-row"><span class="hub-icon" aria-hidden="true">${icon}</span><span class="hub-text">${html}</span>${btn||""}</li>`;
+  function render(){
+    const d0=today();
+    const pz=loadJ("td-whos-v1",null), pDone=!!(pz&&pz.day===d0&&pz.done), pWon=!!(pz&&pz.won);
+    const ar=loadJ("td-arena-daily-v1",null), aDone=!!(ar&&ar.day===d0);
+    const st=streak(pDone,aDone);
+    const plan=window.__arena&&window.__arena.dailyPlan?window.__arena.dailyPlan(d0):null;
+    const fighter=plan&&names?(names.find(n=>n[0]===plan.fighter)||[])[1]:null;
+    const medal=p=>p===1?"🥇":p===2?"🥈":p===3?"🥉":"#"+p;
+    const col=loadJ("td-collection-v1",{}), caught=Array.isArray(col.c)?col.c.length:0, shinyN=Array.isArray(col.s)?col.s.length:0, total=names?names.length:1025;
+    const miss=missingShinyRaids();
+    const top=movers&&movers.risers&&movers.risers[0];
+    const rows=[
+      row(pDone?"✅":"⬜",`<b>Who's That Pokémon? #${d0-PUZZLE_EPOCH+1}</b><small>${pDone?(pWon?`Solved in ${pz.guesses.length}/5`:"Not this time. New one tomorrow"):"Guess today's silhouette"}</small>`,pDone?"":`<button type="button" class="today-btn hub-btn" data-hub="puzzle">PLAY</button>`),
+      row(aDone?"✅":"⬜",`<b>Arena Daily Challenge #${d0-ARENA_EPOCH+1}</b><small>${aDone?`${medal(ar.place)} of ${ar.of} · ${ar.kos} KO${ar.kos===1?"":"s"}`:(fighter?`You're ${esc(fighter)} today`:"Same match for everyone today")}</small>`,aDone?"":`<button type="button" class="today-btn hub-btn" data-goto="arena">PLAY</button>`),
+      miss===null?"":(!caught&&!shinyN
+        ?row("✨",`<b>Shiny hunting</b><small>Mark your shinies in My Collection to see which raid bosses you still need.</small>`,`<button type="button" class="today-btn hub-btn" data-hub="collection">START</button>`)
+        :row("✨",miss.length?`<b>${miss.length} raid boss${miss.length===1?"":"es"} you still need shiny</b><small>${esc(miss.slice(0,4).map(m=>m.name).join(", "))}${miss.length>4?` +${miss.length-4} more`:""}</small>`:`<b>You have every shiny-able raid boss shiny</b><small>Nice. Check back when the raids rotate.</small>`,miss.length?`<button type="button" class="today-btn hub-btn" data-goto="go">RAIDS</button>`:"")),
+      top?row("📈",`<b>Top riser: ${esc(top.name)}</b><small>${esc(top.setName)} #${esc(top.num)} · $${top.to>=100?Math.round(top.to).toLocaleString():top.to.toFixed(2)} <span class="hub-up">▲ +${top.pct}%</span> this week</small>`,`<a class="today-btn hub-btn" href="/tcg?set=${encodeURIComponent(top.set)}&card=${encodeURIComponent(top.id)}">SEE</a>`):"",
+      caught||shinyN?row("📘",`<b>Your collection</b><small>✓ ${caught.toLocaleString()} / ${total.toLocaleString()} caught · ✨ ${shinyN} shiny</small>`,`<button type="button" class="today-btn hub-btn" data-hub="collection">OPEN</button>`):""
+    ].join("");
+    el.innerHTML=`<div class="hub-top"><div class="today-label">▸ YOUR DAY</div><span class="hub-streak${st.n?"":" off"}" title="Days in a row with a daily game finished">🔥 ${st.n}-day streak</span></div>
+      <ul class="hub-list">${rows}</ul>
+      ${pDone&&aDone?`<p class="hub-done">Both dailies done. See you tomorrow!</p>`:""}`;
+  }
+  el.addEventListener("click",e=>{
+    const b=e.target.closest("[data-hub]"); if(!b) return;
+    if(b.dataset.hub==="puzzle"){ const p=document.getElementById("today-puzzle"); if(p) p.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"}); const i=document.getElementById("whos-input"); if(i) setTimeout(()=>i.focus({preventScroll:true}),400); }
+    if(b.dataset.hub==="collection"){ goTab("dex"); if(window.__collection) window.__collection.show("collection"); }
+  });
+  window.hubRender=render;
+  render();
+  (async()=>{
+    await new Promise(r=>setTimeout(r,0)); // the name-list loader is defined further down the page
+    try{ names=window.tcNamesReady?await window.tcNamesReady:null; }catch(e){}
+    render();
+    if(!moversTried&&location.protocol!=="file:"){ moversTried=true; try{ const r=await fetchWithTimeout("prices/movers.json",8000); if(r.ok){ const j=await r.json(); if(j&&Array.isArray(j.risers)) movers=j; } }catch(e){} render(); }
+  })();
+  document.querySelectorAll('.tab[data-view="today"]').forEach(t=>t.addEventListener("click",render));
+})();
+
 
 /* ============================================================
    PIXEL ARENA — solo battle-royale minigame (canvas, no backend).
@@ -3438,7 +3535,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     cancelAnimationFrame(raf); raf=0; draw(); updateHud(); updateSpecial(); skipBtn.hidden=true;
     setOverlay(G.win?"VICTORY! You are the last one standing.":"Knocked out — you placed #"+G.place+" of "+G.f.length+".",true,podiumHtml());
     startBtn.disabled=false;
-    recordResult(G); renderResult(G); renderDaily(); renderRecord();
+    recordResult(G); renderResult(G); renderDaily(); renderRecord(); if(window.hubRender) window.hubRender();
   }
 
   /* ---- Daily Challenge + trainer record (saved in this browser only) ---- */
@@ -3838,6 +3935,7 @@ const RAID_URLS=[
     render(null);
     const names=await (window.tcNamesReady||Promise.resolve(null)).catch(()=>null);
     if(names&&bosses.length) render(names); // second pass adds sprites once the Pokédex name list is in
+    if(window.hubRender) window.hubRender();
   })();
   window.__raids={ get bosses(){ return bosses; } };
 })();
