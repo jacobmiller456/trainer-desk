@@ -528,6 +528,39 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .mv-row.down .mv-pct{ color:#A93226; }
 .mv-num small{ font-size:12px; color:var(--ink-soft,rgba(27,46,31,.68)); }
 .mv-note{ margin:12px 0 0; color:var(--parchment); font-size:13px; opacity:.9; }
+#dex-collection [hidden], #dex-browse[hidden]{ display:none!important; }
+.col-head{ padding:12px 14px; margin-bottom:12px; }
+.col-modes{ margin-bottom:8px; }
+.col-hint{ margin:0 0 8px; font-size:14px; }
+.col-total{ font-family:var(--font-retro); font-size:20px; color:var(--forest-dark); margin-bottom:4px; }
+.col-total small{ font-family:var(--font-body); font-size:13px; color:var(--ink-soft,rgba(27,46,31,.68)); display:block; }
+.col-bar{ height:10px; background:var(--parchment-2); border:2px solid var(--forest-dark); border-radius:3px; overflow:hidden; }
+.col-bar i{ display:block; height:100%; background:var(--forest-light); }
+.col-gens{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px 10px; margin-top:10px; }
+@media(min-width:600px){ .col-gens{ grid-template-columns:repeat(5,1fr); } }
+.col-gen{ font-size:12px; min-width:0; }
+.col-gen span{ display:flex; justify-content:space-between; gap:4px; margin-bottom:2px; font-variant-numeric:tabular-nums; }
+.col-gen .col-bar{ height:7px; border-width:1px; }
+.col-filters{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+.col-filters input{ grid-column:1/-1; }
+.col-filters input, .col-filters select{ min-width:0; width:100%; min-height:44px; }
+@media(min-width:700px){ .col-filters{ grid-template-columns:2fr 1fr 1fr 1fr; } .col-filters input{ grid-column:auto; } }
+.col-actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+.col-actions .arena-btn{ width:100%; justify-content:center; text-align:center; padding-left:8px; padding-right:8px; }
+@media(min-width:700px){ .col-actions{ grid-template-columns:repeat(4,auto); justify-content:start; } }
+.col-import{ display:inline-flex; align-items:center; justify-content:center; }
+.col-shown{ margin:0 0 8px; color:var(--parchment); font-size:14px; }
+.col-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(76px,1fr)); gap:6px; }
+.col-tile{ position:relative; display:flex; flex-direction:column; align-items:center; gap:0; min-height:96px; padding:4px 2px 6px; border:2px solid var(--forest-dark); border-radius:4px; background:var(--parchment); color:var(--ink); cursor:pointer; font:inherit; content-visibility:auto; contain-intrinsic-size:96px; }
+.col-tile img, .col-tile .mono{ width:56px; height:56px; image-rendering:pixelated; filter:grayscale(1) opacity(.45); transition:filter .15s; }
+.col-tile .mono{ display:grid; place-items:center; border-radius:50%; color:#fff; font:800 20px ui-monospace,monospace; }
+.col-tile .num{ font-size:11px; color:var(--ink-soft,rgba(27,46,31,.68)); font-variant-numeric:tabular-nums; }
+.col-tile .nm{ font-size:12px; font-weight:700; line-height:1.15; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 2px; }
+.col-tile .marks{ position:absolute; top:2px; right:3px; font-size:12px; line-height:1; letter-spacing:-1px; }
+.col-tile.on{ background:#FFF3C4; border-color:var(--gold-dark); box-shadow:inset 0 0 0 2px var(--gold); }
+.col-tile.on img, .col-tile.on .mono{ filter:none; }
+.col-tile:focus-visible{ outline:3px solid var(--gold); outline-offset:1px; }
+.col-note{ margin:12px 0 0; color:var(--parchment); font-size:13px; opacity:.9; }
 .seg-btn[aria-pressed="true"]{ background:var(--gold); color:var(--forest-dark); border-color:var(--gold-dark); }
 .arena-btn.alt{ background:var(--parchment); border-color:var(--forest-dark); }
 .tb-add{ font-family:var(--font-pixel); font-size:10px; min-height:44px; padding:8px 10px; cursor:pointer; border:3px solid var(--forest-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); }
@@ -851,9 +884,44 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <div class="view" id="view-dex"><div class="wrap">
   <div class="view-head">
     <h1>POKÉDEX</h1>
-    <p>Every species, searchable by name or number. Click one for types, base stats, and abilities.</p>
+    <p>Every species, searchable by name or number. Click one for types, base stats, and abilities. Track your Pokémon GO collection in MY COLLECTION.</p>
   </div>
 
+  <div class="seg" role="group" aria-label="Pokédex view">
+    <button type="button" class="seg-btn" data-dexview="dex" aria-pressed="true">POKÉDEX</button>
+    <button type="button" class="seg-btn" data-dexview="collection" aria-pressed="false">MY COLLECTION<span id="col-count"></span></button>
+  </div>
+
+  <div id="dex-collection" hidden>
+    <div class="pixel-box col-head">
+      <div class="seg col-modes" role="group" aria-label="What tapping marks">
+        <button type="button" class="seg-btn" data-colmode="c" aria-pressed="true">✓ CAUGHT</button>
+        <button type="button" class="seg-btn" data-colmode="s" aria-pressed="false">✨ SHINY</button>
+        <button type="button" class="seg-btn" data-colmode="l" aria-pressed="false">🍀 LUCKY</button>
+        <button type="button" class="seg-btn" data-colmode="h" aria-pressed="false">💯 HUNDO</button>
+      </div>
+      <p class="col-hint" id="col-hint">Tap a Pokémon to mark it as caught. Tap again to undo.</p>
+      <div class="col-total" id="col-total"></div>
+      <div class="col-gens" id="col-gens"></div>
+    </div>
+    <div class="col-filters">
+      <input type="text" id="col-search" placeholder="Search name or #…" autocomplete="off" aria-label="Search your collection">
+      <select id="col-gen" aria-label="Generation"></select>
+      <select id="col-type" aria-label="Type"></select>
+      <select id="col-show" aria-label="Show"><option value="all">Show: all</option><option value="missing">Show: missing</option><option value="have">Show: have</option><option value="raids">Show: raid bosses now</option></select>
+    </div>
+    <div class="col-actions">
+      <button type="button" class="arena-btn alt" id="col-markall">MARK ALL SHOWN</button>
+      <button type="button" class="arena-btn alt" id="col-clearall">UNMARK ALL SHOWN</button>
+      <button type="button" class="arena-btn alt" id="col-export">EXPORT</button>
+      <label class="arena-btn alt col-import">IMPORT<input type="file" id="col-import" accept="application/json,.json" hidden></label>
+    </div>
+    <p class="col-shown" id="col-shown" aria-live="polite"></p>
+    <div class="col-grid" id="col-grid"></div>
+    <p class="col-note">Saved on this device only (export to keep a backup or move it to another phone). Covers the full Pokédex; not every Pokémon is in Pokémon GO yet.</p>
+  </div>
+
+  <div id="dex-browse">
   <div class="tcg-controls">
     <input type="text" id="dex-search" placeholder="Search name or #number…" autocomplete="off">
     <select id="dex-gen" aria-label="Filter by generation"></select>
@@ -864,6 +932,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
   <div class="dex-grid" id="dex-grid"></div>
   <div class="empty pixel-box" id="dex-empty" style="display:none;"></div>
+  </div>
 
   <div class="pixel-box note">
     <b>Live API:</b> species data pulls from <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a> (<code>pokeapi.co/api/v2</code>), a free community API that asks clients to cache responses — this page keeps the species list in session storage and each detail lookup in memory. Only factual fields are shown (names, types, base stats, abilities, size); Pokédex description text is not imported. Sample data renders if the API can't be reached.
@@ -3416,6 +3485,119 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   draw(); renderDaily(); renderRecord();
   // test hook (used by tests/arena.test.js)
   window.__arena={ step, dailyPlan, shareText, special:()=>!!(G&&useSpecial(G.f[0])), useSpecialFor:i=>!!(G&&G.f[i]&&useSpecial(G.f[i])), get fighters(){ return G&&G.f; }, setInput:(x,y)=>{ testInput=(x==null)?null:[x,y]; }, get state(){ return G&&{over:G.over,win:G.win,place:G.place,playerOut:G.playerOut,arena:G.arena,alive:G.f.filter(f=>f.alive).length,total:G.f.length,mode:G.mode,practice:!!G.practice,kos:G.kos,dmg:G.dmg,ids:G.f.map(f=>f.id),target:target&&{x:target.x,y:target.y},ctrl:ctrlMode,spUsed:G.spUsed,aiSp:G.aiSp||0,player:{x:G.f[0].x,y:G.f[0].y,hp:G.f[0].hp,id:G.f[0].id,sp:G.f[0].sp,spT:G.f[0].spT,phase:G.f[0].phase}}; } };
+})();
+
+/* ============================================================
+   MY COLLECTION (Pokédex tab): a Pokémon GO checklist saved in this browser. Four marks per species: caught,
+   shiny, lucky, hundo (marking any of the last three also marks caught). Progress overall and per generation,
+   filters (search, gen, type, missing/have, current raid bosses), bulk mark/unmark (two taps), export/import JSON.
+   Uses the Pokédex name list (assets/pokedex-names.json via window.tcNamesReady); sprites hotlinked from PokéAPI.
+   ============================================================ */
+(function(){
+  const root=document.getElementById("dex-collection"); if(!root) return;
+  const KEY="td-collection-v1", MODES={c:"caught",s:"shiny",l:"lucky",h:"hundo"}, ICON={c:"✓",s:"✨",l:"🍀",h:"💯"};
+  const grid=document.getElementById("col-grid"), totalEl=document.getElementById("col-total"), gensEl=document.getElementById("col-gens"), shownEl=document.getElementById("col-shown");
+  const qEl=document.getElementById("col-search"), genEl=document.getElementById("col-gen"), typeEl=document.getElementById("col-type"), showEl=document.getElementById("col-show");
+  let names=null, mode="c", built=false, armed=null, armT=0;
+  const load=()=>{ try{ const j=JSON.parse(localStorage.getItem(KEY)||"null"); if(j&&typeof j==="object") return j; }catch(e){} return {}; };
+  const sets={}; { const j=load(); for(const k in MODES) sets[k]=new Set((Array.isArray(j[k])?j[k]:[]).filter(n=>Number.isInteger(n)&&n>0&&n<20000)); }
+  const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(Object.fromEntries(Object.keys(MODES).map(k=>[k,[...sets[k]].sort((a,b)=>a-b)])))); }catch(e){ toast("Couldn't save — your browser's storage is full."); } };
+  const norm=t=>t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/♀/g,"f").replace(/♂/g,"m").replace(/[^a-z0-9]/g,"");
+  const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+  const countEl=document.getElementById("col-count");
+  const updateCount=()=>{ if(countEl) countEl.textContent=sets.c.size?" ("+sets.c.size+")":""; };
+  updateCount();
+
+  function raidIds(){
+    const bosses=(window.__raids&&window.__raids.bosses)||[]; const out=new Set();
+    for(const b of bosses){ if(/^(galarian|alolan|hisuian|paldean)\s/i.test(b.name)) continue; const base=norm(b.name.replace(/\s*\([^)]*\)\s*$/,"").replace(/^(Mega|Primal|Shadow|Dynamax|Gigantamax)\s+/i,"").replace(/\s+[XY]$/,"")); const p=names.find(n=>norm(n[1])===base); if(p) out.add(p[0]); }
+    return out;
+  }
+  function shown(){
+    const q=qEl.value.trim(), qn=norm(q), num=/^#?\d+$/.test(q)?parseInt(q.replace("#",""),10):null, g=Number(genEl.value)||0, t=typeEl.value, sh=showEl.value, set=sets[mode];
+    const raids=sh==="raids"?raidIds():null;
+    return names.filter(n=>(!q||(num!=null?n[0]===num:norm(n[1]).includes(qn)))&&(!g||n[3]===g)&&(!t||n[2].includes(t))
+      &&(sh==="all"||(sh==="missing"&&!set.has(n[0]))||(sh==="have"&&set.has(n[0]))||(sh==="raids"&&raids.has(n[0]))));
+  }
+  const marks=id=>Object.keys(MODES).filter(k=>sets[k].has(id)).map(k=>ICON[k]).join("");
+  function tileHtml(n){
+    const col=DEX_TYPE_COLORS[n[2][0]]||"#888", on=sets[mode].has(n[0]);
+    const art=SHOW_SPRITES?`<img src="${SPRITE_URL(n[0])}" alt="" width="56" height="56" loading="lazy" decoding="async">`:`<span class="mono" style="background:${col}" aria-hidden="true">${esc(n[1].charAt(0))}</span>`;
+    return `<button type="button" class="col-tile${on?" on":""}" data-id="${n[0]}" aria-pressed="${on}" aria-label="${esc(n[1])} #${n[0]}: ${on?"marked":"not marked"} ${MODES[mode]}">${art}<span class="num">#${String(n[0]).padStart(4,"0")}</span><span class="nm">${esc(n[1])}</span><span class="marks" aria-hidden="true">${marks(n[0])}</span></button>`;
+  }
+  function renderGrid(){
+    const list=shown();
+    shownEl.textContent=`${list.length.toLocaleString()} shown · ${list.filter(n=>sets[mode].has(n[0])).length.toLocaleString()} marked ${MODES[mode]}`;
+    grid.innerHTML=list.length?list.map(tileHtml).join(""):`<p class="pixel-box" style="padding:12px;margin:0;grid-column:1/-1">${showEl.value==="raids"&&!((window.__raids&&window.__raids.bosses)||[]).length?"Raid bosses haven't loaded yet. Open the GO tab once, or try again in a moment.":"Nothing matches these filters."}</p>`;
+    disarm();
+  }
+  function renderProgress(){
+    const set=sets[mode], total=names.length, have=names.filter(n=>set.has(n[0])).length, pct=total?have/total*100:0;
+    totalEl.innerHTML=`${ICON[mode]} ${have.toLocaleString()} / ${total.toLocaleString()} ${MODES[mode]} (${pct.toFixed(pct<10&&pct>0?1:0)}%)<small>Caught ${sets.c.size} · ✨ Shiny ${sets.s.size} · 🍀 Lucky ${sets.l.size} · 💯 Hundo ${sets.h.size}</small><div class="col-bar" role="img" aria-label="${Math.round(pct)}% ${MODES[mode]}"><i style="width:${pct.toFixed(2)}%"></i></div>`;
+    const gens=[...new Set(names.map(n=>n[3]))].sort((a,b)=>a-b);
+    gensEl.innerHTML=gens.map(g=>{ const all=names.filter(n=>n[3]===g), h=all.filter(n=>set.has(n[0])).length;
+      return `<div class="col-gen"><span><b>Gen ${g}</b><em>${h}/${all.length}</em></span><div class="col-bar"><i style="width:${(h/all.length*100).toFixed(1)}%"></i></div></div>`; }).join("");
+    updateCount();
+  }
+  function setMode(m){
+    mode=m; document.querySelectorAll("[data-colmode]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.colmode===m)));
+    document.getElementById("col-hint").textContent=m==="c"?"Tap a Pokémon to mark it as caught. Tap again to undo.":`Tap a Pokémon to mark it as ${MODES[m]} (it's marked caught too). Tap again to undo.`;
+    renderProgress(); renderGrid();
+  }
+  function toggle(id){
+    const set=sets[mode], on=!set.has(id);
+    if(on){ set.add(id); if(mode!=="c") sets.c.add(id); }
+    else { set.delete(id); if(mode==="c") for(const k of ["s","l","h"]) sets[k].delete(id); } // uncaught can't be shiny/lucky/hundo
+    save();
+    const n=names.find(x=>x[0]===id), el=grid.querySelector(`.col-tile[data-id="${id}"]`);
+    if(el&&n){ const sh=showEl.value; if((sh==="missing"&&on)||(sh==="have"&&!on)){ el.classList.toggle("on",on); el.setAttribute("aria-pressed",String(on)); el.querySelector(".marks").textContent=marks(id); } else el.outerHTML=tileHtml(n); }
+    renderProgress();
+    shownEl.textContent=shownEl.textContent.replace(/· [\d,]+ marked/,`· ${shown().filter(x=>sets[mode].has(x[0])).length.toLocaleString()} marked`);
+  }
+  function disarm(){ armed=null; clearTimeout(armT); document.getElementById("col-markall").textContent="MARK ALL SHOWN"; document.getElementById("col-clearall").textContent="UNMARK ALL SHOWN"; }
+  function bulk(add,btn){
+    const list=shown(); if(!list.length) return;
+    if(armed!==btn.id){ disarm(); armed=btn.id; btn.textContent=`TAP AGAIN: ${add?"MARK":"UNMARK"} ${list.length}`; armT=setTimeout(disarm,4000); return; }
+    for(const n of list){ if(add){ sets[mode].add(n[0]); if(mode!=="c") sets.c.add(n[0]); } else { sets[mode].delete(n[0]); if(mode==="c") for(const k of ["s","l","h"]) sets[k].delete(n[0]); } }
+    save(); renderProgress(); renderGrid(); toast(`${add?"Marked":"Unmarked"} ${list.length} as ${MODES[mode]}`);
+  }
+  async function build(){
+    if(built) return; built=true;
+    grid.innerHTML='<p class="col-shown">Loading the Pokédex…</p>';
+    try{ names=window.tcNamesReady?await window.tcNamesReady:null; }catch(e){ names=null; }
+    if(!names){ built=false; totalEl.textContent=""; gensEl.innerHTML=""; grid.innerHTML='<p class="pixel-box" style="padding:12px;margin:0;grid-column:1/-1">The Pokédex list couldn\'t load. Check your connection and open this tab again. Your saved marks are safe.</p>'; return; }
+    const gens=[...new Set(names.map(n=>n[3]))].sort((a,b)=>a-b);
+    genEl.innerHTML='<option value="0">All generations</option>'+gens.map(g=>`<option value="${g}">Generation ${g}</option>`).join("");
+    typeEl.innerHTML='<option value="">All types</option>'+TYPE_LIST.map(t=>`<option value="${t}">${cap(t)}</option>`).join("");
+    setMode(mode);
+  }
+  grid.addEventListener("click",e=>{ const t=e.target.closest(".col-tile"); if(t) toggle(Number(t.dataset.id)); });
+  grid.addEventListener("error",e=>{ const im=e.target; if(im&&im.tagName==="IMG"){ const t=im.closest(".col-tile"), n=names&&names.find(x=>x[0]===Number(t&&t.dataset.id)); im.outerHTML=`<span class="mono" style="background:${n?DEX_TYPE_COLORS[n[2][0]]||"#888":"#888"}" aria-hidden="true">${esc(n?n[1].charAt(0):"?")}</span>`; } },true);
+  document.querySelectorAll("[data-colmode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.colmode)));
+  let qt=0; qEl.addEventListener("input",()=>{ clearTimeout(qt); qt=setTimeout(renderGrid,150); });
+  [genEl,typeEl,showEl].forEach(el=>el.addEventListener("change",renderGrid));
+  document.getElementById("col-markall").addEventListener("click",e=>bulk(true,e.currentTarget));
+  document.getElementById("col-clearall").addEventListener("click",e=>bulk(false,e.currentTarget));
+  document.getElementById("col-export").addEventListener("click",()=>{
+    const blob=new Blob([JSON.stringify({app:"trainer-desk",type:"collection",v:1,...Object.fromEntries(Object.keys(MODES).map(k=>[k,[...sets[k]].sort((a,b)=>a-b)]))},null,1)],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="trainer-desk-collection.json"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+  });
+  document.getElementById("col-import").addEventListener("change",async e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value=""; if(!f) return;
+    try{
+      const j=JSON.parse(await f.text()); if(!j||j.type!=="collection") throw new Error("not a collection file");
+      let added=0; for(const k in MODES) for(const n of (Array.isArray(j[k])?j[k]:[])) if(Number.isInteger(n)&&n>0&&n<20000&&!sets[k].has(n)){ sets[k].add(n); added++; }
+      save(); if(names){ renderProgress(); renderGrid(); } updateCount(); toast(`Imported: ${added} new mark${added===1?"":"s"} added`);
+    }catch(err){ toast("That file isn't a Trainer Desk collection export."); }
+  });
+  // view switch on the Pokédex tab
+  function showDexView(which){
+    document.getElementById("dex-browse").hidden=which!=="dex"; root.hidden=which!=="collection";
+    document.querySelectorAll("[data-dexview]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.dexview===which)));
+    if(which==="collection") build();
+  }
+  document.querySelectorAll("[data-dexview]").forEach(b=>b.addEventListener("click",()=>showDexView(b.dataset.dexview)));
+  window.__collection={ get sets(){ return sets; }, show:showDexView };
 })();
 
 /* ============================================================
