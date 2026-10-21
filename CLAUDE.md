@@ -20,6 +20,7 @@ Most visitors are on phones. `tests/mobile.test.js` (part of `npm test`, and run
 - Text at least 12px (10px for the Press Start 2P pixel font); form fields at least 16px so iOS doesn't zoom on focus.
 - Keep `width=device-width` in the viewport meta and never disable pinch-zoom.
 - Design new UI at 375px first, then widen with `min-width` media queries.
+- Dark mode (`<html data-theme="dark">`, set before paint from `td-theme` or the device setting; ☀️/🌙 toggle in the header): new UI must be readable in both themes. Use the CSS variables (`--ink`, `--ink-soft`, `--card`, `--mint`, `--gold-ink`) or add a `:root[data-theme="dark"]` rule. `tests/dark-mode.test.js` scans every tab and dialog for text contrast (4.5:1 in dark, nothing invisible in light); add new views/dialogs to its `scanAll()`. Static pages follow the device via `prefers-color-scheme` in `assets/dex-page.css`.
 
 ## Architecture rules
 - All fetches go through `fetchWithTimeout()` (6s abort by default; TCG calls use `TCG_TIMEOUT` 12s / `TCGDEX_TIMEOUT` 15s). Every live section MUST have an offline fallback; no section may render blank.

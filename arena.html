@@ -21,6 +21,7 @@
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="https://www.trainerdesk.net/arena">
 <meta name="theme-color" content="#1B4332">
+<script>/* theme before first paint: saved choice (td-theme) else the device setting */(function(){try{var t=localStorage.getItem("td-theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 <meta name="application-name" content="Trainer Desk">
 <meta name="apple-mobile-web-app-title" content="Trainer Desk">
 <meta property="og:type" content="website">
@@ -54,7 +55,8 @@
   --parchment:#FDF6E3;
   --parchment-2:#F3ECD2;
   --ink:#1B2E1F;
-  --ink-soft:rgba(27,46,31,0.62);
+  --ink-soft:rgba(27,46,31,0.74);
+  --gold-ink:#8C5E00; /* gold used as text on cream */
   --gold:#FFC94A;
   --gold-dark:#D89A1F;
   --hp-green:#4CD964;
@@ -244,7 +246,7 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .tb-price{ font-family:var(--font-retro); font-size:34px; line-height:1; color:var(--forest-dark); }
 .tb-src{ font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
 .tb-date{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
-.tb-hint{ font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); }
+.tb-hint{ font-family:var(--font-retro); font-size:14px; color:var(--gold-ink); }
 .tc-zoom{ position:absolute; top:2px; right:2px; z-index:3; width:44px; height:44px; padding:0; border:0; background:none; cursor:pointer; display:grid; place-items:center; }
 .tc-zoom span{ display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:rgba(27,67,50,.85); color:#fff; font-size:17px; line-height:1; box-shadow:0 1px 3px rgba(0,0,0,.4); }
 .tc-zoom:focus-visible span{ outline:3px solid var(--gold); }
@@ -311,7 +313,7 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
   border:2px solid var(--forest); color:var(--forest); white-space:nowrap;
 }
 .tourney-date, .tourney-players{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); white-space:nowrap; }
-.tourney-link{ font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); text-decoration:underline; white-space:nowrap; display:inline-flex; align-items:center; min-height:44px; }
+.tourney-link{ font-family:var(--font-retro); font-size:14px; color:var(--gold-ink); text-decoration:underline; white-space:nowrap; display:inline-flex; align-items:center; min-height:44px; }
 @media(max-width:700px){ .tourney-row{ grid-template-columns:1fr; gap:4px; } }
 
 .region-badge{
@@ -321,6 +323,7 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .region-en{ background:rgba(25,113,194,0.14); color:#1971C2; }
 .region-jp{ background:rgba(217,72,15,0.14); color:#D9480F; }
 
+.empty.pixel-box{ color:var(--ink); }
 .empty{ padding:44px 20px; text-align:center; color:var(--parchment); font-family:var(--font-retro); font-size:16px; border:3px dashed var(--gold); border-radius:6px; }
 
 .note{
@@ -494,7 +497,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .cd-mon img, .cd-mon .mono{ width:48px; height:48px; image-rendering:pixelated; flex:0 0 auto; }
 .cd-mon .mono{ display:grid; place-items:center; font-family:var(--font-pixel); font-size:16px; color:#fff; background:var(--forest); border-radius:3px; }
 .cd-mon b{ font-family:var(--font-body); font-size:15px; color:var(--ink); }
-.cd-mon small{ display:block; font-family:var(--font-retro); font-size:14px; color:var(--gold-dark); }
+.cd-mon small{ display:block; font-family:var(--font-retro); font-size:14px; color:var(--gold-ink); }
 .cd-sub{ font-family:var(--font-pixel); font-size:10px; color:var(--forest); letter-spacing:0.5px; }
 .cd-bonuses{ margin:0; padding-left:20px; columns:2 220px; column-gap:20px; font-size:14px; color:var(--ink); }
 .cd-bonuses li{ margin:0 0 4px; break-inside:avoid; }
@@ -682,6 +685,79 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .whos-link{ display:inline-flex; align-items:center; text-decoration:none; }
 .whos .binder-actions .today-btn{ margin-top:0; }
 .whos-legend{ font-size:14px; }
+
+/* ---- Dark mode: <html data-theme="dark"> (set before paint by the script in <head>: saved choice, else the device
+   setting). Cards go dark green-grey, text goes light; gold buttons and type colours stay. tests/dark-mode.test.js
+   checks text contrast on every tab in both themes. ---- */
+:root[data-theme="dark"]{ --ink:#E4EEE7; --ink-soft:rgba(228,238,231,.70); --card:#1C2822; --card-2:#26352D; --mint:#A8E6C1; color-scheme:dark; }
+:root[data-theme="dark"] body{ background:radial-gradient(ellipse 900px 500px at 15% -10%, rgba(116,198,157,0.10), transparent 60%), linear-gradient(180deg,#07130D,#0E2117 55%,#143022); background-attachment:fixed; }
+:root[data-theme="dark"] header{ background:#0A1A11; }
+:root[data-theme="dark"] :is(
+  .arena-btn.alt,
+  .cdd,
+  .col-tile,
+  /* ---- cookie banner ---- */
+.cookie-banner,
+  /* ---- pixel box (GBA dialogue-box style: double border,
+  hard corners) ---- */
+.pixel-box,
+  input[type=text],
+  select){ background-color:var(--card); }
+:root[data-theme="dark"] :is(
+  .cd-mon,
+  .cdd-art,
+  .col-bar,
+  .cookie-btn,
+  .dex-stat-bar,
+  .evd-code code,
+  .evd-mons li,
+  .evd-notes,
+  .mv-img,
+  .note code,
+  .pack-mini .pocket-ph,
+  .pack-mini > svg,
+  .pack-mini img,
+  .pull-front,
+  .raid-art,
+  .tcard .imgwrap,
+  .today-flavor,
+  .today-potd img){ background-color:var(--card-2); }
+:root[data-theme="dark"] .pixel-box{ background-color:var(--card); box-shadow:inset 0 0 0 2px var(--card-2), 4px 4px 0 rgba(0,0,0,.45); }
+:root[data-theme="dark"] :is(
+  .arena-daily h3,
+  .arena-record h3,
+  .arena-result h3,
+  .arena-stats dd,
+  .cdd-price b,
+  .col-total,
+  .cookie-inner a,
+  .ev .cd,
+  .evd-sec h3,
+  .evd-src,
+  .evd-when .cd,
+  .mv-num b,
+  .mv-rank,
+  .tb-price,
+  .tc-link,
+  .whos-q){ color:var(--mint); }
+:root[data-theme="dark"] :is(
+  .cookie-btn):not([aria-pressed="true"]):not(.ready){ color:var(--ink); }
+:root[data-theme="dark"] select, :root[data-theme="dark"] input[type=text]{ background:#141E19; color:var(--ink); }
+:root[data-theme="dark"] .today-label, :root[data-theme="dark"] .cd-sub{ color:var(--meadow); }
+:root[data-theme="dark"]{ --gold-ink:var(--gold); }
+:root[data-theme="dark"] .arena-btn.alt{ color:var(--ink); border-color:#0A1A11; }
+:root[data-theme="dark"] .ev-type{ color:color-mix(in srgb, var(--type-c,var(--forest)) 45%, #fff); border-color:color-mix(in srgb, var(--type-c,var(--forest)) 60%, #fff); }
+:root[data-theme="dark"] .region-en{ color:#8EC5F5; } :root[data-theme="dark"] .region-jp{ color:#FFAA80; }
+:root[data-theme="dark"] .tourney-format{ color:var(--meadow); border-color:var(--meadow); }
+:root[data-theme="dark"] :is(.mv-pct,.cdd-sum .up,.tb-spark.up span){ color:#7DDB95; }
+:root[data-theme="dark"] :is(.mv-row.down .mv-pct,.cdd-sum .down,.tb-spark.down span){ color:#FF8F86; }
+:root[data-theme="dark"] .col-tile.on{ background:#3A3418; }
+:root[data-theme="dark"] .whos-frame, :root[data-theme="dark"] .cdd-art{ filter:brightness(.88); }
+:root[data-theme="dark"] a{ color:inherit; }
+:root[data-theme="dark"] .pixel-box a:not([class]){ color:var(--mint); }
+.theme-btn{ order:3; display:grid; place-items:center; width:44px; height:44px; padding:0; border:3px solid var(--forest-dark); border-radius:50%; background:var(--forest); color:var(--gold); font-size:20px; line-height:1; cursor:pointer; box-shadow:2px 2px 0 rgba(0,0,0,.3); }
+.theme-btn:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+@media(max-width:700px){ .theme-btn{ order:1; margin-left:auto; } header .tabs{ order:2; } }
 </style>
 </head>
 <body>
@@ -691,6 +767,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 </div></noscript>
 <header><div class="wrap">
   <div class="logo"><span class="mark">✦</span> TRAINER DESK</div>
+  <button type="button" class="theme-btn" id="theme-btn" aria-label="Switch to dark mode">🌙</button>
   <div class="tabs">
     <button class="tab active" data-view="today">TODAY</button>
     <button class="tab" data-view="go"><span class="full">GO EVENTS</span><span class="short">GO</span></button>
@@ -2835,6 +2912,16 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
 /* ============ TODAY — what's live right now (no extra services beyond one Pokédex lookup) ============ */
 (function(){
   const $=id=>document.getElementById(id);
+  // light/dark toggle: saves the choice; with no saved choice the device setting is followed live
+  (function(){
+    const btn=document.getElementById("theme-btn"), root=document.documentElement, mq=window.matchMedia?matchMedia("(prefers-color-scheme: dark)"):null;
+    const meta=document.querySelector('meta[name="theme-color"]');
+    const apply=t=>{ root.setAttribute("data-theme",t); if(btn){ btn.textContent=t==="dark"?"☀️":"🌙"; btn.setAttribute("aria-label",t==="dark"?"Switch to light mode":"Switch to dark mode"); } if(meta) meta.setAttribute("content",t==="dark"?"#0A1A11":"#1B4332"); };
+    let saved=null; try{ saved=localStorage.getItem("td-theme"); }catch(e){}
+    apply(saved==="dark"||saved==="light"?saved:(mq&&mq.matches?"dark":"light"));
+    if(mq&&mq.addEventListener) mq.addEventListener("change",e=>{ let s=null; try{ s=localStorage.getItem("td-theme"); }catch(_){} if(s!=="dark"&&s!=="light") apply(e.matches?"dark":"light"); });
+    if(btn) btn.addEventListener("click",()=>{ const t=root.getAttribute("data-theme")==="dark"?"light":"dark"; apply(t); try{ localStorage.setItem("td-theme",t); }catch(e){} });
+  })();
   const goTab=v=>{ const t=document.querySelector('.tab[data-view="'+v+'"]'); if(t) t.click(); };
   document.addEventListener("click",e=>{ const b=e.target.closest("[data-goto]"); if(b) goTab(b.dataset.goto); });
   $("today-date").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})+" — here's what's on today.";
