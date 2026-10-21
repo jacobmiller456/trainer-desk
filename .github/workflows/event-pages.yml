@@ -1,0 +1,36 @@
+name: Refresh GO event pages
+
+# Daily: save a facts-only snapshot of the ScrapedDuck event feed (data/events.json) and rebuild the static pages, so the
+# event guides (go/<id>.html), the schedule (go/events.html) and sitemap.xml stay current. Commits only if something changed;
+# the push to main redeploys the site. Can also be run by hand.
+on:
+  schedule:
+    - cron: '23 11 * * *'   # daily 11:23 UTC, after the morning price runs
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: push-to-main-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/fetch-events.mjs
+      - run: node scripts/build-pages.mjs
+      - name: Commit changes
+        run: |
+          git add -A data/events.json go sitemap.xml
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git config user.name "trainer-desk-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh GO event pages"
+          for i in 1 2 3; do git pull --rebase && git push && exit 0; sleep 10; done; exit 1

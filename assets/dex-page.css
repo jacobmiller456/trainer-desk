@@ -73,7 +73,16 @@ footer a{ color:var(--gold); }
   .box{ background:#1C2822; box-shadow:inset 0 0 0 2px #26352D,4px 4px 0 rgba(0,0,0,.45); }
   .sprite, .cards img, .cards .noimg{ background:#26352D; }
   .box a{ color:#A8E6C1; }
+  .box a.btn, .pager a{ color:var(--forest-dark); }
   .stats .bar span{ background:var(--meadow); }
   .stats .total th, .stats .total .v{ border-top-color:#A8E6C1; }
   .links a{ background:#1C2822; }
 }
+
+/* GO event guide pages (go/*.html) */
+.ev-hero h1{ margin:8px 0 6px; }
+.type.ev-kind{ background:var(--forest-light); }
+.ev-sum{ font-size:17px; }
+.ev-ended{ font-weight:700; color:#A93226; }
+@media (prefers-color-scheme: dark){ .ev-ended{ color:#FF8F86; } }
+.box ul li{ margin:4px 0; }

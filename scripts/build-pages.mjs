@@ -2,6 +2,7 @@
 //   pokedex/<slug>.html  one page per Pokémon      (data/pokedex.json, from PokéAPI's open data)
 //   tcg/<slug>.html      one page per English set  (data/tcg.json, from the open Pokémon TCG data)
 //   tcg/sets.html        index of every set, plus sitemap.xml
+//   go/<eventID>.html    one page per GO event with hand-written notes (EVENT_NOTES in index.html), go/events.html index
 // Facts only: no flavor text or attack text; sprites and card images are hotlinked, never copied.
 //   node scripts/build-pages.mjs          regenerate
 //   node scripts/build-pages.mjs --check  exit 1 if anything is out of date (npm test / CI)
@@ -56,7 +57,7 @@ const trim = (s, n) => s.length <= n ? s : s.slice(0, n - 1).replace(/\s+\S*$/, 
 const badge = t => `<span class="type" style="background:${TYPE_COLORS[t] || '#888'}">${esc(cap(t))}</span>`;
 const link = p => `<a href="/pokedex/${p.slug}">${esc(p.name)}</a>`;
 
-function doc({ title, desc, url, ld, img, current, ogType, body }) {
+function doc({ title, desc, url, ld, img, current, ogType, body, credit }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,7 +85,7 @@ function doc({ title, desc, url, ld, img, current, ogType, body }) {
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="stylesheet" href="/assets/dex-page.css">
-<script type="application/ld+json">${JSON.stringify(ld)}</script>
+<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
 <!-- Analytics only if the visitor already accepted cookies on the main site (Consent Mode: denied by default) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-S7NHPZKHJQ"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'});try{if(localStorage.getItem('td-cookie-consent')==='granted')gtag('consent','update',{analytics_storage:'granted'});}catch(e){}gtag('js',new Date());gtag('config','G-S7NHPZKHJQ');</script>
@@ -97,7 +98,7 @@ function doc({ title, desc, url, ld, img, current, ogType, body }) {
 ${body}
 <footer class="wrap">
   Trainer Desk is an unofficial fan project, not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., or The Pokémon Company International.
-  Pokémon and all related names are trademarks of their respective owners. Data from <a href="https://pokeapi.co">PokéAPI</a>; sprites are linked from PokéAPI's sprite repository and belong to their respective owners.
+  Pokémon and all related names are trademarks of their respective owners. ${credit || `Data from <a href="https://pokeapi.co">PokéAPI</a>; sprites are linked from PokéAPI's sprite repository and belong to their respective owners.`}
 </footer>
 </body>
 </html>
@@ -310,8 +311,82 @@ function setsIndex() {
 </main>` });
 }
 
+
+// ---------- GO event pages ----------
+// Facts snapshot (scripts/fetch-events.mjs) + our hand-written notes, read straight out of index.html so the app and the
+// pages always agree. "Today" is the snapshot date, so --check is deterministic. Pages stay up 30 days after an event ends.
+const evData = fs.existsSync(path.join(root, 'data/events.json')) ? JSON.parse(fs.readFileSync(path.join(root, 'data/events.json'), 'utf8')) : { fetchedAt: '1970-01-01', events: [] };
+const notesSrc = indexHtml.slice(indexHtml.indexOf('const EVENT_NOTES={'), indexHtml.indexOf('function eventNote(ev)'));
+const { EVENT_NOTES, EVENT_NOTE_PATTERNS } = Function(notesSrc + '\nreturn { EVENT_NOTES, EVENT_NOTE_PATTERNS };')();
+const noteFor = id => EVENT_NOTES[id] || (EVENT_NOTE_PATTERNS.find(([re]) => re.test(id)) || [])[1] || null;
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MON3 = MONTHS.map(m => m.slice(0, 3));
+const isLocal = t => !/(Z|[+-]\d\d:?\d\d)$/.test(t);
+function when(t) { // deterministic, no locale: "Tue, Oct 27, 10:00 AM" (+ "UTC" for worldwide times)
+  const d = new Date(isLocal(t) ? t + 'Z' : t); if (isNaN(d)) return t;
+  const h = d.getUTCHours(), m = d.getUTCMinutes();
+  return `${DAYS[d.getUTCDay()]}, ${MON3[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}, ${(h % 12) || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}${isLocal(t) ? '' : ' UTC'}`;
+}
+const typeName = t => (t || 'event').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/^Go /, 'GO ').replace(/^Pokemon /, 'Pokémon ');
+const dayNum = t => Math.floor(Date.parse((isLocal(t) ? t + 'Z' : t)) / 864e5);
+const today = Math.floor(Date.parse(evData.fetchedAt + 'T00:00:00Z') / 864e5);
+const IN_PERSON = /^(wild-area|city-safari|pokemon-go-tour|pokemon-go-fest|safari-zone)$/;
+// specific notes (EVENT_NOTES) get a page until 30 days after the end; shared series notes only within 60 days of the
+// start, so one note doesn't become many near-identical pages
+const pagedEvents = evData.events.filter(e => (EVENT_NOTES[e.id] || (noteFor(e.id) && dayNum(e.start) <= today + 60)) && dayNum(e.end) >= today - 30);
+const evPaged = new Set(pagedEvents.map(e => e.id));
+const evUrl = e => evPaged.has(e.id) ? `/go/${e.id}` : `/go?event=${encodeURIComponent(e.id)}`;
+const evCredit = 'Event dates and facts via the community <a href="https://github.com/bigfoott/ScrapedDuck">ScrapedDuck</a> feed (gathered by LeekDuck); notes written by Trainer Desk from the official announcements.';
+
+function eventPage(e) {
+  const n = noteFor(e.id), url = `${SITE}/go/${e.id}`, ended = dayNum(e.end) < today, local = isLocal(e.start);
+  const desc = trim(`${e.name}: ${n.summary} Dates, bonuses and tips for this Pokémon GO event.`, 158);
+  const ld = [{ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Trainer Desk', item: SITE + '/' },
+      { '@type': 'ListItem', position: 2, name: 'Pokémon GO events', item: SITE + '/go/events' },
+      { '@type': 'ListItem', position: 3, name: e.name, item: url }] }];
+  if (!IN_PERSON.test(e.type)) ld.push({ '@context': 'https://schema.org', '@type': 'Event', name: e.name, description: n.summary,
+    startDate: e.start.replace(/\.000/, ''), endDate: e.end.replace(/\.000/, ''), eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode', location: { '@type': 'VirtualLocation', url } });
+  const facts = [];
+  if (e.bosses.length) facts.push(['Raid bosses', e.bosses]);
+  if (e.spotlight && e.spotlight.mons.length) facts.push(['Featured Pokémon', e.spotlight.mons.concat(e.spotlight.bonus ? [`Bonus during the hour: ${e.spotlight.bonus}`] : [])]);
+  const checked = (() => { const [y, m, d] = n.checked.split('-').map(Number); return `${MONTHS[m - 1]} ${d}, ${y}`; })();
+  return doc({ title: `${e.name}: Pokémon GO Event Guide | Trainer Desk`, desc, url, ld, img: ROUTES.go.img, current: 'go', ogType: 'article', credit: evCredit, body: `<main class="wrap">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/go/events">GO events</a> › <span>${esc(e.name)}</span></nav>
+  <section class="box ev-hero">
+    <span class="type ev-kind">${esc(typeName(e.type))}</span>
+    <h1>${esc(e.name)}</h1>
+    <p class="meta">${esc(when(e.start))} → ${esc(when(e.end))}${local ? ' (your local time: it happens at local time everywhere)' : ' (the same moment worldwide)'}</p>
+    ${ended ? '<p class="ev-ended">This event has ended.</p>' : ''}
+    <p class="ev-sum">${esc(n.summary)}</p>
+    <div class="cta"><a class="btn" href="/go?event=${encodeURIComponent(e.id)}">${ended ? 'SEE CURRENT EVENTS' : 'COUNTDOWN &amp; ADD TO CALENDAR'}</a></div>
+  </section>
+  ${n.lists.map(([h, items]) => `<section class="box"><h2>${esc(h)}</h2><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></section>`).join('\n  ')}
+  ${facts.map(([h, items]) => `<section class="box"><h2>${esc(h)}</h2><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></section>`).join('\n  ')}
+  ${n.tip ? `<section class="box"><h2>Tip</h2><p>${esc(n.tip)}</p></section>` : ''}
+  <p class="intro">Written by Trainer Desk from the official announcement, checked ${checked}. Details can change, so check in game. See <a href="/go/events">all upcoming GO events</a> or the <a href="/go">live event tracker</a> for raid bosses and counters.</p>
+</main>` });
+}
+function eventsIndex() {
+  const live = evData.events.filter(e => dayNum(e.start) <= today && dayNum(e.end) >= today);
+  const soon = evData.events.filter(e => dayNum(e.start) > today && dayNum(e.start) <= today + 60);
+  const url = SITE + '/go/events';
+  const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Trainer Desk', item: SITE + '/' }, { '@type': 'ListItem', position: 2, name: 'Pokémon GO events', item: url }] };
+  const li = (e, live) => `<li><a href="${evUrl(e)}">${esc(e.name)}</a><small>${esc(typeName(e.type))} · ${live ? 'ends ' + esc(when(e.end).replace(/, \d{4},/, ',')) : esc(when(e.start).replace(/, \d{4},/, ','))}${evPaged.has(e.id) ? ' · guide' : ''}</small></li>`;
+  return doc({ title: 'Pokémon GO Events: Current & Upcoming Schedule | Trainer Desk',
+    desc: `Every current and upcoming Pokémon GO event (${live.length + soon.length} listed): dates, raid bosses, Spotlight Hours, Community Day and our own event guides.`,
+    url, ld, img: ROUTES.go.img, current: 'go', credit: evCredit, body: `<main class="wrap">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <span>GO events</span></nav>
+  <h1 class="page-h1">Pokémon GO events</h1>
+  <p class="intro">Current and upcoming events for the next two months. Events marked "guide" have Trainer Desk notes; the <a href="/go">live tracker</a> has countdowns, raid bosses and counters. Updated ${fmtDate(evData.fetchedAt)}.</p>
+  <section class="box"><h2>Happening now</h2>${live.length ? `<ul class="setlist">${live.map(e => li(e, true)).join('')}</ul>` : '<p>Nothing running right now.</p>'}</section>
+  <section class="box"><h2>Coming up</h2>${soon.length ? `<ul class="setlist">${soon.map(e => li(e, false)).join('')}</ul>` : '<p>No upcoming events announced yet.</p>'}</section>
+</main>` });
+}
+
 function sitemap() {
-  const urls = [...Object.values(ROUTES).map(r => [r.path, r.path === '/' ? '1.0' : '0.8', 'daily']), ...dex.map(p => ['/pokedex/' + p.slug, '0.6', 'monthly']), ['/tcg/sets', '0.7', 'weekly'], ...[...tcg].reverse().map(t => ['/tcg/' + setSlug.get(t.id), '0.6', 'weekly'])];
+  const urls = [...Object.values(ROUTES).map(r => [r.path, r.path === '/' ? '1.0' : '0.8', 'daily']), ...dex.map(p => ['/pokedex/' + p.slug, '0.6', 'monthly']), ['/tcg/sets', '0.7', 'weekly'], ...[...tcg].reverse().map(t => ['/tcg/' + setSlug.get(t.id), '0.6', 'weekly']), ['/go/events', '0.7', 'daily'], ...pagedEvents.map(e => ['/go/' + e.id, '0.6', 'daily'])];
   return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     urls.map(([u, pr, f]) => `  <url><loc>${SITE}${u}</loc><changefreq>${f}</changefreq><priority>${pr}</priority></url>\n`).join('') + '</urlset>\n';
 }
@@ -320,19 +395,21 @@ const check = process.argv.includes('--check');
 const files = new Map(dex.map(p => [path.join('pokedex', p.slug + '.html'), page(p)]));
 tcg.forEach((t, i) => files.set(path.join('tcg', setSlug.get(t.id) + '.html'), setPage(t, i)));
 files.set(path.join('tcg', 'sets.html'), setsIndex());
+for (const e of pagedEvents) files.set(path.join('go', e.id + '.html'), eventPage(e));
+files.set(path.join('go', 'events.html'), eventsIndex());
 // compact name list for the Who's That Pokémon? puzzle: [id, name, types, generation, page slug]
 files.set(path.join('assets', 'pokedex-names.json'), JSON.stringify(dex.map(p => [p.id, p.name, p.types, p.gen, p.slug])));
 files.set('sitemap.xml', sitemap());
 const stale = [];
-if (!check) { fs.mkdirSync(path.join(root, 'pokedex'), { recursive: true }); fs.mkdirSync(path.join(root, 'tcg'), { recursive: true }); }
+if (!check) for (const d of ['pokedex', 'tcg', 'go']) fs.mkdirSync(path.join(root, d), { recursive: true });
 for (const [rel, html] of files) {
   const f = path.join(root, rel);
   if (check) { if (!fs.existsSync(f) || fs.readFileSync(f, 'utf8') !== html) stale.push(rel); }
   else fs.writeFileSync(f, html);
 }
-if (!check) for (const d of ['pokedex', 'tcg']) for (const n of fs.readdirSync(path.join(root, d))) if (!files.has(path.join(d, n))) fs.unlinkSync(path.join(root, d, n));
+if (!check) for (const d of ['pokedex', 'tcg', 'go']) for (const n of fs.readdirSync(path.join(root, d))) if (!files.has(path.join(d, n))) fs.unlinkSync(path.join(root, d, n));
 if (check) {
-  const extra = ['pokedex', 'tcg'].flatMap(d => fs.existsSync(path.join(root, d)) ? fs.readdirSync(path.join(root, d)).filter(n => !files.has(path.join(d, n))) : []);
+  const extra = ['pokedex', 'tcg', 'go'].flatMap(d => fs.existsSync(path.join(root, d)) ? fs.readdirSync(path.join(root, d)).filter(n => !files.has(path.join(d, n))) : []);
   if (stale.length || extra.length) { console.error(`Static pages out of date (${stale.length} changed, ${extra.length} extra) — run: npm run static-pages`); process.exit(1); }
-  console.log(`static pages up to date (${dex.length} Pokémon, ${tcg.length} sets)`);
-} else console.log(`wrote ${dex.length} Pokémon pages, ${tcg.length} set pages, the set index and sitemap.xml`);
+  console.log(`static pages up to date (${dex.length} Pokémon, ${tcg.length} sets, ${pagedEvents.length} event guides)`);
+} else console.log(`wrote ${dex.length} Pokémon pages, ${tcg.length} set pages, the set index, ${pagedEvents.length} event guides + index and sitemap.xml`);

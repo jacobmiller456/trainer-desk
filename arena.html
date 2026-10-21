@@ -141,6 +141,8 @@ header .wrap{display:flex; align-items:center; justify-content:space-between; mi
 /* ---- event cards ---- */
 .ev-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
 .ev{ padding:16px; position:relative; }
+.ev-all{ margin:10px 0 0; }
+.ev-all a{ display:inline-flex; align-items:center; min-height:44px; color:var(--gold); font-family:var(--font-retro); font-size:18px; }
 .ev-more{ display:inline-flex; align-items:center; min-height:44px; margin-top:8px; padding:0 14px; border:3px solid var(--forest-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); font-family:var(--font-pixel); font-size:10px; cursor:pointer; box-shadow:2px 2px 0 rgba(0,0,0,.25); }
 .evd-chip{ display:inline-block; align-self:flex-start; padding:3px 10px; border-radius:3px; color:#fff; font-family:var(--font-pixel); font-size:10px; }
 .evd-when{ margin:0; font-size:15px; }
@@ -837,6 +839,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
   <div class="sec-label">▸ COMING UP</div>
   <div class="ev-grid" id="upcoming-events"></div>
+  <p class="ev-all"><a href="/go/events">Full event schedule and guides →</a></p>
 
   <div class="sec-label">▸ TYPE CHECKER</div>
   <section class="pixel-box tc" id="type-checker" aria-label="Pokémon GO type checker">
@@ -1358,6 +1361,13 @@ const EVENT_NOTE_PATTERNS=[
       ["About Minior",["Rock/Flying type. Its Meteor Form has more Defense; its Core Form has more Attack. It changes form at half health in trainer battles."]]],
     tip:"Play in the evening: that's when Minior is most common. Collecting every core colour means catching it in each shower."}]
 ];
+// Static guide page for this event (go/<id>.html, built by scripts/build-pages.mjs with the same rule): events with their
+// own note, or a shared series note when the event starts within 60 days.
+function eventPagePath(ev){
+  const slug=String(ev._key||"").toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-|-$/g,"");
+  const own=!!EVENT_NOTES[ev._key], soon=ev._s&&(ev._s-Date.now())<=60*864e5;
+  return slug&&eventNote(ev)&&(own||soon)?"/go/"+slug:null;
+}
 function eventNote(ev){ if(EVENT_NOTES[ev._key]) return EVENT_NOTES[ev._key]; for(const [re,n] of EVENT_NOTE_PATTERNS) if(re.test(ev._key)) return n; return null; }
 function noteHtml(n){
   const d=new Date(n.checked+"T12:00:00Z");
@@ -1365,6 +1375,7 @@ function noteHtml(n){
     <p class="evd-about">${esc(n.summary)}</p>
     ${n.lists.map(([h,items])=>`<h4>${esc(h)}</h4><ul>${items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`).join("")}
     ${n.tip?`<p class="evd-tip">💡 ${esc(n.tip)}</p>`:""}
+    ${n.page?`<a class="evd-src" href="${esc(n.page)}">Open the full guide page →</a>`:""}
     <p class="cdd-note">Written by Trainer Desk from the official announcement · checked ${esc(isNaN(d)?n.checked:d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}))}. Details can change, so check in game.</p></section>`;
 }
 // Explainers matched on the event name (checked before the per-type text). Our own words.
@@ -1437,7 +1448,7 @@ async function openEventDetail(key){
     <p class="evd-when">${esc(ev._s.toLocaleString(undefined,o))} → ${esc(ev._e.toLocaleString(undefined,o))} (${esc(dur)})<br>
       <small>${isLocalTime(ev.start)?"Your local time (it happens at local time everywhere).":"Shown in your time zone (same moment worldwide)."}</small>
       ${ended?'<span class="cd-meta">This event has ended.</span>':`<span class="cd" data-t="${(live?ev._e:ev._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span>`}</p>
-    ${eventNote(ev)?noteHtml(eventNote(ev)):`<p class="evd-about">${esc(eventAbout(ev))}</p>`}
+    ${eventNote(ev)?noteHtml({...eventNote(ev),page:eventPagePath(ev)}):`<p class="evd-about">${esc(eventAbout(ev))}</p>`}
     <div id="evd-extra"></div>
     ${x.spawns||x.research?`<ul class="evd-flags">${x.spawns?"<li>Has featured or boosted wild spawns</li>":""}${x.research?"<li>Has event Field Research tasks</li>":""}</ul>`:""}
     <div class="cdd-actions">
@@ -1450,7 +1461,7 @@ async function openEventDetail(key){
   const cal=document.getElementById("evd-cal");
   if(cal) cal.addEventListener("click",()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([icsFor(ev)],{type:"text/calendar"})); a.download=(ev._key||"event").replace(/[^a-z0-9-]+/gi,"-").slice(0,60)+".ics"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); });
   document.getElementById("evd-share").addEventListener("click",async()=>{
-    const url=`${location.origin}/go?event=${encodeURIComponent(ev._key)}`;
+    const url=location.origin+(eventPagePath(ev)||`/go?event=${encodeURIComponent(ev._key)}`);
     try{ if(navigator.share){ await navigator.share({title:ev.title+" · Trainer Desk",url}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
     try{ await navigator.clipboard.writeText(url); toast("Link copied"); }catch(e){ toast(url); }
   });
@@ -3495,9 +3506,10 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     const zone=left?"FINAL ZONE IN "+left+"s":"FINAL ZONE";
     const win=G.f.find(f=>f.alive);
     if(G.over){ hud.textContent="MATCH OVER — "+(win?(win.isPlayer?"you win!":"winner: "+win.name):"no survivors")+" · you placed #"+G.place; return; }
-    hud.textContent=G.playerOut
+    const tag=G.mode==="daily"&&G.practice?"PRACTICE (NOT COUNTED) · ":G.mode==="daily"?"DAILY · ":"";
+    hud.textContent=tag+(G.playerOut
       ? "SPECTATING — you placed #"+G.place+" · ALIVE "+n+"/"+G.f.length+" · "+zone
-      : "ALIVE "+n+"/"+G.f.length+" · "+p.name+" HP "+Math.max(0,Math.ceil(p.hp))+"/"+Math.ceil(p.maxhp)+" · "+zone;
+      : "ALIVE "+n+"/"+G.f.length+" · "+p.name+" HP "+Math.max(0,Math.ceil(p.hp))+"/"+Math.ceil(p.maxhp)+" · "+zone);
   }
   const spBtn=document.getElementById("arena-special"), spLabel=document.getElementById("arena-special-label");
   function updateSpecial(){

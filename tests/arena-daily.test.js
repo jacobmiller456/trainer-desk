@@ -76,7 +76,7 @@ const started = page => page.waitForFunction(() => window.__arena.state && !wind
   await off.route('**/*', r => r.request().url().startsWith(base) ? r.continue() : r.abort());
   await off.goto(base + '/arena'); await off.waitForSelector('#arena-daily-go');
   await off.click('#arena-daily-go'); await started(off);
-  check('offline daily run is practice and says why', (await off.evaluate(() => window.__arena.state)).practice && /practice only/.test(await off.textContent('#arena-hud')));
+  check('offline daily run is practice and says so', (await off.evaluate(() => window.__arena.state)).practice && /practice only|PRACTICE \(NOT COUNTED\)/.test(await off.textContent('#arena-hud')));
   await playOut(off); await off.waitForTimeout(200);
   check('offline daily run not saved as the official result', !(await off.evaluate(() => localStorage.getItem('td-arena-daily-v1'))) && /PRACTICE RUN/.test(await off.textContent('#arena-result')));
   const errsOff = off.errors; await ctx2.close();

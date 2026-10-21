@@ -5,12 +5,13 @@
   "description": "Unofficial fan site: Pokemon GO events, TCG set browser, Pokedex. Static single-file site.",
   "scripts": {
     "dev": "npx serve . -l 3000",
-    "test": "node scripts/tab-pages.mjs --check && node scripts/build-pages.mjs --check && mkdir -p tests/shots && node tests/tcg.test.js index.html && node tests/dex.test.js index.html tests/shots && node tests/mobile.test.js index.html && node tests/cookie.test.js index.html && node tests/tcg-backup.test.js index.html && node tests/arena.test.js index.html && node tests/today.test.js index.html && node tests/card-images.test.js index.html && node tests/community-day.test.js index.html && node tests/binder.test.js index.html && node tests/seo.test.js && node tests/pokedex-pages.test.js && node tests/tcg-pages.test.js && node tests/packs.test.js && node tests/puzzle.test.js && node tests/types.test.js && node tests/price-history.test.js && node tests/raids.test.js && node tests/card-detail.test.js && node tests/arena-daily.test.js && node tests/arena-special.test.js && node tests/arena-controls.test.js && node tests/event-detail.test.js && node tests/price-movers.test.js && node tests/collection.test.js && node tests/dark-mode.test.js && node tests/hub.test.js",
+    "test": "node scripts/tab-pages.mjs --check && node scripts/build-pages.mjs --check && mkdir -p tests/shots && node tests/tcg.test.js index.html && node tests/dex.test.js index.html tests/shots && node tests/mobile.test.js index.html && node tests/cookie.test.js index.html && node tests/tcg-backup.test.js index.html && node tests/arena.test.js index.html && node tests/today.test.js index.html && node tests/card-images.test.js index.html && node tests/community-day.test.js index.html && node tests/binder.test.js index.html && node tests/seo.test.js && node tests/pokedex-pages.test.js && node tests/tcg-pages.test.js && node tests/packs.test.js && node tests/puzzle.test.js && node tests/types.test.js && node tests/price-history.test.js && node tests/raids.test.js && node tests/card-detail.test.js && node tests/arena-daily.test.js && node tests/arena-special.test.js && node tests/arena-controls.test.js && node tests/event-detail.test.js && node tests/price-movers.test.js && node tests/collection.test.js && node tests/dark-mode.test.js && node tests/hub.test.js && node tests/event-pages.test.js",
     "deploy": "vercel --prod",
     "test:mobile": "node tests/mobile.test.js index.html",
     "pages": "node scripts/tab-pages.mjs",
     "data": "node scripts/fetch-pokedex-data.mjs && node scripts/fetch-tcg-data.mjs && node scripts/build-pages.mjs",
-    "static-pages": "node scripts/build-pages.mjs"
+    "static-pages": "node scripts/build-pages.mjs",
+    "events": "node scripts/fetch-events.mjs && node scripts/build-pages.mjs"
   },
   "devDependencies": {
     "playwright": "^1.48.0"
