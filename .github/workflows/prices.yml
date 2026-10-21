@@ -29,6 +29,7 @@ jobs:
       - run: node scripts/snapshot-prices.mjs
         env:
           POKEMONTCG_API_KEY: ${{ secrets.POKEMONTCG_API_KEY }}
+      - run: node scripts/price-movers.mjs   # weekly risers/fallers for the TCG tab (prices/movers.json)
       - name: Commit changes
         run: |
           git add -A prices

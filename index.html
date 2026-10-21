@@ -505,6 +505,29 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 /* ---- tcg view toggle + binder ---- */
 .seg{ display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
 .seg-btn{ font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px; min-height:44px; padding:10px 14px; cursor:pointer; border:3px solid var(--forest-dark); border-radius:4px; background:var(--forest); color:var(--meadow); box-shadow:2px 2px 0 rgba(0,0,0,0.3); }
+#tcg-movers [hidden]{ display:none!important; }
+.mv-intro{ margin:0 0 12px; color:var(--parchment); font-size:15px; }
+.mv-bar{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; margin-bottom:12px; }
+.mv-bar .mv-seg{ margin:0; }
+.mv-bar select{ min-width:0; min-height:44px; }
+.mv-list{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr; gap:8px; counter-reset:mv; }
+@media(min-width:760px){ .mv-list{ grid-template-columns:1fr 1fr; } }
+.mv-row{ display:grid; grid-template-columns:22px 44px 1fr auto; align-items:center; gap:10px; min-height:72px; padding:8px 12px 8px 8px; text-decoration:none; color:var(--ink); }
+.mv-row:focus-visible{ outline:3px solid var(--gold); }
+.mv-rank{ font-family:var(--font-pixel); font-size:10px; color:var(--forest-dark); text-align:center; }
+.mv-img{ width:44px; height:61px; object-fit:contain; border-radius:3px; background:var(--parchment-2); }
+.mv-info{ min-width:0; display:flex; flex-direction:column; gap:2px; }
+.mv-info b{ font-size:15px; line-height:1.2; overflow-wrap:anywhere; }
+.mv-info span{ font-size:13px; color:var(--ink-soft,rgba(27,46,31,.68)); }
+.mv-info svg{ display:block; margin-top:2px; }
+.mv-info polyline{ fill:none; stroke:var(--forest-light); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+.mv-row.down .mv-info polyline{ stroke:#C0392B; }
+.mv-num{ display:flex; flex-direction:column; align-items:flex-end; gap:1px; text-align:right; }
+.mv-num b{ font-family:var(--font-retro); font-size:24px; font-weight:400; line-height:1; color:var(--forest-dark); }
+.mv-pct{ font-family:var(--font-retro); font-size:17px; color:#2F7A3A; }
+.mv-row.down .mv-pct{ color:#A93226; }
+.mv-num small{ font-size:12px; color:var(--ink-soft,rgba(27,46,31,.68)); }
+.mv-note{ margin:12px 0 0; color:var(--parchment); font-size:13px; opacity:.9; }
 .seg-btn[aria-pressed="true"]{ background:var(--gold); color:var(--forest-dark); border-color:var(--gold-dark); }
 .arena-btn.alt{ background:var(--parchment); border-color:var(--forest-dark); }
 .tb-add{ font-family:var(--font-pixel); font-size:10px; min-height:44px; padding:8px 10px; cursor:pointer; border:3px solid var(--forest-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); }
@@ -719,6 +742,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <button type="button" class="seg-btn" data-tcgview="browse" aria-pressed="true">BROWSE SETS</button>
     <button type="button" class="seg-btn" data-tcgview="binder" aria-pressed="false">MY BINDER<span id="binder-count"></span></button>
     <button type="button" class="seg-btn" data-tcgview="packs" aria-pressed="false">OPEN PACKS</button>
+    <button type="button" class="seg-btn" data-tcgview="movers" aria-pressed="false">PRICE MOVERS</button>
   </div>
 
   <div id="tcg-browse">
@@ -737,6 +761,19 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
   <div class="card-grid" id="card-grid"></div>
   <div class="empty pixel-box" id="tcg-empty" style="display:none;"></div>
+  </div>
+
+  <div id="tcg-movers" hidden>
+    <p class="mv-intro" id="mv-intro">Loading this week's price movers…</p>
+    <div class="mv-bar">
+      <div class="seg mv-seg" role="group" aria-label="Risers or fallers">
+        <button type="button" class="seg-btn" data-mv="risers" aria-pressed="true">▲ RISERS</button>
+        <button type="button" class="seg-btn" data-mv="fallers" aria-pressed="false">▼ FALLERS</button>
+      </div>
+      <select id="mv-min" aria-label="Minimum card value"><option value="2">Cards $2+</option><option value="10">Cards $10+</option><option value="50">Cards $50+</option><option value="100">Cards $100+</option></select>
+    </div>
+    <ol class="mv-list" id="mv-list"></ol>
+    <p class="mv-note">TCGplayer market prices saved once a day. Market estimates, not offers to sell. Tap a card for its full price chart.</p>
   </div>
 
   <div id="tcg-packs" hidden>
@@ -1638,6 +1675,57 @@ if(cddEl){
   cddBody.addEventListener("pointercancel",()=>{ sx=null; });
   cddBody.addEventListener("pointerup",e=>{ if(sx==null) return; const dx=e.clientX-sx, dy=e.clientY-sy; sx=null; if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5) stepCardDetail(dx<0?1:-1); });
 }
+/* ---- Price movers (TCG tab): prices/movers.json, written daily by scripts/price-movers.mjs. Tapping a row opens that
+   card's detail view (loads its set first). Offline: a message, never a blank list. ---- */
+(function(){
+  const list=document.getElementById("mv-list"), intro=document.getElementById("mv-intro"), minSel=document.getElementById("mv-min");
+  if(!list) return;
+  let data=null, loading=null, side="risers";
+  const money=v=>"$"+(v>=100?Math.round(v).toLocaleString():v.toFixed(2));
+  const spark=pts=>{ if(!pts||pts.length<2) return ""; const lo=Math.min(...pts), hi=Math.max(...pts), W=80, H=18;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${pts.map((v,i)=>`${(i*(W-4)/(pts.length-1)+2).toFixed(1)},${(hi===lo?H/2:H-2-(v-lo)/(hi-lo)*(H-4)).toFixed(1)}`).join(" ")}"/></svg>`; };
+  function render(){
+    if(!data){ return; }
+    const min=Number(minSel.value)||2, rows=(data[side]||[]).filter(r=>Math.max(r.from,r.to)>=min).slice(0,20);
+    const since=new Date(rows[0]&&rows[0].since?rows[0].since+"T12:00:00Z":data.updated+"T12:00:00Z");
+    intro.textContent=`Biggest TCGplayer price ${side==="risers"?"rises":"drops"} over the last week (since ${since.toLocaleDateString(undefined,{month:"short",day:"numeric"})}), out of ${data.considered.toLocaleString()} cards worth $${data.minPrice}+. Updated ${new Date(data.updated+"T12:00:00Z").toLocaleDateString(undefined,{month:"short",day:"numeric"})}.`;
+    if(!rows.length){ list.innerHTML=`<li class="pixel-box" style="padding:14px">No ${side} at this price level this week.</li>`; return; }
+    list.innerHTML=rows.map((r,i)=>`<li><a class="mv-row pixel-box${r.pct<0?" down":""}" href="/tcg?set=${encodeURIComponent(r.set)}&card=${encodeURIComponent(r.id)}" data-set="${esc(r.set)}" data-card="${esc(r.id)}">
+      <span class="mv-rank">${i+1}</span>
+      ${r.img&&/^https:\/\//.test(r.img)?`<img class="mv-img" src="${esc(r.img)}" alt="" loading="lazy" width="44" height="61">`:`<span class="mv-img" aria-hidden="true"></span>`}
+      <span class="mv-info"><b>${esc(r.name)}</b><span>${esc(r.setName)} · #${esc(r.num)}${r.rarity?" · "+esc(r.rarity):""}</span>${spark(r.pts)}</span>
+      <span class="mv-num"><b>${money(r.to)}</b><span class="mv-pct">${r.pct>0?"▲ +":"▼ "}${r.pct}%</span><small>from ${money(r.from)}</small></span></a></li>`).join("");
+  }
+  async function load(){
+    if(data) return render();
+    if(loading) return loading;
+    loading=(async()=>{
+      try{
+        if(location.protocol==="file:") throw new Error("local preview");
+        const r=await fetchWithTimeout("prices/movers.json",8000); if(!r.ok) throw new Error(r.status);
+        const j=await r.json(); if(!j||!Array.isArray(j.risers)||!Array.isArray(j.fallers)) throw new Error("bad data");
+        data=j; render();
+      }catch(e){ intro.textContent="Price movers couldn't load right now. Check your connection and try again."; list.innerHTML=""; }
+      loading=null;
+    })();
+    return loading;
+  }
+  document.querySelectorAll("[data-mv]").forEach(b=>b.addEventListener("click",()=>{ side=b.dataset.mv; document.querySelectorAll("[data-mv]").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
+  minSel.addEventListener("change",render);
+  list.addEventListener("error",e=>{ const im=e.target; if(im&&im.tagName==="IMG"&&im.classList.contains("mv-img")) im.outerHTML='<span class="mv-img" aria-hidden="true"></span>'; },true); // unreachable image: plain tile
+  list.addEventListener("click",e=>{ // open the card in place when the main card source is up (backup source uses different ids)
+    const a=e.target.closest("a.mv-row"); if(!a||tcgSource!=="ptcg"||e.metaKey||e.ctrlKey) return;
+    if(![...setSel.options].some(o=>o.value===a.dataset.set)) return; // unknown set: let the link do a full load
+    e.preventDefault();
+    try{ history.replaceState(null,"",a.getAttribute("href")); }catch(_){}
+    linkedCardDone=false;
+    if(window.tcgShowView) window.tcgShowView("browse");
+    if(setSel.value===a.dataset.set&&allCards.some(c=>c.id===a.dataset.card)){ linkedCardDone=true; openCardDetail(a.dataset.card); }
+    else { setSel.value=a.dataset.set; loadCards(a.dataset.set); }
+  });
+  window.moversShow=load;
+  window.__movers={ get data(){ return data; } };
+})();
 function paintBackFor(c){
   const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
   const body=el&&el.querySelector(".tb-body");
@@ -1893,12 +1981,14 @@ function toast(msg){
   // ---- view switch ----
   function showView(which){
     const binder=which==="binder";
-    browse.hidden=which!=="browse"; view.hidden=!binder; document.getElementById("tcg-packs").hidden=which!=="packs";
+    browse.hidden=which!=="browse"; view.hidden=!binder; document.getElementById("tcg-packs").hidden=which!=="packs"; document.getElementById("tcg-movers").hidden=which!=="movers";
     if(which==="packs"&&window.packsShow) window.packsShow();
+    if(which==="movers"&&window.moversShow) window.moversShow();
     document.querySelectorAll("[data-tcgview]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.tcgview===which)));
     if(binder) render(); else if(typeof renderCards==="function"&&allCards.length) renderCards(); // refresh "in binder" labels
   }
   document.querySelectorAll("[data-tcgview]").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.tcgview)));
+  window.tcgShowView=showView;
   function updateCount(){ const n=binderStore.binders.reduce((s,b)=>s+b.cards.length,0); countEl.textContent=n?" ("+n+")":""; }
 
   // ---- render ----
