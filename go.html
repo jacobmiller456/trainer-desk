@@ -825,8 +825,23 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <div class="view" id="view-go"><div class="wrap">
   <div class="view-head">
     <h1>POKEMON GO<br>EVENT TRACKER</h1>
-    <p>Current raid bosses with counters, plus live countdowns for active and upcoming events. Times shown in your local timezone.</p>
+    <p>Type checker and current raid bosses with counters, plus live countdowns for active and upcoming events. Times shown in your local timezone.</p>
   </div>
+
+  <div class="sec-label">▸ TYPE CHECKER</div>
+  <section class="pixel-box tc" id="type-checker" aria-label="Pokémon GO type checker">
+    <p class="tc-intro">Type any Pokémon (or choose its types), or tap COUNTERS on a raid boss below, to see what hits it hard in Pokémon GO.</p>
+    <form class="tc-form" id="tc-form" autocomplete="off">
+      <input type="text" id="tc-name" list="tc-names" placeholder="Pokémon name…" aria-label="Pokémon name" enterkeyhint="go">
+      <div class="tc-types">
+        <select id="tc-t1" aria-label="First type"></select>
+        <select id="tc-t2" aria-label="Second type"></select>
+      </div>
+    </form>
+    <p class="tc-msg" id="tc-msg" aria-live="polite"></p>
+    <div id="tc-out" aria-live="polite"></div>
+    <p class="tc-foot">GO damage multipliers: super effective ×1.6, not very effective ×0.625, and "immune" types take ×0.39 instead of nothing. Two types multiply together.</p>
+  </section>
 
   <div class="sec-label">▸ RAID BOSSES</div>
   <div id="raid-box"></div>
@@ -840,21 +855,6 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   <div class="sec-label">▸ COMING UP</div>
   <div class="ev-grid" id="upcoming-events"></div>
   <p class="ev-all"><a href="/go/events">Full event schedule and guides →</a></p>
-
-  <div class="sec-label">▸ TYPE CHECKER</div>
-  <section class="pixel-box tc" id="type-checker" aria-label="Pokémon GO type checker">
-    <p class="tc-intro">Pick a raid boss or any Pokémon (or choose its types) to see what hits it hard in Pokémon GO.</p>
-    <form class="tc-form" id="tc-form" autocomplete="off">
-      <input type="text" id="tc-name" list="tc-names" placeholder="Pokémon name…" aria-label="Pokémon name" enterkeyhint="go">
-      <div class="tc-types">
-        <select id="tc-t1" aria-label="First type"></select>
-        <select id="tc-t2" aria-label="Second type"></select>
-      </div>
-    </form>
-    <p class="tc-msg" id="tc-msg" aria-live="polite"></p>
-    <div id="tc-out" aria-live="polite"></div>
-    <p class="tc-foot">GO damage multipliers: super effective ×1.6, not very effective ×0.625, and "immune" types take ×0.39 instead of nothing. Two types multiply together.</p>
-  </section>
 
   <dialog class="cdd" id="ev-detail" aria-labelledby="evd-name">
     <div class="cdd-bar"><span class="cdd-pos">EVENT</span><button type="button" class="cdd-btn cdd-close" id="evd-close" aria-label="Close">✕</button></div>

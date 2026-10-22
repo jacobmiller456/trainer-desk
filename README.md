@@ -84,7 +84,7 @@ Every event with a hand-written note gets its own static page, built by `scripts
 ### Raid bosses (GO tab)
 Current raid bosses from ScrapedDuck's `raids.json` (same two mirrors as the events feed; structured fields only: name, tier, types, CP range, boosted weather, shiny), grouped by tier (5-star and Mega open, 3-star/1-star folded). Each card shows the boss's best attack type(s) using the type checker's GO multipliers, and **COUNTERS** fills the type checker with the boss's own types (`window.tcShow`), so regional and Mega forms are right. Sprites are hotlinked from PokéAPI when the name matches a Pokédex entry (Mega/Shadow/form suffixes stripped; `SHOW_SPRITES` respected); otherwise a type-coloured letter. LeekDuck images are never used. Offline: a note pointing to the type checker. Covered by `tests/raids.test.js`.
 
-### GO type checker (GO tab)
+### GO type checker (GO tab, first section)
 Type a Pokémon name (suggestions from `assets/pokedex-names.json`) or pick one or two types to see what it's weak to and what it resists, using GO's multipliers (×1.6 / ×0.625 / ×0.39 for "immune", multiplied for dual types: ×2.56, ×0.244…). The type chart (`TYPE_CHART`, `goTypeMult()`) is plain game fact data in `index.html`; if the name list can't load, the type pickers still work. Links to the Pokémon's static Pokédex page. Covered by `tests/types.test.js`.
 
 ### Who's That Pokémon? (Today tab)
