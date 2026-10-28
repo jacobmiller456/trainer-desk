@@ -1,6 +1,6 @@
 # Plan: replacing pokemontcg.io before March 1, 2027
 
-Status: **planned (Oct 28, 2026)** — waiting on owner decisions (bottom). Keep this file updated as phases land.
+Status (Oct 28, 2026): **owner approved** — prices from TCGdex, TCGdex images may be the main source, groundwork now and the app switch in early January. Phases 1–2 built (`scripts/fetch-tcgdex.mjs`, run weekly by `refresh-data.yml`). Keep this file updated as phases land.
 
 ## Why
 - The Pokémon TCG API (pokemontcg.io) goes offline on **March 1, 2027**. Its successor, Scrydex, is paid; new pokemontcg.io sign-ups are closed. Scrydex keeps the old card IDs.
@@ -16,13 +16,13 @@ Status: **planned (Oct 28, 2026)** — waiting on owner decisions (bottom). Keep
 | TCG set pages `tcg/<slug>.html`, `data/tcg.json`, pack opener sets | pokemon-tcg-data (GitHub) | new sets missing |
 
 ## Phases
-1. **ID map** (no decision needed): `scripts/build-id-map.mjs` → `data/tcg-id-map.json` mapping every pokemontcg.io card/set ID to its TCGdex ID (match sets by name + release date + card count, cards by number; report anything unmatched for hand-fixing).
-2. **Set data**: switch `fetch-tcg-data.mjs` to TCGdex (one request per set, weekly) so new sets keep appearing on the set pages.
-3. **Prices** (decision A): new daily snapshot source, writing the same `prices/<month>/<set>.json` format (keyed by TCGdex IDs, old files converted with the ID map so history continues).
+1. **ID map** ✅ built: `scripts/fetch-tcgdex.mjs` → `data/tcg-id-map.json` mapping every pokemontcg.io card/set ID to its TCGdex ID (match sets by name + release date + card count, cards by number; report anything unmatched for hand-fixing).
+2. **Set data** ✅ built: sets newer than the pokemon-tcg-data snapshot are added from TCGdex (`src:"tcgdex"`, cached in `data/tcgdex-sets.json`), so new sets keep getting pages. Their `/tcg?set=` button only works once phase 4 lands.
+3. **Prices** (decision: TCGdex; sets from the last ~2–3 years daily, older sets weekly): new daily snapshot source, writing the same `prices/<month>/<set>.json` format (keyed by TCGdex IDs, old files converted with the ID map so history continues).
 4. **App switch**: TCGdex becomes the primary card source (pokemontcg.io becomes backup until it's gone); binders, deep links and price lookups translate old IDs through the map on load (no data loss).
 5. **Cut-over** by mid-February 2027: remove pokemontcg.io from the app, scripts and workflows; update CLAUDE.md guardrails (card images then hotlinked from TCGdex as the main source) and tests.
 
-## Owner decisions
+## Owner decisions (decided Oct 28, 2026: A = TCGdex, B = yes, C = groundwork now, switch in early January)
 - **A. Price source for the daily saves**
   - *TCGCSV* (recommended if allowed): free daily TCGplayer prices in bulk (one file per set), plus an archive back to Feb 2024 that could backfill years of history. No published terms → email the maintainer to ask (draft ready on request).
   - *TCGdex*: free, no key, but one request per card (~20,000/day) with no published rate limit → would need to be slow and polite (a few hours per run) or limited to recent sets.

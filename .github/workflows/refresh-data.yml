@@ -1,6 +1,7 @@
 name: Refresh Pokédex and TCG data
 
-# Weekly: re-download PokéAPI's and the Pokémon TCG project's open data, regenerate the static pages + sitemap, and commit if anything
+# Weekly: re-download PokéAPI's and the Pokémon TCG project's open data, match its card IDs to TCGdex and add sets newer than
+# that (now historical) snapshot from TCGdex (scripts/fetch-tcgdex.mjs; see docs/tcg-migration.md), regenerate the static pages + sitemap, and commit if anything
 # changed (the push to main redeploys the site). Can also be run by hand from the Actions tab.
 on:
   schedule:
@@ -10,10 +11,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: push-to-main-data
+  cancel-in-progress: false
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,12 +26,13 @@ jobs:
           node-version: 22
       - run: node scripts/fetch-pokedex-data.mjs
       - run: node scripts/fetch-tcg-data.mjs
+      - run: node scripts/fetch-tcgdex.mjs   # a TCGdex outage keeps last week's map/new sets and doesn't fail the job
       - run: node scripts/build-pages.mjs
       - name: Commit changes
         run: |
-          if git diff --quiet; then echo "No changes"; exit 0; fi
+          git add -A data pokedex tcg sitemap.xml assets/pokedex-names.json
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git config user.name "trainer-desk-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A data pokedex tcg sitemap.xml
           git commit -m "Refresh Pokédex and TCG data"
-          git push
+          for i in 1 2 3; do git pull --rebase && git push && exit 0; sleep 10; done; exit 1
