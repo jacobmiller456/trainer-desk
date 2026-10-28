@@ -3,18 +3,9 @@
 <head>
 <!-- GENERATED from index.html by scripts/tab-pages.mjs. Edit index.html, then run: npm run pages -->
 <meta charset="UTF-8">
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-S7NHPZKHJQ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  // Consent Mode: no analytics cookies until the visitor accepts (see cookie banner below).
-  gtag('consent', 'default', { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
-  try { if (localStorage.getItem('td-cookie-consent') === 'granted') gtag('consent', 'update', { analytics_storage: 'granted' }); } catch (e) {}
-  gtag('js', new Date());
-
-  gtag('config', 'G-S7NHPZKHJQ');
-</script>
+<!-- Visit counts: Vercel Web Analytics (no cookies, nothing stored on the device, no cross-site tracking) -->
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pokédex: Types, Base Stats &amp; Abilities | Trainer Desk</title>
 <meta name="description" content="Search every Pokémon by name, number or generation and see types, base stats, abilities, height and weight in a fast, mobile-friendly Pokédex.">
@@ -385,31 +376,10 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important;}}
 
-/* ---- cookie banner ---- */
-.cookie-banner{
-  position:fixed; left:0; right:0; bottom:0; z-index:50;
-  background:var(--parchment); color:var(--ink);
-  border-top:4px solid var(--gold-dark); box-shadow:0 -4px 0 rgba(0,0,0,0.25);
-  padding:14px 16px calc(14px + env(safe-area-inset-bottom));
-}
-.cookie-banner[hidden]{ display:none; }
-.cookie-inner{ max-width:960px; margin:0 auto; display:flex; gap:12px 20px; align-items:center; flex-wrap:wrap; }
-.cookie-inner p{ margin:0; flex:1 1 280px; font-size:14px; line-height:1.45; }
-.cookie-inner a{ color:var(--forest-dark); text-decoration:underline; }
-.cookie-actions{ display:flex; gap:8px; flex:0 0 auto; }
-.cookie-btn{
-  font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px;
-  min-height:44px; min-width:44px; padding:10px 16px; cursor:pointer;
-  border:3px solid var(--forest-dark); border-radius:4px;
-  background:var(--parchment-2); color:var(--forest-dark); box-shadow:2px 2px 0 rgba(0,0,0,0.3);
-}
-.cookie-btn.primary{ background:var(--gold); border-color:var(--gold-dark); }
-.cookie-btn:focus-visible{ outline:3px solid var(--forest); outline-offset:2px; }
 .link-btn{
   background:none; border:0; padding:0; font:inherit; color:inherit; text-decoration:underline; cursor:pointer;
   min-height:44px; display:inline-flex; align-items:center;
 }
-@media(max-width:480px){ .cookie-actions{ width:100%; } .cookie-btn{ flex:1; } }
 
 /* ---- tab labels: short on phones so four tabs fit ---- */
 .tab .short{ display:none; }
@@ -717,8 +687,6 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   .arena-btn.alt,
   .cdd,
   .col-tile,
-  /* ---- cookie banner ---- */
-.cookie-banner,
   /* ---- pixel box (GBA dialogue-box style: double border,
   hard corners) ---- */
 .pixel-box,
@@ -728,7 +696,6 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   .cd-mon,
   .cdd-art,
   .col-bar,
-  .cookie-btn,
   .dex-stat-bar,
   .evd-code code,
   .evd-mons li,
@@ -751,7 +718,6 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   .arena-stats dd,
   .cdd-price b,
   .col-total,
-  .cookie-inner a,
   .ev .cd,
   .evd-sec h3,
   .evd-src,
@@ -761,8 +727,6 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   .tb-price,
   .tc-link,
   .whos-q){ color:var(--mint); }
-:root[data-theme="dark"] :is(
-  .cookie-btn):not([aria-pressed="true"]):not(.ready){ color:var(--ink); }
 :root[data-theme="dark"] select, :root[data-theme="dark"] input[type=text]{ background:#141E19; color:var(--ink); }
 :root[data-theme="dark"] .today-label, :root[data-theme="dark"] .cd-sub{ color:var(--meadow); }
 :root[data-theme="dark"]{ --gold-ink:var(--gold); }
@@ -1096,32 +1060,17 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <footer><div class="wrap">
   Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
   Pokémon and all related names are trademarks of their respective owners. Card data, images and prices via the community Pokémon TCG API. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (it also lists TCGplayer and Cardmarket prices). GO event schedule and Community Day data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed, sourced from <a href="https://leekduck.com" target="_blank" rel="noopener" style="text-decoration:underline;">LeekDuck</a>. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
-  This site uses Google Analytics (cookies) to count visits, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
+  Visits are counted with <a href="https://vercel.com/docs/analytics/privacy-policy" target="_blank" rel="noopener" style="text-decoration:underline;">Vercel Web Analytics</a>: no cookies, nothing saved on your device, no personal data.
 </div></footer>
 
-<div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Cookie consent" hidden>
-  <div class="cookie-inner">
-    <p>We'd like to use Google Analytics cookies to count visits and see which tabs are useful. Nothing is collected unless you accept. <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Learn more</a></p>
-    <div class="cookie-actions">
-      <button type="button" class="cookie-btn" id="cookie-decline">DECLINE</button>
-      <button type="button" class="cookie-btn primary" id="cookie-accept">ACCEPT</button>
-    </div>
-  </div>
-</div>
 <script>
+/* Google Analytics and its cookie banner were removed (Oct 2026). Tidy up what they left on returning visitors' devices. */
 (function(){
-  var KEY='td-cookie-consent', banner=document.getElementById('cookie-banner');
-  function stored(){ try{ return localStorage.getItem(KEY); }catch(e){ return null; } }
-  function save(v){ try{ localStorage.setItem(KEY,v); }catch(e){} }
-  function choose(v){
-    save(v);
-    gtag('consent','update',{ analytics_storage: v });
-    banner.hidden=true;
-  }
-  document.getElementById('cookie-accept').addEventListener('click',function(){ choose('granted'); });
-  document.getElementById('cookie-decline').addEventListener('click',function(){ choose('denied'); });
-  document.getElementById('cookie-settings').addEventListener('click',function(){ banner.hidden=false; document.getElementById('cookie-accept').focus(); });
-  if(!stored()) banner.hidden=false;
+  try{ localStorage.removeItem('td-cookie-consent'); }catch(e){}
+  try{ document.cookie.split(';').map(function(c){ return c.split('=')[0].trim(); }).filter(function(n){ return /^_ga/.test(n); }).forEach(function(n){
+    var host=location.hostname, dom=host.replace(/^www\./,'');
+    [host,'.'+dom,''].forEach(function(d){ document.cookie=n+'=; Max-Age=0; path=/'+(d?'; domain='+d:''); });
+  }); }catch(e){}
 })();
 </script>
 

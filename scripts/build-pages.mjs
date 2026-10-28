@@ -86,9 +86,9 @@ function doc({ title, desc, url, ld, img, current, ogType, body, credit }) {
 <link rel="manifest" href="/site.webmanifest">
 <link rel="stylesheet" href="/assets/dex-page.css">
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
-<!-- Analytics only if the visitor already accepted cookies on the main site (Consent Mode: denied by default) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-S7NHPZKHJQ"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'});try{if(localStorage.getItem('td-cookie-consent')==='granted')gtag('consent','update',{analytics_storage:'granted'});}catch(e){}gtag('js',new Date());gtag('config','G-S7NHPZKHJQ');</script>
+<!-- Visit counts: Vercel Web Analytics (no cookies, nothing stored on the device) -->
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <header><nav class="wrap" aria-label="Site">
