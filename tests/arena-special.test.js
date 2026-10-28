@@ -42,7 +42,7 @@ const mockPokemon = id => ({ id, name: 'mon' + id, species: { name: 'mon' + id }
   let a = await setup('burst', 50); await page.waitForTimeout(150);
   check('button shows READY when charged', await page.$eval('#arena-special', e => e.classList.contains('ready')) && /TAP/.test(await page.textContent('#arena-special')));
   await page.click('#arena-special'); let z = await after();
-  check('BURST hurts a nearby rival, not a far one; recharge restarts (8s)', a.hp1 - z.hp1 > 10 && a.hpFar - z.hpFar < 3 && z.spT > 7.5, { a, z }); // live loop may tick once; far rival may take a sliver of zone damage while the live loop runs
+  check('BURST hurts a nearby rival, not a far one; recharge restarts (8s)', a.hp1 - z.hp1 > 10 && a.hpFar - z.hpFar < (a.hp1 - z.hp1) / 2 && z.spT > 7.5, { a, z }); // live loop may tick once; far rival may take a sliver of zone damage while the live loop runs
   a = await setup('wave', 50); await page.evaluate(() => window.__arena.special()); z = await after();
   check('WAVE pushes a nearby rival away and chips it', z.d1 > a.d1 + 30 && z.hp1 < a.hp1, { a, z });
   a = await setup('dash', 0); await page.evaluate(() => window.__arena.setInput(1, 0)); await page.evaluate(() => window.__arena.special()); z = await after(); await page.evaluate(() => window.__arena.setInput(null));

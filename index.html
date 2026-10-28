@@ -454,6 +454,8 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .arena-daily p, .arena-result p{ margin:0 0 8px; font-size:15px; }
 .arena-daily .arena-btn, .arena-result .arena-btn{ margin-top:2px; }
 .arena-btns{ display:flex; flex-wrap:wrap; gap:8px; }
+.arena-stars{ margin:-6px 0 12px; font-size:15px; color:var(--ink); }
+.arena-earned{ margin:10px 0 0; font-size:15px; color:var(--ink); }
 .arena-stats{ display:grid; grid-template-columns:repeat(2,1fr); gap:6px 12px; margin:0; }
 @media(min-width:420px){ .arena-stats{ grid-template-columns:repeat(4,1fr); } }
 .arena-stats div{ display:flex; flex-direction:column; }
@@ -1063,7 +1065,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <div class="view" id="view-arena"><div class="wrap">
   <div class="view-head">
     <h1>PIXEL ARENA</h1>
-    <p>Solo battle royale. Pick a fighter and outlast the computer-controlled rivals as the red zone closes in. Type matchups matter — water beats fire, and so on. Each fighter has a special move for its type: tap SPECIAL when it's charged. Grab pickups as they appear: green heals, yellow gives a speed boost, blue a shield that halves damage.</p>
+    <p>Solo battle royale. Pick a fighter and outlast the computer-controlled rivals as the red zone closes in. Type matchups matter — water beats fire, and so on. Each fighter has a special move for its type: tap SPECIAL when it's charged. Grab pickups as they appear: green heals, yellow gives a speed boost, blue a shield that halves damage. Every match earns stars (more for a top-3 finish, a win or the Daily Challenge), and stars unlock 16 more fighters.</p>
   </div>
   <section class="pixel-box arena-daily" id="arena-daily" aria-label="Daily challenge"></section>
   <div class="arena-controls">
@@ -1079,6 +1081,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <button type="button" class="arena-btn alt" id="arena-sound" aria-pressed="true">🔊 SOUND ON</button>
     <button type="button" class="arena-btn" id="arena-start"><img src="assets/arena/pokeball.webp" alt="" width="20" height="20"> START</button>
   </div>
+  <p class="arena-stars" id="arena-stars" aria-live="polite"></p>
   <div class="arena-wrap">
     <canvas id="arena-canvas" width="480" height="480" role="img" aria-label="Battle arena with fighters and a shrinking red zone"></canvas>
     <div class="arena-overlay" id="arena-overlay" role="status"><p id="arena-msg"></p><div class="podium" id="arena-podium"></div><button type="button" class="arena-btn" id="arena-again" hidden>PLAY AGAIN</button></div>
@@ -3233,6 +3236,9 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   const SPECIAL_NAME={burst:"BURST",wave:"WAVE",dash:"DASH",heal:"HEAL",phase:"PHASE",barrage:"BARRAGE"};
   const SPECIAL_HELP={burst:"blast everyone close by",wave:"push rivals away",dash:"zip forward through rivals",heal:"restore health",phase:"turn untouchable for a moment",barrage:"fire in every direction"};
   const SP_CHARGE=8, SP_CHARGE_AI=14;
+  // Health scale: matches used to end in ~25s (players out after ~10s). HP_SCALE stretches every fighter's health (and the zone
+  // damage with it, so the closing zone still decides the end) for ~75s matches; see README.
+  const HP_SCALE=3;
   // Pickups (one every 7s, up to 3 on the floor): heal +30% HP, speed boost or shield (half damage) for 6s. Rivals can grab them too.
   const PICKUPS={heal:{color:"#4CD964",label:"+HP"},speed:{color:"#FFD43B",label:"SPEED UP!",t:6},shield:{color:"#5AC8FA",label:"SHIELD!",t:6}};
   const BOOST=1.45, SHIELD=0.5;
@@ -3279,12 +3285,10 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   }
 
   const cv=document.getElementById("arena-canvas"), ctx=cv.getContext("2d");
-  const sel=document.getElementById("arena-fighter"), arenaSel=document.getElementById("arena-map"), startBtn=document.getElementById("arena-start"), skipBtn=document.getElementById("arena-skip");
+  const starsEl=document.getElementById("arena-stars"), sel=document.getElementById("arena-fighter"), arenaSel=document.getElementById("arena-map"), startBtn=document.getElementById("arena-start"), skipBtn=document.getElementById("arena-skip");
   const hud=document.getElementById("arena-hud"), overlay=document.getElementById("arena-overlay");
   const msgEl=document.getElementById("arena-msg"), podiumEl=document.getElementById("arena-podium"), againBtn=document.getElementById("arena-again");
   cv.width=W; cv.height=H;
-  sel.innerHTML=ROSTER.map(r=>`<option value="${r[0]}">${esc(prettyName(r[1]))}</option>`).join("");
-  sel.value="25";
   arenaSel.innerHTML='<option value="daily">Arena: today\'s pick</option>'+ARENAS.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("");
 
   let G=null, raf=0, last=0, hudAt=0, stick=null;
@@ -3325,7 +3329,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     return {
       id:d.id, name:prettyName(d.name), types:d.types, isPlayer,
       x:CX+Math.cos(ang)*175, y:CY+Math.sin(ang)*175*ELL,
-      maxhp:70+(s.hp||50)*0.9, hp:0,
+      maxhp:(70+(s.hp||50)*0.9)*HP_SCALE, hp:0,
       dmg:7+Math.max(s.attack||50,s["special-attack"]||50)*0.12,
       def:1/(1+(((s.defense||50)+(s["special-defense"]||50))/2)/120),
       speed:60+Math.min(spd,130)*0.45,
@@ -3453,7 +3457,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
         const want=f.sp==="heal"?f.hp<f.maxhp*0.45:f.sp==="phase"?f.hp<f.maxhp*0.4&&ne.d<160:f.sp==="burst"?ne.d<85:f.sp==="wave"?ne.d<100:ne.d<190;
         if(want) useSpecial(f);
       }
-      if(zoneDist(f)>zr) f.hp-=(8+G.t*0.08)*dt; // outside the zone
+      if(zoneDist(f)>zr) f.hp-=(8+G.t*0.08)*HP_SCALE*dt; // outside the zone
       f.flash=Math.max(0,f.flash-dt);
       f.t-=dt;
       if(!f.atk&&f.t<=0&&ne&&ne.d<200){ // start a jump attack; the shot leaves at the contact beat
@@ -3639,7 +3643,8 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     cancelAnimationFrame(raf); raf=0; draw(); updateHud(); updateSpecial(); skipBtn.hidden=true;
     setOverlay(G.win?"VICTORY! You are the last one standing.":"Knocked out — you placed #"+G.place+" of "+G.f.length+".",true,podiumHtml());
     startBtn.disabled=false;
-    recordResult(G); renderResult(G); renderDaily(); renderRecord(); if(window.hubRender) window.hubRender();
+    recordResult(G); renderResult(G); renderDaily(); renderRecord(); renderFighters(); if(window.hubRender) window.hubRender();
+    if(G.unlocked&&G.unlocked.length){ toast("New fighter unlocked: "+G.unlocked.map(rosterName).join(", ")+"!"); sfx("pickup"); }
   }
 
   /* ---- Daily Challenge + trainer record (saved in this browser only) ---- */
@@ -3647,7 +3652,27 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   const utcDay=()=>Math.floor(Date.now()/864e5), dailyNum=()=>utcDay()-DAILY_EPOCH+1;
   const loadJ=(k,d)=>{ try{ const v=JSON.parse(localStorage.getItem(k)||"null"); return v&&typeof v==="object"?v:d; }catch(e){ return d; } };
   const saveJ=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
-  const freshRec=()=>({played:0,wins:0,kos:0,best:0,streak:0,bestStreak:0,by:{},dStreak:0,dBest:0,dLast:-1});
+  const freshRec=()=>({played:0,wins:0,kos:0,best:0,streak:0,bestStreak:0,by:{},dStreak:0,dBest:0,dLast:-1,stars:0});
+  // records saved before stars existed get them back-filled from matches and wins
+  const loadRec=()=>{ const raw=loadJ(REC_KEY,{}), r=Object.assign(freshRec(),raw); if(typeof raw.stars!=="number") r.stars=r.played+r.wins*3; return r; };
+  /* ---- Unlockable fighters: 8 to start, the other 16 unlock in this order, one every UNLOCK_STEP stars.
+     Stars per finished match: 1, +1 for a top-3 place, +2 for a win, +2 for a counted Daily Challenge. Free, no purchases:
+     stars can only be earned by playing. The Daily Challenge can hand you a fighter you haven't unlocked yet (a free try). */
+  const STARTERS=[25,1,4,7,39,52,54,133];
+  const UNLOCK_ORDER=[92,3,6,9,130,143,94,448,282,681,700,658,248,445,149,150];
+  const UNLOCK_STEP=5;
+  const unlockedN=stars=>Math.min(UNLOCK_ORDER.length,Math.floor(stars/UNLOCK_STEP));
+  const isUnlocked=(id,stars)=>STARTERS.includes(id)||UNLOCK_ORDER.indexOf(id)>-1&&UNLOCK_ORDER.indexOf(id)<unlockedN(stars);
+  const starsFor=g=>1+(g.place<=3?1:0)+(g.win?2:0)+(g.mode==="daily"&&!g.practice?2:0);
+  function nextUnlock(stars){ const n=unlockedN(stars); return n>=UNLOCK_ORDER.length?null:{id:UNLOCK_ORDER[n],at:(n+1)*UNLOCK_STEP,need:(n+1)*UNLOCK_STEP-stars}; }
+  function renderFighters(){
+    const stars=loadRec().stars, cur=Number(sel.value)||25;
+    sel.innerHTML=ROSTER.map(([id,name])=>{ const ok=isUnlocked(id,stars), at=(UNLOCK_ORDER.indexOf(id)+1)*UNLOCK_STEP;
+      return `<option value="${id}"${ok?"":" disabled"}>${ok?"":"🔒 "}${esc(prettyName(name))}${ok?"":` (${at} ★)`}</option>`; }).join("");
+    sel.value=String(isUnlocked(cur,stars)?cur:25);
+    if(starsEl){ const nx=nextUnlock(stars);
+      starsEl.innerHTML=`<b>★ ${stars}</b> · ${STARTERS.length+unlockedN(stars)}/${ROSTER.length} fighters · `+(nx?`next: <b>${esc(rosterName(nx.id))}</b> in ${nx.need} ★`:"every fighter unlocked!"); }
+  }
   const medal=p=>p===1?"🥇":p===2?"🥈":p===3?"🥉":"#"+p;
   const ord=p=>p+(p%10===1&&p%100!==11?"st":p%10===2&&p%100!==12?"nd":p%10===3&&p%100!==13?"rd":"th");
   function dailyPlan(day){
@@ -3661,7 +3686,8 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   const rosterName=id=>{ const r=ROSTER.find(x=>x[0]===id); return r?prettyName(r[1]):"#"+id; };
   function recordResult(g){
     if(g.counted) return; g.counted=true;
-    const rec=Object.assign(freshRec(),loadJ(REC_KEY,{}));
+    const rec=loadRec(), before=unlockedN(rec.stars);
+    g.stars=starsFor(g); rec.stars+=g.stars; g.unlocked=UNLOCK_ORDER.slice(before,unlockedN(rec.stars));
     rec.played++; rec.kos+=g.kos; if(g.win){ rec.wins++; rec.streak++; rec.bestStreak=Math.max(rec.bestStreak,rec.streak); } else rec.streak=0;
     rec.best=rec.best?Math.min(rec.best,g.place):g.place;
     const me=g.f[0], b=rec.by[me.id]||{p:0,w:0}; b.p++; if(g.win) b.w++; rec.by[me.id]=b;
@@ -3685,6 +3711,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     resultEl.hidden=false;
     resultEl.innerHTML=`<h3>${g.mode==="daily"?(g.practice?"PRACTICE RUN (NOT COUNTED)":"DAILY CHALLENGE #"+dailyNum()):"MATCH RESULT"}</h3>
       <dl class="arena-stats"><div><dt>Placed</dt><dd>${medal(g.place)} ${ord(g.place)}</dd></div><div><dt>KOs</dt><dd>${g.kos}</dd></div><div><dt>Damage</dt><dd>${Math.round(g.dmg)}</dd></div><div><dt>Survived</dt><dd>${Math.round(g.tOut)}s</dd></div></dl>
+      <p class="arena-earned">+${g.stars||0} ★${g.unlocked&&g.unlocked.length?` · <b>NEW FIGHTER UNLOCKED: ${g.unlocked.map(id=>esc(rosterName(id))).join(", ")}!</b> Pick ${g.unlocked.length>1?"them":"it"} from YOUR FIGHTER.`:""}</p>
       ${official?`<div class="arena-btns" style="margin-top:10px"><button type="button" class="arena-btn" id="arena-share">SHARE RESULT</button></div>`:""}`;
     const sb=document.getElementById("arena-share"); if(sb) sb.addEventListener("click",()=>share(today));
   }
@@ -3705,7 +3732,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   }
   function renderRecord(){
     if(!recordEl) return;
-    const r=Object.assign(freshRec(),loadJ(REC_KEY,{}));
+    const r=loadRec();
     if(!r.played){ recordEl.innerHTML=`<h3>▸ YOUR TRAINER RECORD</h3><p class="today-meta" style="margin:0">Finish a match to start your record. It's saved on this device only.</p>`; return; }
     let bestF=null; for(const [id,v] of Object.entries(r.by)){ if(!bestF||v.w>bestF.w||(v.w===bestF.w&&v.p>bestF.p)) bestF={id:+id,...v}; }
     recordEl.innerHTML=`<h3>▸ YOUR TRAINER RECORD</h3>
@@ -3724,7 +3751,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     stop(); startBtn.disabled=true; setOverlay("Loading fighters…",false); hud.textContent=""; if(resultEl) resultEl.hidden=true;
     const plan=mode==="daily"?dailyPlan(utcDay()):null, doneToday=(loadJ(DAILY_KEY,{}).day===utcDay());
     rnd=plan?mulberry(plan.seed):Math.random;
-    const pid=plan?plan.fighter:Number(sel.value), arena=plan?plan.arena:chosenArena();
+    const pid=plan?plan.fighter:(isUnlocked(Number(sel.value),loadRec().stars)?Number(sel.value):25), arena=plan?plan.arena:chosenArena();
     getBg(arena); ["wisp","fireball","waterwisp","iceball","shadowball","purplewisp","leaf1","leftclaw","rightclaw"].forEach(getFx);
     const ids=plan?[pid,...plan.rivals]:[pid,...ROSTER.map(r=>r[0]).filter(i=>i!==pid).sort(()=>Math.random()-.5).slice(0,11)];
     const res=await Promise.allSettled(ids.map(i=>loadDexDetail(i)));
@@ -3771,7 +3798,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   try{ const v=localStorage.getItem("td-arena-ctrl"); if(v==="stick"||v==="tap") ctrlMode=v; }catch(e){}
   if(ctrlSel){ ctrlSel.value=ctrlMode; ctrlSel.addEventListener("change",()=>{ ctrlMode=ctrlSel.value==="stick"?"stick":"tap"; stick=null; target=null; try{ localStorage.setItem("td-arena-ctrl",ctrlMode); }catch(e){} }); }
   setOverlay("Pick a fighter and press START, or play today's Daily Challenge. Tap the arena where you want to go (or hold and your fighter follows your finger; WASD / arrow keys on a keyboard). Your fighter attacks on its own. Tap SPECIAL (or Space) when it's charged.",false);
-  draw(); renderDaily(); renderRecord();
+  draw(); renderDaily(); renderRecord(); renderFighters();
   // test hook (used by tests/arena.test.js)
   const sndBtn=document.getElementById("arena-sound");
   const showSound=()=>{ if(!sndBtn) return; sndBtn.textContent=soundOn?"🔊 SOUND ON":"🔇 SOUND OFF"; sndBtn.setAttribute("aria-pressed",String(soundOn)); sndBtn.setAttribute("aria-label",soundOn?"Sound and vibration on. Tap to turn off":"Sound and vibration off. Tap to turn on"); };
