@@ -88,7 +88,7 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   check('hovering before a match does nothing', !(await dp.evaluate(() => window.__arena.state)));
   await dp.click('#arena-start');
   await dp.waitForFunction(() => window.__arena.state && document.getElementById('arena-overlay').hidden, null, { timeout: 15000 });
-  check('no thumb pad in mouse mode; crosshair cursor', (await dp.$eval('#arena-pad', e => e.hidden)) && (await dp.$eval('#arena-canvas', e => getComputedStyle(e).cursor)) === 'crosshair');
+  check('no thumb pad in mouse mode; normal pointer, no crosshair', (await dp.$eval('#arena-pad', e => e.hidden)) && (await dp.$eval('#arena-canvas', e => getComputedStyle(e).cursor)) !== 'crosshair');
   await dp.evaluate(() => { const F = window.__arena.fighters; F.slice(1).forEach((o, i) => { o.x = 40 + i * 30; o.y = 160; o.speed = 0; o.t = 99; o.spT = 99; o.atk = null; }); F[0].x = 120; F[0].y = 300; });
   cb = await cbox();
   const at = (cx, cy) => [cb.x + cx * cb.width / 480, cb.y + cy * cb.height / 480];
