@@ -33,7 +33,7 @@ const mockPokemon = id => ({ id, name: 'mon' + id, species: { name: 'mon' + id }
   // freeze the match so only our actions matter: park rivals far away, zone untouched
   const setup = (sp, near) => page.evaluate(([sp, near]) => {
     const F = window.__arena.fighters, p = F[0]; p.sp = sp; p.spT = 0; p.x = 240; p.y = 300; p.hp = p.maxhp * 0.5; p.phase = 0;
-    F.slice(1).forEach((o, i) => { o.alive = true; o.hp = o.maxhp; o.phase = 0; o.spT = 99; o.t = 99; o.atk = null; o.x = 30 + (i % 6) * 80; o.y = 150; });
+    F.slice(1).forEach((o, i) => { o.alive = true; o.hp = o.maxhp; o.phase = 0; o.spT = 99; o.t = 99; o.atk = null; o.speed = 0; o.slow = 0; o.x = 30 + (i % 6) * 80; o.y = 150; });
     if (near) { F[1].x = 240 + near; F[1].y = 300; }
     return { hp1: F[1].hp, d1: Math.hypot(F[1].x - p.x, F[1].y - p.y), hpFar: F[5].hp, php: p.hp, px: p.x };
   }, [sp, near]);
