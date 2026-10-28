@@ -486,6 +486,11 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   align-self:flex-start; font-family:var(--font-pixel); font-size:10px; letter-spacing:0.5px; min-height:44px; min-width:44px; padding:10px 14px; cursor:pointer; margin-top:auto;
   border:3px solid var(--forest-dark); border-radius:4px; background:var(--gold); color:var(--forest-dark); box-shadow:2px 2px 0 rgba(0,0,0,0.3);
 }
+#today-app[hidden],#app-ios[hidden],#app-install[hidden]{ display:none; }
+.app-steps{ margin:0 0 10px; padding-left:22px; color:var(--ink); font-size:15px; line-height:1.5; }
+.app-actions{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 16px; margin-top:auto; }
+.app-actions .today-btn{ margin-top:0; }
+.app-actions .link-btn{ color:var(--ink-soft); font-size:15px; }
 .today-btn:focus-visible{ outline:3px solid var(--forest); outline-offset:2px; }
 .today-flavor{ margin:0; padding:10px 12px; border-left:4px solid var(--gold-dark); background:var(--parchment-2); font-family:var(--font-retro); font-size:18px; line-height:1.25; color:var(--ink); }
 .today-flavor cite{ display:block; margin-top:6px; font-size:14px; font-style:normal; color:var(--ink-soft); }
@@ -807,6 +812,20 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   </div>
   <div class="today-grid">
     <section class="ev pixel-box hub-card" id="today-hub" aria-label="Your day"></section>
+    <section class="ev pixel-box app-card" id="today-app" aria-label="Install the app" hidden>
+      <div class="today-label">▸ GET THE APP</div>
+      <h3>Put Trainer Desk on your home screen</h3>
+      <div class="desc">Opens full screen like an app, with no app store and nothing to pay. Pages you've opened before still work offline.</div>
+      <ol class="app-steps" id="app-ios" hidden>
+        <li>Tap the <b>Share</b> button <span aria-hidden="true">(□↑)</span> in Safari's toolbar.</li>
+        <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+        <li>Tap <b>Add</b>.</li>
+      </ol>
+      <div class="app-actions">
+        <button type="button" class="today-btn" id="app-install" hidden>INSTALL APP</button>
+        <button type="button" class="link-btn" id="app-dismiss">Not now</button>
+      </div>
+    </section>
     <section class="ev pixel-box puzzle-card" id="today-puzzle"></section>
     <section class="ev pixel-box" id="today-event" aria-live="off"></section>
     <section class="ev pixel-box" id="today-cd"></section>
@@ -3971,6 +3990,34 @@ const RAID_URLS=[
 })();
 
 loadSets();
+
+/* ============ APP: service worker (offline), install card, shortcut links ============ */
+(function(){
+  // Tests drive the page with mocked network; a service worker would sit in front of those mocks, so it stays off there.
+  if("serviceWorker" in navigator&&canRoute&&(!navigator.webdriver||window.__tdSwTest)) addEventListener("load",()=>{ navigator.serviceWorker.register("/sw.js").catch(()=>{}); });
+  // Home screen shortcuts (site.webmanifest) open /tcg?view=movers and /pokedex?view=collection
+  let v=null; try{ v=new URLSearchParams(location.search).get("view"); }catch(e){}
+  if(v==="movers"&&window.tcgShowView) window.tcgShowView("movers");
+  if(v==="collection"&&window.__collection) window.__collection.show("collection");
+
+  const card=document.getElementById("today-app"), btn=document.getElementById("app-install"), ios=document.getElementById("app-ios");
+  const KEY="td-app-dismissed";
+  const standalone=()=>(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+  const dismissed=()=>{ try{ return +localStorage.getItem(KEY)>Date.now()-30*864e5; }catch(e){ return false; } }; // ask again after 30 days
+  let prompt=null;
+  const show=how=>{ if(standalone()||dismissed()) return; btn.hidden=how!=="prompt"; ios.hidden=how!=="ios"; card.hidden=false; };
+  addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); prompt=e; show("prompt"); });
+  addEventListener("appinstalled",()=>{ card.hidden=true; prompt=null; });
+  btn.addEventListener("click",async()=>{
+    if(!prompt) return; const p=prompt; prompt=null;
+    try{ await p.prompt(); const c=await p.userChoice; if(c&&c.outcome==="accepted") card.hidden=true; }catch(e){}
+  });
+  document.getElementById("app-dismiss").addEventListener("click",()=>{ card.hidden=true; try{ localStorage.setItem(KEY,String(Date.now())); }catch(e){} });
+  // iPhone/iPad Safari has no install prompt: show the Add to Home Screen steps instead
+  const ua=navigator.userAgent||"", iOS=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  if(iOS&&/Safari/.test(ua)&&!/CriOS|FxiOS|EdgiOS/.test(ua)) show("ios");
+  window.__app={ show };
+})();
 </script>
 </body>
 </html>

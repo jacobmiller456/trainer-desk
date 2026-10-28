@@ -10,5 +10,5 @@ exports.serve = () => new Promise(res => {
     if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { rsp.writeHead(404); return rsp.end(); }
     rsp.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(rsp);
   });
-  server.listen(0, () => res({ base: 'http://127.0.0.1:' + server.address().port, close: () => server.close() }));
+  server.listen(0, () => res({ base: 'http://127.0.0.1:' + server.address().port, close: () => { server.close(); if (server.closeAllConnections) server.closeAllConnections(); } }));
 });

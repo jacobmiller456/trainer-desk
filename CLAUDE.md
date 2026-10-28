@@ -29,6 +29,7 @@ Most visitors are on phones. `tests/mobile.test.js` (part of `npm test`, and run
 - `UPCOMING_SETS` is hand-maintained; write blurbs in our own words.
 - `EVENT_NOTES` / `EVENT_NOTE_PATTERNS` (GO event notes) are hand-maintained the same way: facts from the official announcement in our own words, a `checked` date, nothing copied from LeekDuck or Niantic, and no automated fetching of Niantic/Scopely sites (their terms forbid bots).
 - Escape dynamic text with `esc()` in new code.
+- `sw.js` (installable app/offline) handles same-origin GETs only, network first; never let it cache cross-origin responses (card images and sprites must stay hotlinked, not stored). Bump its `VERSION` if saved copies must be dropped.
 - Do not remove `const API=...` (it was once dropped by a bad edit; `tests/tcg.test.js` guards it). After any edit run `npm test`.
 
 ## Legal guardrails (do not relax without asking the owner)
