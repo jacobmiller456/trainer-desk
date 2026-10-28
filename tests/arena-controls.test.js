@@ -1,5 +1,5 @@
 // Pixel Arena controls: thumb pad under the arena (default; dead zone + gentle curve), tap-to-move (also works in pad mode),
-// hold-to-follow, in-arena joystick (bigger), choice remembered, keyboard overrides a tap target, zone assist, +20% speed. Usage: node tests/arena-controls.test.js
+// hold-to-follow, follow-the-mouse on computers (default there), in-arena joystick (bigger), choice remembered, keyboard overrides a tap target, zone assist, +20% speed. Usage: node tests/arena-controls.test.js
 const { chromium } = require('playwright');
 const { serve } = require('./serve');
 let failures = 0;
@@ -27,10 +27,10 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   let [tx, ty] = await toCanvas(330, 330);
   await page.touchscreen.tap(tx, ty);
   const tgt = (await page.evaluate(() => window.__arena.state)).target;
-  check('a tap sets a walk target where you tapped', tgt && Math.abs(tgt.x - 330) < 6 && Math.abs(tgt.y - 320) < 6, tgt);
+  check('a tap sets a walk target where you tapped', tgt && Math.abs(tgt.x - 330) < 6 && Math.abs(tgt.y - 312) < 6, tgt);
   await page.evaluate(() => { for (let i = 0; i < 60; i++) window.__arena.step(0.05); });
   let st = await page.evaluate(() => window.__arena.state);
-  check('fighter walks to the tapped spot by itself, then the target clears', Math.hypot(st.player.x - 330, st.player.y - 320) < 10 && !st.target, st.player);
+  check('fighter walks to the tapped spot by itself, then the target clears', Math.hypot(st.player.x - 330, st.player.y - 312) < 10 && !st.target, st.player);
   // thumb pad: beside SPECIAL, big enough, on screen with the arena
   const padBox = await page.evaluate(() => { const p = document.getElementById('arena-pad').getBoundingClientRect(), s = document.getElementById('arena-special').getBoundingClientRect(); return { w: p.width, h: p.height, top: p.top, bottom: p.bottom, sLeft: s.left, pRight: p.right, sw: s.width, vw: innerHeight, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
   check('pad shows during a match: 136px, left of a still-wide SPECIAL button, fits 375px', padBox.w === 136 && padBox.h === 136 && padBox.pRight <= padBox.sLeft && padBox.sw >= 150 && padBox.overflow <= 0, padBox);
@@ -52,7 +52,7 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   let [ax, ay] = await toCanvas(200, 300), [bx, by] = await toCanvas(120, 380);
   await page.mouse.move(ax, ay); await page.mouse.down(); await page.mouse.move(bx, by, { steps: 4 });
   st = await page.evaluate(() => window.__arena.state);
-  check('holding and dragging moves the target with the finger', st.target && Math.abs(st.target.x - 120) < 6 && Math.abs(st.target.y - 370) < 6, st.target);
+  check('holding and dragging moves the target with the finger', st.target && Math.abs(st.target.x - 120) < 6 && Math.abs(st.target.y - 362) < 6, st.target);
   await page.mouse.up();
   // keyboard overrides a tap target
   await page.keyboard.down('ArrowUp'); await page.evaluate(() => window.__arena.step(0.05)); await page.keyboard.up('ArrowUp');
@@ -76,6 +76,38 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   check('control choice is remembered', (await page.inputValue('#arena-ctrl')) === 'stick');
   const lay = await page.evaluate(() => { const r = document.getElementById('arena-ctrl').getBoundingClientRect(); return { h: r.height, font: getComputedStyle(document.getElementById('arena-ctrl')).fontSize, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
   check('375px: controls picker is 44px+, 16px text, no sideways scroll', lay.h >= 44 && lay.font === '16px' && lay.overflow <= 0, lay);
+  // desktop with a mouse: "Follow mouse" is the default; the fighter walks toward the cursor without clicking
+  const dctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
+  const dp = await dctx.newPage(); dp.on('pageerror', e => errors.push(e.message));
+  await dp.route('**/*', r => r.request().url().startsWith(base) ? r.continue() : r.abort());
+  await dp.goto(base + '/arena'); await dp.waitForSelector('#arena-start');
+  check('computer with a mouse: Follow mouse is the default', (await dp.inputValue('#arena-ctrl')) === 'mouse');
+  const cbox = async () => { await dp.locator('#arena-canvas').scrollIntoViewIfNeeded(); return dp.locator('#arena-canvas').boundingBox(); };
+  let cb = await cbox();
+  await dp.mouse.move(cb.x + cb.width * 0.7, cb.y + cb.height * 0.7);
+  check('hovering before a match does nothing', !(await dp.evaluate(() => window.__arena.state)));
+  await dp.click('#arena-start');
+  await dp.waitForFunction(() => window.__arena.state && document.getElementById('arena-overlay').hidden, null, { timeout: 15000 });
+  check('no thumb pad in mouse mode; crosshair cursor', (await dp.$eval('#arena-pad', e => e.hidden)) && (await dp.$eval('#arena-canvas', e => getComputedStyle(e).cursor)) === 'crosshair');
+  await dp.evaluate(() => { const F = window.__arena.fighters; F.slice(1).forEach((o, i) => { o.x = 40 + i * 30; o.y = 160; o.speed = 0; o.t = 99; o.spT = 99; o.atk = null; }); F[0].x = 120; F[0].y = 300; });
+  cb = await cbox();
+  const at = (cx, cy) => [cb.x + cx * cb.width / 480, cb.y + cy * cb.height / 480];
+  await dp.mouse.move(...at(360, 400), { steps: 4 });
+  let ms = await dp.evaluate(() => window.__arena.state);
+  check('moving the mouse over the arena sets where to walk (no click)', ms.target && Math.abs(ms.target.x - 360) < 6 && Math.abs(ms.target.y - 382) < 6, ms.target);
+  await dp.evaluate(() => { for (let i = 0; i < 80; i++) window.__arena.step(0.05); });
+  ms = await dp.evaluate(() => window.__arena.state);
+  check('fighter walks to the cursor and waits there', Math.hypot(ms.player.x - 360, ms.player.y - 382) < 8 && ms.target, ms.player);
+  await dp.mouse.move(...at(150, 330), { steps: 4 });
+  await dp.evaluate(() => { for (let i = 0; i < 80; i++) window.__arena.step(0.05); });
+  ms = await dp.evaluate(() => window.__arena.state);
+  check('...and follows when the cursor moves', Math.hypot(ms.player.x - 150, ms.player.y - 312) < 8, ms.player);
+  await dp.mouse.move(...at(400, 330)); await dp.mouse.move(cb.x + cb.width + 60, cb.y + 10, { steps: 3 });
+  const x0 = (await dp.evaluate(() => window.__arena.state)).player.x;
+  await dp.evaluate(() => { for (let i = 0; i < 20; i++) window.__arena.step(0.05); });
+  ms = await dp.evaluate(() => window.__arena.state);
+  check('cursor leaves the arena: fighter stops', !ms.target && Math.abs(ms.player.x - x0) < 1, { x0, x: ms.player.x });
+  await dctx.close();
   check('no uncaught JS errors', !errors.length, errors);
   await b.close(); close();
   console.log(failures ? `\n${failures} ARENA CONTROL CHECK(S) FAILED` : '\nALL ARENA CONTROL CHECKS PASSED');

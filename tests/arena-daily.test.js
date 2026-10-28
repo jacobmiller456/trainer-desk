@@ -62,9 +62,10 @@ const started = page => page.waitForFunction(() => window.__arena.state && !wind
 
   await page.selectOption('#arena-fighter', { index: 2 }); await page.click('#arena-start'); await started(page);
   check('START is free play', (await page.evaluate(() => window.__arena.state)).mode === 'free');
-  await playOut(page); await page.waitForTimeout(200);
+  const end3 = await playOut(page);
+  await page.waitForFunction(() => (JSON.parse(localStorage.getItem('td-arena-stats-v1') || '{}').played || 0) >= 3, null, { timeout: 5000 }).catch(() => {});
   const rec = await page.evaluate(() => JSON.parse(localStorage.getItem('td-arena-stats-v1')));
-  check('record counts every finished match (3), daily streak 1', rec.played === 3 && rec.dStreak === 1 && Object.values(rec.by).reduce((n, v) => n + v.p, 0) === 3, rec);
+  check('record counts every finished match (3), daily streak 1', rec.played === 3 && rec.dStreak === 1 && Object.values(rec.by).reduce((n, v) => n + v.p, 0) === 3, { rec, end3 });
   const lay = await page.evaluate(() => { const vw = document.documentElement.clientWidth; const small = [...document.querySelectorAll('#arena-daily button, #arena-result button')].filter(e => { const r = e.getBoundingClientRect(); return r.width && r.height < 44; }).length; return { overflow: document.documentElement.scrollWidth - vw, small }; });
   check('375px: no sideways scroll, buttons >= 44px', lay.overflow <= 0 && !lay.small, lay);
   const errs = page.errors; await page.close();

@@ -42,7 +42,7 @@ const mockPokemon = id => ({ id, name: 'mon' + id, species: { name: 'mon' + id }
   const lb = await page.$eval('#arena-stars', e => getComputedStyle(e).fontSize);
   check('progress text readable size', parseFloat(lb) >= 12, lb);
 
-  // health: ~3x what it was (fighter with 80 HP base: (70 + 80*0.9) * 3 = 426)
+  // health: 3x what it was (fighter with 80 HP base: (70 + 80*0.9) * 3 = 426)
   await page.click('#arena-start');
   await page.waitForFunction(() => window.__arena.state && document.getElementById('arena-overlay').hidden, null, { timeout: 15000 });
   const mh = await page.evaluate(() => window.__arena.fighters[0].maxhp);

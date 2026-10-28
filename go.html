@@ -427,6 +427,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .arena-btn:disabled{ opacity:.6; cursor:default; }
 .arena-btn:focus-visible{ outline:3px solid var(--parchment); outline-offset:2px; }
 .arena-wrap{ position:relative; width:100%; max-width:480px; margin:0 auto; }
+#arena-canvas.follow{ cursor:crosshair; }
 #arena-canvas{ display:block; width:100%; height:auto; aspect-ratio:1/1; image-rendering:pixelated; touch-action:none; border:4px solid var(--border); border-radius:4px; box-shadow:4px 4px 0 rgba(0,0,0,0.25); background:#2D6A4F; }
 .arena-overlay{
   position:absolute; inset:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:20px; text-align:center;
@@ -1083,7 +1084,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
       <select id="arena-map" aria-label="Arena"></select>
     </label>
     <label class="arena-field">CONTROLS
-      <select id="arena-ctrl" aria-label="Touch controls"><option value="pad">Thumb pad</option><option value="tap">Tap to move</option><option value="stick">Joystick in arena</option></select>
+      <select id="arena-ctrl" aria-label="Touch controls"><option value="mouse">Follow mouse</option><option value="pad">Thumb pad</option><option value="tap">Tap to move</option><option value="stick">Joystick in arena</option></select>
     </label>
     <button type="button" class="arena-btn alt" id="arena-sound" aria-pressed="true">🔊 SOUND ON</button>
     <button type="button" class="arena-btn" id="arena-start"><img src="assets/arena/pokeball.webp" alt="" width="20" height="20"> START</button>
@@ -3199,7 +3200,9 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
    bursts, damage popups and a winner podium.
    ============================================================ */
 (function(){
-  const W=480, H=480, SPR=48, RAD=17, CX=240, CY=300, ELL=0.62, TOP=135;
+  const W=480, H=480, SPR=72, RAD=22, VR=26, HEAD=50, CX=240, CY=300, ELL=0.62, TOP=135;
+  // SPR = sprite size, RAD = hitbox, VR = drawn body radius (rings, letter discs), HEAD = HP bar height above a fighter.
+  // Fighters were drawn at 48px with a 17px hitbox until Nov 2026; now 1.5x bigger to see, hitbox grown to match the body.
   const ZONE_START=262, ZONE_END=34, ZONE_DELAY=6, ZONE_TIME=70;
   const ATK_DUR=0.42, LUNGE=34;
   const REDUCED=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -3247,7 +3250,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   const SPECIAL_HELP={burst:"blast everyone close by",wave:"push rivals away",dash:"zip forward through rivals",heal:"restore health",phase:"turn untouchable for a moment",barrage:"fire in every direction"};
   const SP_CHARGE=8, SP_CHARGE_AI=14;
   // Health scale: matches used to end in ~25s (players out after ~10s). HP_SCALE stretches every fighter's health (and the zone
-  // damage with it, so the closing zone still decides the end) for ~75s matches; see README.
+  // damage with it, so the closing zone still decides the end) for ~65s matches; see README.
   const HP_SCALE=3;
   const MOVE_SCALE=1.2; // walking speed for everyone, +20% (Nov 2026) so dodging attacks is possible
   // Pickups (one every 7s, up to 3 on the floor): heal +30% HP, speed boost or shield (half damage) for 6s. Rivals can grab them too.
@@ -3358,11 +3361,13 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
 
   // Touch controls: "pad" (default) = thumb pad under the arena, so your thumb never covers the fight (tapping the arena
   // still walks there too); "tap" = tap/hold a spot and the fighter walks there (follows a held finger); "stick" =
-  // joystick dragged inside the arena. Pad and stick share padCurve(): a small dead zone, gentle steering for small
+  // joystick dragged inside the arena; "mouse" = no clicking: the fighter walks toward the cursor while it's over the
+  // arena and stops when it leaves (default on computers with a mouse, the pad everywhere else). Pad and stick share padCurve(): a small dead zone, gentle steering for small
   // movements, full speed only near the edge.
   const STICK_PX=56, PAD_DEAD=0.12;
   const padCurve=m=>m<=PAD_DEAD?0:Math.min(1,Math.pow((m-PAD_DEAD)/(1-PAD_DEAD),1.3));
-  let ctrlMode="pad", target=null, pad=null; // pad = current thumb-pad vector [x,y] (length 0..1), null when released
+  const hasMouse=!!(window.matchMedia&&matchMedia("(hover: hover) and (pointer: fine)").matches);
+  let ctrlMode=hasMouse?"mouse":"pad", target=null, pad=null; // pad = current thumb-pad vector [x,y] (length 0..1), null when released
   function inputVec(){
     const x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0), y=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
     if(x||y){ target=null; const m=Math.hypot(x,y); return [x/m,y/m]; }
@@ -3403,10 +3408,10 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     if(!G||G.over||!f.alive||f.spT>0) return false;
     f.spT=f.isPlayer?SP_CHARGE:SP_CHARGE_AI*(0.8+rnd()*0.4);
     const col=tcolor(f.types[0]), type=f.types[0]||"normal", foes=G.f.filter(o=>o.alive&&o!==f);
-    const tag=t=>popup(f.x,f.y-RAD-26,t,"#FFC94A",f.isPlayer?20:15);
+    const tag=t=>popup(f.x,f.y-HEAD-12,t,"#FFC94A",f.isPlayer?20:15);
     if(f.sp==="burst"){
       tag(SPECIAL_NAME.burst+"!"); G.fx.push({k:"ring",x:f.x,y:f.y-6,t:0,max:0.5,color:col,r:95}); burst(f.x,f.y-6,col,26,220,0.6);
-      for(const o of foes){ if(dist(f,o)<95){ const m=strike(f,o,f.dmg*2.2,type); if(m) popup(o.x,o.y-RAD-10,"-"+Math.round(f.dmg*2.2*m*o.def)+(m>1?"!":""),m>1?"#FFD43B":"#fff",m>1?22:18); } }
+      for(const o of foes){ if(dist(f,o)<95){ const m=strike(f,o,f.dmg*2.2,type); if(m) popup(o.x,o.y-HEAD+6,"-"+Math.round(f.dmg*2.2*m*o.def)+(m>1?"!":""),m>1?"#FFD43B":"#fff",m>1?22:18); } }
     } else if(f.sp==="wave"){
       tag(SPECIAL_NAME.wave+"!"); G.fx.push({k:"ring",x:f.x,y:f.y-6,t:0,max:0.55,color:col,r:130});
       for(const o of foes){ const d=dist(f,o); if(d<130&&d>0){ const ux=(o.x-f.x)/d, uy=(o.y-f.y)/d, push=90*(1-d/160);
@@ -3438,7 +3443,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     if(s.owner.isPlayer) sfx(m>1?"super":"hit");
     burst(f.x,f.y-6,tcolor(s.type),m>1?9:6,90,0.4);
     const big=m>1, small=m<1;
-    popup(f.x,f.y-RAD-10,"-"+Math.max(1,Math.round(dmg))+(big?"!":""),big?"#FFD43B":small?"#B8C4BC":"#FFFFFF",big?22:small?15:18);
+    popup(f.x,f.y-HEAD+6,"-"+Math.max(1,Math.round(dmg))+(big?"!":""),big?"#FFD43B":small?"#B8C4BC":"#FFFFFF",big?22:small?15:18);
     if(CLAW_TYPES.has(s.type)&&!REDUCED) G.fx.push({k:"slash",x:f.x,y:f.y-6,t:0,max:0.28});
   }
 
@@ -3512,7 +3517,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
         if(Math.hypot(f.x-o.x,f.y-o.y)>=RAD+8) return true;
         const P=PICKUPS[o.k]||PICKUPS.heal;
         if(o.k==="speed") f.boost=P.t; else if(o.k==="shield") f.shield=P.t; else f.hp=Math.min(f.maxhp,f.hp+f.maxhp*0.3);
-        popup(f.x,f.y-RAD-10,P.label,P.color,f.isPlayer?18:15);
+        popup(f.x,f.y-HEAD+6,P.label,P.color,f.isPlayer?18:15);
         if(f.isPlayer){ G.picks=(G.picks||0)+1; sfx("pickup"); buzz(15); }
         return false;
       });
@@ -3546,11 +3551,11 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   function drawFighterArt(f,x,y,s,alpha,rot){
     const im=getSprite(f.id);
     ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x,y); if(rot) ctx.rotate(rot);
-    if(im){ ctx.imageSmoothingEnabled=false; ctx.drawImage(im,-SPR*s/2,-SPR*s/2-8,SPR*s,SPR*s); }
+    if(im){ ctx.imageSmoothingEnabled=false; ctx.drawImage(im,-SPR*s/2,-SPR*s/2-12,SPR*s,SPR*s); }
     else{
-      ctx.fillStyle=tcolor(f.types[0])||"#888"; ctx.beginPath(); ctx.arc(0,0,RAD*s,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=tcolor(f.types[0])||"#888"; ctx.beginPath(); ctx.arc(0,0,VR*s,0,Math.PI*2); ctx.fill();
       ctx.strokeStyle="#1B4332"; ctx.lineWidth=3; ctx.stroke();
-      ctx.fillStyle="#fff"; ctx.font="bold 20px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(f.name.charAt(0),0,1);
+      ctx.fillStyle="#fff"; ctx.font="bold 28px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(f.name.charAt(0),0,1);
     }
     ctx.restore();
   }
@@ -3576,18 +3581,18 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     for(const d of G.dying){ const p=d.t/0.6; drawFighterArt(d,d.x,d.y,1-p*0.35,1-p,REDUCED?0:p*5); }
     for(const f of [...G.f].sort((a,b)=>a.y-b.y)){
       if(!f.alive) continue;
-      ctx.fillStyle="rgba(0,0,0,0.28)"; ctx.beginPath(); ctx.ellipse(f.x,f.y+14,15,6,0,0,Math.PI*2); ctx.fill(); // ground shadow stays put while the sprite jumps
-      if(f.isPlayer){ ctx.strokeStyle="#FFC94A"; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(f.x,f.y+14,20,8,0,0,Math.PI*2); ctx.stroke(); }
+      ctx.fillStyle="rgba(0,0,0,0.28)"; ctx.beginPath(); ctx.ellipse(f.x,f.y+20,21,8,0,0,Math.PI*2); ctx.fill(); // ground shadow stays put while the sprite jumps
+      if(f.isPlayer){ ctx.strokeStyle="#FFC94A"; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(f.x,f.y+20,27,10,0,0,Math.PI*2); ctx.stroke(); }
       let ox=0,oy=0,sc=1;
       if(f.atk&&!REDUCED){ const [fw,lift,s]=pose(f.atk.t); ox=f.atk.ux*fw*LUNGE; oy=f.atk.uy*fw*LUNGE-lift; sc=s; }
       drawFighterArt(f,f.x+ox,f.y+oy,sc,f.phase>0?0.4:1,0);
-      if(f.shield>0){ ctx.strokeStyle="rgba(90,200,250,"+(f.shield<1.5&&!REDUCED&&Math.floor(G.t*8)%2?0.35:0.9)+")"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(f.x,f.y-4,RAD+6,0,Math.PI*2); ctx.stroke(); } // blinks as it runs out
-      if(f.boost>0){ ctx.strokeStyle="rgba(255,212,59,.85)"; ctx.lineWidth=2; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.ellipse(f.x,f.y+14,22,9,0,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
-      if(f.slow>0){ ctx.strokeStyle="rgba(150,217,214,.9)"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y,RAD+3,0,Math.PI*2); ctx.stroke(); }
-      if(f.flash>0){ ctx.fillStyle="rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.arc(f.x,f.y,RAD,0,Math.PI*2); ctx.fill(); }
-      const bw=34, r=f.hp/f.maxhp;
-      ctx.fillStyle="#1B2E1F"; ctx.fillRect(f.x-bw/2-1,f.y-RAD-19,bw+2,7);
-      ctx.fillStyle=r>0.5?"#4CD964":r>0.25?"#FFD43B":"#FF5C5C"; ctx.fillRect(f.x-bw/2,f.y-RAD-18,bw*r,5);
+      if(f.shield>0){ ctx.strokeStyle="rgba(90,200,250,"+(f.shield<1.5&&!REDUCED&&Math.floor(G.t*8)%2?0.35:0.9)+")"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(f.x,f.y-8,VR+6,0,Math.PI*2); ctx.stroke(); } // blinks as it runs out
+      if(f.boost>0){ ctx.strokeStyle="rgba(255,212,59,.85)"; ctx.lineWidth=2; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.ellipse(f.x,f.y+20,30,12,0,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
+      if(f.slow>0){ ctx.strokeStyle="rgba(150,217,214,.9)"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y-6,VR+3,0,Math.PI*2); ctx.stroke(); }
+      if(f.flash>0){ ctx.fillStyle="rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.arc(f.x,f.y-6,VR,0,Math.PI*2); ctx.fill(); }
+      const bw=44, r=f.hp/f.maxhp;
+      ctx.fillStyle="#1B2E1F"; ctx.fillRect(f.x-bw/2-1,f.y-HEAD-2,bw+2,7);
+      ctx.fillStyle=r>0.5?"#4CD964":r>0.25?"#FFD43B":"#FF5C5C"; ctx.fillRect(f.x-bw/2,f.y-HEAD-1,bw*r,5);
     }
     for(const s of G.shots){
       const col=tcolor(s.type), name=FX_FOR[s.type]||"wisp", im=getFx(name);
@@ -3607,7 +3612,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       else if(e.k==="slash"){ const l=getFx("leftclaw"), r=getFx("rightclaw"); ctx.globalAlpha=1-p; if(l) ctx.drawImage(l,e.x-34,e.y-30); if(r) ctx.drawImage(r,e.x-2,e.y-30); ctx.globalAlpha=1; }
       else if(e.k==="txt"){ ctx.globalAlpha=Math.min(1,(1-p)*1.6); ctx.font="bold "+e.size+"px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.lineWidth=4; ctx.strokeStyle="#1B2E1F"; ctx.strokeText(e.text,e.x,e.y); ctx.fillStyle=e.color; ctx.fillText(e.text,e.x,e.y); ctx.globalAlpha=1; }
     }
-    if(target&&G&&!G.over){ const pulse=REDUCED?0:Math.sin(performance.now()/120)*2; ctx.strokeStyle="rgba(255,201,74,0.9)"; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(target.x,target.y+10,12+pulse,5+pulse/2,0,0,Math.PI*2); ctx.stroke(); }
+    if(target&&!target.mouse&&G&&!G.over){ const pulse=REDUCED?0:Math.sin(performance.now()/120)*2; ctx.strokeStyle="rgba(255,201,74,0.9)"; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(target.x,target.y+18,12+pulse,5+pulse/2,0,0,Math.PI*2); ctx.stroke(); }
     if(stick){ ctx.strokeStyle="rgba(255,255,255,0.5)"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(stick.ox,stick.oy,stick.r,0,Math.PI*2); ctx.stroke();
       const dx=stick.x-stick.ox, dy=stick.y-stick.oy, m=Math.hypot(dx,dy)||1, k=Math.min(m,stick.r)/m;
       ctx.fillStyle="rgba(255,255,255,0.6)"; ctx.beginPath(); ctx.arc(stick.ox+dx*k,stick.oy+dy*k,16,0,Math.PI*2); ctx.fill(); }
@@ -3807,10 +3812,13 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   });
   window.addEventListener("keyup",e=>{ keys[e.key.toLowerCase()]=false; });
   const pos=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]; };
-  const setTarget=(x,y,held)=>{ target={x:clamp(x,RAD,W-RAD),y:clamp(y-10,TOP,H-RAD),held}; }; // aim at the feet, inside the floor
+  const setTarget=(x,y,held)=>{ target={x:clamp(x,RAD,W-RAD),y:clamp(y-18,TOP,H-RAD),held}; }; // aim at the feet, inside the floor
   cv.addEventListener("pointerdown",e=>{ const [x,y]=pos(e); try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+    if(followMouse(e)){ setTarget(x,y,true); target.mouse=true; return; }
     if(ctrlMode==="stick"){ stick={ox:x,oy:y,x,y,r:STICK_PX*W/cv.getBoundingClientRect().width}; target=null; } else setTarget(x,y,true); });
-  cv.addEventListener("pointermove",e=>{ const [x,y]=pos(e); if(stick){ stick.x=x; stick.y=y; } else if(target&&target.held) setTarget(x,y,true); });
+  const followMouse=e=>ctrlMode==="mouse"&&e.pointerType==="mouse"&&G&&!G.over;
+  cv.addEventListener("pointermove",e=>{ const [x,y]=pos(e); if(stick){ stick.x=x; stick.y=y; } else if(followMouse(e)){ setTarget(x,y,true); target.mouse=true; } else if(target&&target.held) setTarget(x,y,true); });
+  cv.addEventListener("pointerleave",e=>{ if(target&&target.mouse) target=null; }); // mouse left the arena: stop
   ["pointerup","pointercancel","pointerleave"].forEach(ev=>cv.addEventListener(ev,()=>{ stick=null; if(target) target.held=false; }));
   const padEl=document.getElementById("arena-pad"), knob=document.getElementById("arena-pad-knob");
   function padMove(e){ const r=padEl.getBoundingClientRect(), R=(r.width-52)/2, dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2), m=Math.hypot(dx,dy), k=m>R?R/m:1;
@@ -3822,9 +3830,10 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>padEl.addEventListener(ev,padRelease));
   }
   const ctrlSel=document.getElementById("arena-ctrl");
-  try{ const v=localStorage.getItem("td-arena-ctrl"); if(v==="stick"||v==="tap"||v==="pad") ctrlMode=v; }catch(e){}
-  if(ctrlSel){ ctrlSel.value=ctrlMode; ctrlSel.addEventListener("change",()=>{ ctrlMode=["pad","tap","stick"].includes(ctrlSel.value)?ctrlSel.value:"pad"; stick=null; target=null; padRelease(); updateSpecial(); try{ localStorage.setItem("td-arena-ctrl",ctrlMode); }catch(e){} }); }
-  setOverlay("Pick a fighter and press START, or play today's Daily Challenge. Move with the thumb pad under the arena (or tap the arena where you want to go; WASD / arrow keys on a keyboard; CONTROLS has other options). Your fighter attacks on its own. Tap SPECIAL (or Space) when it's charged.",false);
+  try{ const v=localStorage.getItem("td-arena-ctrl"); if(["mouse","pad","tap","stick"].includes(v)) ctrlMode=v; }catch(e){}
+  cv.classList.toggle("follow",ctrlMode==="mouse");
+  if(ctrlSel){ ctrlSel.value=ctrlMode; ctrlSel.addEventListener("change",()=>{ ctrlMode=["mouse","pad","tap","stick"].includes(ctrlSel.value)?ctrlSel.value:"pad"; cv.classList.toggle("follow",ctrlMode==="mouse"); stick=null; target=null; padRelease(); updateSpecial(); try{ localStorage.setItem("td-arena-ctrl",ctrlMode); }catch(e){} }); }
+  setOverlay("Pick a fighter and press START, or play today's Daily Challenge. Move with the thumb pad under the arena (or tap the arena where you want to go). With a mouse, just point: your fighter follows the cursor, no clicking. WASD / arrow keys work too; CONTROLS has other options. Your fighter attacks on its own. Tap SPECIAL (or Space) when it's charged.",false);
   draw(); renderDaily(); renderRecord(); renderFighters();
   // test hook (used by tests/arena.test.js)
   const sndBtn=document.getElementById("arena-sound");
