@@ -1063,7 +1063,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <div class="view" id="view-arena"><div class="wrap">
   <div class="view-head">
     <h1>PIXEL ARENA</h1>
-    <p>Solo battle royale. Pick a fighter and outlast the computer-controlled rivals as the red zone closes in. Type matchups matter — water beats fire, and so on. Each fighter has a special move for its type: tap SPECIAL when it's charged.</p>
+    <p>Solo battle royale. Pick a fighter and outlast the computer-controlled rivals as the red zone closes in. Type matchups matter — water beats fire, and so on. Each fighter has a special move for its type: tap SPECIAL when it's charged. Grab pickups as they appear: green heals, yellow gives a speed boost, blue a shield that halves damage.</p>
   </div>
   <section class="pixel-box arena-daily" id="arena-daily" aria-label="Daily challenge"></section>
   <div class="arena-controls">
@@ -1076,6 +1076,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <label class="arena-field">CONTROLS
       <select id="arena-ctrl" aria-label="Touch controls"><option value="tap">Tap to move</option><option value="stick">Drag joystick</option></select>
     </label>
+    <button type="button" class="arena-btn alt" id="arena-sound" aria-pressed="true">🔊 SOUND ON</button>
     <button type="button" class="arena-btn" id="arena-start"><img src="assets/arena/pokeball.webp" alt="" width="20" height="20"> START</button>
   </div>
   <div class="arena-wrap">
@@ -3232,6 +3233,42 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   const SPECIAL_NAME={burst:"BURST",wave:"WAVE",dash:"DASH",heal:"HEAL",phase:"PHASE",barrage:"BARRAGE"};
   const SPECIAL_HELP={burst:"blast everyone close by",wave:"push rivals away",dash:"zip forward through rivals",heal:"restore health",phase:"turn untouchable for a moment",barrage:"fire in every direction"};
   const SP_CHARGE=8, SP_CHARGE_AI=14;
+  // Pickups (one every 7s, up to 3 on the floor): heal +30% HP, speed boost or shield (half damage) for 6s. Rivals can grab them too.
+  const PICKUPS={heal:{color:"#4CD964",label:"+HP"},speed:{color:"#FFD43B",label:"SPEED UP!",t:6},shield:{color:"#5AC8FA",label:"SHIELD!",t:6}};
+  const BOOST=1.45, SHIELD=0.5;
+  // Sound effects (synthesized with Web Audio: no sound files) + phone vibration, for the player's own actions only.
+  // One toggle for both, saved in td-arena-sound; browsers only allow audio after a tap, so START unlocks it.
+  let soundOn=true; try{ soundOn=localStorage.getItem("td-arena-sound")!=="off"; }catch(e){}
+  let actx=null; const lastSnd={}, sndLog=[];
+  const SOUNDS={ // [frequency, start s, length s, wave, volume, slide-to frequency]
+    shoot:[[660,0,0.05,"square",0.025,330]],
+    hit:[[240,0,0.07,"square",0.05,120]],
+    super:[[880,0,0.06,"square",0.05],[1320,0.05,0.09,"square",0.045]],
+    hurt:[[170,0,0.12,"sawtooth",0.06,70]],
+    ko:[[523,0,0.07,"square",0.06],[392,0.07,0.07,"square",0.06],[262,0.14,0.16,"square",0.06]],
+    special:[[220,0,0.25,"sawtooth",0.06,900]],
+    pickup:[[784,0,0.07,"triangle",0.09],[1175,0.07,0.12,"triangle",0.09]],
+    win:[[523,0,0.12,"square",0.06],[659,0.12,0.12,"square",0.06],[784,0.24,0.12,"square",0.06],[1047,0.36,0.32,"square",0.06]],
+    lose:[[392,0,0.15,"triangle",0.08],[330,0.15,0.15,"triangle",0.08],[262,0.3,0.35,"triangle",0.08]]
+  };
+  function unlockAudio(){
+    if(!soundOn) return;
+    try{ if(!actx){ const AC=window.AudioContext||window.webkitAudioContext; if(AC) actx=new AC(); } if(actx&&actx.state==="suspended") actx.resume(); }catch(e){}
+  }
+  function sfx(name){
+    if(!soundOn) return;
+    const now=performance.now(); if(now-(lastSnd[name]||0)<70) return; lastSnd[name]=now; // no machine-gun repeats
+    sndLog.push(name); if(sndLog.length>60) sndLog.shift();
+    if(!actx||actx.state!=="running") return;
+    try{
+      const t0=actx.currentTime;
+      for(const [f,st,d,w,v,sl] of SOUNDS[name]){
+        const o=actx.createOscillator(), g=actx.createGain(); o.type=w; o.frequency.setValueAtTime(f,t0+st); if(sl) o.frequency.exponentialRampToValueAtTime(sl,t0+st+d);
+        g.gain.setValueAtTime(v,t0+st); g.gain.exponentialRampToValueAtTime(0.0001,t0+st+d); o.connect(g); g.connect(actx.destination); o.start(t0+st); o.stop(t0+st+d+0.02);
+      }
+    }catch(e){}
+  }
+  const buzz=pat=>{ if(soundOn&&navigator.vibrate) try{ navigator.vibrate(pat); }catch(e){} };
   // Jump-attack pose over time: [progress, forward (fraction of LUNGE), lift px, scale] — wind-up, hop, contact, return.
   const KF=[[0,0,0,1],[.13,-.25,0,.94],[.4,.55,14,1.1],[.54,1,0,1.06],[.65,1,-2,1],[.83,.45,9,1.04],[1,0,0,1]];
   function pose(p){
@@ -3294,7 +3331,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       speed:60+Math.min(spd,130)*0.45,
       cool:clamp(1.3-spd/200,0.6,1.2), t:rnd()*0.8,
       sp:SPECIAL_OF[d.types[0]]||"burst", spT:isPlayer?3:SP_CHARGE_AI*(0.5+rnd()*0.5), phase:0, slow:0, face:[1,0],
-      alive:true, flash:0, strafe:rnd()<0.5?1:-1, wander:rnd()*6.28, wt:0, place:0, atk:null
+      boost:0, shield:0, alive:true, flash:0, strafe:rnd()<0.5?1:-1, wander:rnd()*6.28, wt:0, place:0, atk:null
     };
   }
   function newGame(details,arena){
@@ -3335,9 +3372,10 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
 
   function strike(owner,f,base,type){ // damage f; credits the owner with damage and the knockout
     if(f.phase>0) return 0;
-    const m=typeMult(type,f.types), dmg=base*m*f.def;
+    const m=typeMult(type,f.types), dmg=base*m*f.def*(f.shield>0?SHIELD:1);
     if(owner.isPlayer) G.dmg+=Math.min(dmg,Math.max(0,f.hp));
     f.hp-=dmg; f.flash=0.12;
+    if(f.isPlayer&&dmg>0){ sfx("hurt"); buzz(20); }
     if(f.hp<=0&&!f.koBy){ f.koBy=owner; if(owner.isPlayer) G.kos++; }
     return m;
   }
@@ -3370,13 +3408,14 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       tag(SPECIAL_NAME.barrage+"!");
       for(let k=0;k<10;k++){ const a=k/10*Math.PI*2; G.shots.push({x:f.x,y:f.y-6,vx:Math.cos(a)*300,vy:Math.sin(a)*300,owner:f,type,life:0.8,spin:a,power:1.1}); }
     }
-    if(f.isPlayer) G.spUsed++; else G.aiSp=(G.aiSp||0)+1;
+    if(f.isPlayer){ G.spUsed++; sfx("special"); buzz(30); } else G.aiSp=(G.aiSp||0)+1;
     return true;
   }
   function hit(s,f){
     if(f.phase>0) return;
-    const m=typeMult(s.type,f.types), dmg=s.owner.dmg*(s.power||1)*m*f.def;
+    const m=typeMult(s.type,f.types), dmg=s.owner.dmg*(s.power||1)*m*f.def*(f.shield>0?SHIELD:1);
     strike(s.owner,f,s.owner.dmg*(s.power||1),s.type);
+    if(s.owner.isPlayer) sfx(m>1?"super":"hit");
     burst(f.x,f.y-6,tcolor(s.type),m>1?9:6,90,0.4);
     const big=m>1, small=m<1;
     popup(f.x,f.y-RAD-10,"-"+Math.max(1,Math.round(dmg))+(big?"!":""),big?"#FFD43B":small?"#B8C4BC":"#FFFFFF",big?22:small?15:18);
@@ -3407,9 +3446,9 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
         vx+=Math.cos(f.wander)*0.25; vy+=Math.sin(f.wander)*0.25;
         const m=Math.hypot(vx,vy); if(m>1){ vx/=m; vy/=m; }
       }
-      const sm=f.slow>0?0.5:1; if(Math.hypot(vx,vy)>0.2){ const m=Math.hypot(vx,vy); f.face=[vx/m,vy/m]; }
+      const sm=(f.slow>0?0.5:1)*(f.boost>0?BOOST:1); if(Math.hypot(vx,vy)>0.2){ const m=Math.hypot(vx,vy); f.face=[vx/m,vy/m]; }
       f.x=clamp(f.x+vx*f.speed*sm*dt,RAD,W-RAD); f.y=clamp(f.y+vy*f.speed*sm*dt,TOP,H-RAD);
-      f.spT=Math.max(0,f.spT-dt); f.phase=Math.max(0,f.phase-dt); f.slow=Math.max(0,f.slow-dt);
+      f.spT=Math.max(0,f.spT-dt); f.phase=Math.max(0,f.phase-dt); f.slow=Math.max(0,f.slow-dt); f.boost=Math.max(0,f.boost-dt); f.shield=Math.max(0,f.shield-dt);
       if(!f.isPlayer&&f.spT<=0&&ne){ // rivals pick sensible moments
         const want=f.sp==="heal"?f.hp<f.maxhp*0.45:f.sp==="phase"?f.hp<f.maxhp*0.4&&ne.d<160:f.sp==="burst"?ne.d<85:f.sp==="wave"?ne.d<100:ne.d<190;
         if(want) useSpecial(f);
@@ -3425,7 +3464,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
         if(!f.atk.fired&&f.atk.t>=0.54){
           f.atk.fired=true;
           const tg=nearestEnemy(f,G.f);
-          if(tg&&tg.d<260){ const dx=(tg.o.x-f.x)/tg.d, dy=(tg.o.y-f.y)/tg.d; G.shots.push({x:f.x,y:f.y-6,vx:dx*290,vy:dy*290,owner:f,type:f.types[0]||"normal",life:0.9,spin:Math.atan2(dy,dx)}); }
+          if(tg&&tg.d<260){ const dx=(tg.o.x-f.x)/tg.d, dy=(tg.o.y-f.y)/tg.d; G.shots.push({x:f.x,y:f.y-6,vx:dx*290,vy:dy*290,owner:f,type:f.types[0]||"normal",life:0.9,spin:Math.atan2(dy,dx)}); if(f.isPlayer) sfx("shoot"); }
         }
         if(f.atk.t>=1) f.atk=null;
       }
@@ -3445,11 +3484,18 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     G.shots=G.shots.filter(s=>s.life>0&&s.x>-10&&s.x<W+10&&s.y>-10&&s.y<H+10);
     G.orbT-=dt;
     if(G.orbT<=0&&G.orbs.length<3){
-      G.orbT=7; const a=rnd()*6.28, r=rnd()*Math.max(20,zr-40);
-      G.orbs.push({x:CX+Math.cos(a)*r,y:CY+Math.sin(a)*r*ELL});
+      G.orbT=7; const a=rnd()*6.28, r=rnd()*Math.max(20,zr-40), kr=rnd();
+      G.orbs.push({k:kr<0.5?"heal":kr<0.75?"speed":"shield",x:CX+Math.cos(a)*r,y:CY+Math.sin(a)*r*ELL});
     }
     for(const f of alive){
-      G.orbs=G.orbs.filter(o=>{ if(Math.hypot(f.x-o.x,f.y-o.y)<RAD+8){ f.hp=Math.min(f.maxhp,f.hp+f.maxhp*0.3); popup(f.x,f.y-RAD-10,"+HP","#4CD964",16); return false; } return true; });
+      G.orbs=G.orbs.filter(o=>{
+        if(Math.hypot(f.x-o.x,f.y-o.y)>=RAD+8) return true;
+        const P=PICKUPS[o.k]||PICKUPS.heal;
+        if(o.k==="speed") f.boost=P.t; else if(o.k==="shield") f.shield=P.t; else f.hp=Math.min(f.maxhp,f.hp+f.maxhp*0.3);
+        popup(f.x,f.y-RAD-10,P.label,P.color,f.isPlayer?18:15);
+        if(f.isPlayer){ G.picks=(G.picks||0)+1; sfx("pickup"); buzz(15); }
+        return false;
+      });
     }
     // effects
     for(const e of G.fx){ e.t+=dt; if(e.k==="p"){ e.x+=e.vx*dt; e.y+=e.vy*dt; e.vx*=0.94; e.vy*=0.94; } else if(e.k==="txt") e.y+=e.vy*dt; }
@@ -3465,13 +3511,14 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
         G.dying.push({x:f.x,y:f.y,id:f.id,name:f.name,types:f.types,t:0});
         burst(f.x,f.y-6,tcolor(f.types[0]),18,140,0.6);
         G.fx.push({k:"ring",x:f.x,y:f.y-6,t:0,max:0.45,color:tcolor(f.types[0])});
+        if(f.koBy&&f.koBy.isPlayer&&!f.isPlayer){ sfx("ko"); buzz([25,30,25]); }
       });
     }
     const player=G.f[0], remaining=G.f.filter(f=>f.alive);
-    if(!player.alive&&!G.playerOut){ G.playerOut=true; G.place=player.place; G.tOut=G.t; skipBtn.hidden=false; }
+    if(!player.alive&&!G.playerOut){ G.playerOut=true; G.place=player.place; G.tOut=G.t; skipBtn.hidden=false; sfx("lose"); buzz(200); }
     if(remaining.length<=1){
       G.over=true; G.win=player.alive; if(remaining[0]) remaining[0].place=1;
-      if(player.alive){ G.place=1; G.tOut=G.t; }
+      if(player.alive){ G.place=1; G.tOut=G.t; sfx("win"); buzz([60,40,120]); }
       finish();
     }
   }
@@ -3498,7 +3545,14 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); ctx.ellipse(CX,CY,zr,zr*ELL,0,0,Math.PI*2,true);
     ctx.fillStyle="rgba(255,60,60,0.30)"; ctx.fill("evenodd"); ctx.restore();
     ctx.strokeStyle="rgba(255,255,255,0.9)"; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(CX,CY,zr,zr*ELL,0,0,Math.PI*2); ctx.stroke();
-    for(const o of G.orbs){ ctx.fillStyle="#4CD964"; ctx.beginPath(); ctx.arc(o.x,o.y,8,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.stroke(); ctx.fillStyle="#fff"; ctx.fillRect(o.x-4,o.y-1,8,2); ctx.fillRect(o.x-1,o.y-4,2,8); }
+    for(const o of G.orbs){
+      const bob=REDUCED?0:Math.sin(G.t*4+o.x)*2, y=o.y+bob;
+      ctx.fillStyle=(PICKUPS[o.k]||PICKUPS.heal).color; ctx.beginPath(); ctx.arc(o.x,y,9,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle="#fff"; ctx.strokeStyle="#fff";
+      if(o.k==="speed"){ ctx.beginPath(); ctx.moveTo(o.x+1,y-6); ctx.lineTo(o.x-4,y+1); ctx.lineTo(o.x,y+1); ctx.lineTo(o.x-1,y+6); ctx.lineTo(o.x+4,y-1); ctx.lineTo(o.x,y-1); ctx.closePath(); ctx.fill(); } // lightning bolt
+      else if(o.k==="shield"){ ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(o.x,y-5); ctx.lineTo(o.x+4,y-3); ctx.lineTo(o.x+3,y+2); ctx.lineTo(o.x,y+5); ctx.lineTo(o.x-3,y+2); ctx.lineTo(o.x-4,y-3); ctx.closePath(); ctx.stroke(); }
+      else { ctx.fillRect(o.x-4,y-1,8,2); ctx.fillRect(o.x-1,y-4,2,8); }
+    }
     for(const d of G.dying){ const p=d.t/0.6; drawFighterArt(d,d.x,d.y,1-p*0.35,1-p,REDUCED?0:p*5); }
     for(const f of [...G.f].sort((a,b)=>a.y-b.y)){
       if(!f.alive) continue;
@@ -3507,6 +3561,8 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
       let ox=0,oy=0,sc=1;
       if(f.atk&&!REDUCED){ const [fw,lift,s]=pose(f.atk.t); ox=f.atk.ux*fw*LUNGE; oy=f.atk.uy*fw*LUNGE-lift; sc=s; }
       drawFighterArt(f,f.x+ox,f.y+oy,sc,f.phase>0?0.4:1,0);
+      if(f.shield>0){ ctx.strokeStyle="rgba(90,200,250,"+(f.shield<1.5&&!REDUCED&&Math.floor(G.t*8)%2?0.35:0.9)+")"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(f.x,f.y-4,RAD+6,0,Math.PI*2); ctx.stroke(); } // blinks as it runs out
+      if(f.boost>0){ ctx.strokeStyle="rgba(255,212,59,.85)"; ctx.lineWidth=2; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.ellipse(f.x,f.y+14,22,9,0,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
       if(f.slow>0){ ctx.strokeStyle="rgba(150,217,214,.9)"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y,RAD+3,0,Math.PI*2); ctx.stroke(); }
       if(f.flash>0){ ctx.fillStyle="rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.arc(f.x,f.y,RAD,0,Math.PI*2); ctx.fill(); }
       const bw=34, r=f.hp/f.maxhp;
@@ -3545,7 +3601,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     const tag=G.mode==="daily"&&G.practice?"PRACTICE (NOT COUNTED) · ":G.mode==="daily"?"DAILY · ":"";
     hud.textContent=tag+(G.playerOut
       ? "SPECTATING — you placed #"+G.place+" · ALIVE "+n+"/"+G.f.length+" · "+zone
-      : "ALIVE "+n+"/"+G.f.length+" · "+p.name+" HP "+Math.max(0,Math.ceil(p.hp))+"/"+Math.ceil(p.maxhp)+" · "+zone);
+      : "ALIVE "+n+"/"+G.f.length+" · "+p.name+" HP "+Math.max(0,Math.ceil(p.hp))+"/"+Math.ceil(p.maxhp)+(p.shield>0?" · SHIELD "+Math.ceil(p.shield)+"s":"")+(p.boost>0?" · SPEED "+Math.ceil(p.boost)+"s":"")+" · "+zone);
   }
   const spBtn=document.getElementById("arena-special"), spLabel=document.getElementById("arena-special-label");
   function updateSpecial(){
@@ -3664,7 +3720,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
 
   let lastMode="free";
   async function start(mode){
-    mode=mode==="daily"?"daily":"free"; lastMode=mode;
+    mode=mode==="daily"?"daily":"free"; lastMode=mode; unlockAudio(); // still inside the tap, so browsers allow sound
     stop(); startBtn.disabled=true; setOverlay("Loading fighters…",false); hud.textContent=""; if(resultEl) resultEl.hidden=true;
     const plan=mode==="daily"?dailyPlan(utcDay()):null, doneToday=(loadJ(DAILY_KEY,{}).day===utcDay());
     rnd=plan?mulberry(plan.seed):Math.random;
@@ -3717,7 +3773,10 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   setOverlay("Pick a fighter and press START, or play today's Daily Challenge. Tap the arena where you want to go (or hold and your fighter follows your finger; WASD / arrow keys on a keyboard). Your fighter attacks on its own. Tap SPECIAL (or Space) when it's charged.",false);
   draw(); renderDaily(); renderRecord();
   // test hook (used by tests/arena.test.js)
-  window.__arena={ step, dailyPlan, shareText, special:()=>!!(G&&useSpecial(G.f[0])), useSpecialFor:i=>!!(G&&G.f[i]&&useSpecial(G.f[i])), get fighters(){ return G&&G.f; }, setInput:(x,y)=>{ testInput=(x==null)?null:[x,y]; }, get state(){ return G&&{over:G.over,win:G.win,place:G.place,playerOut:G.playerOut,arena:G.arena,alive:G.f.filter(f=>f.alive).length,total:G.f.length,mode:G.mode,practice:!!G.practice,kos:G.kos,dmg:G.dmg,ids:G.f.map(f=>f.id),target:target&&{x:target.x,y:target.y},ctrl:ctrlMode,spUsed:G.spUsed,aiSp:G.aiSp||0,player:{x:G.f[0].x,y:G.f[0].y,hp:G.f[0].hp,id:G.f[0].id,sp:G.f[0].sp,spT:G.f[0].spT,phase:G.f[0].phase}}; } };
+  const sndBtn=document.getElementById("arena-sound");
+  const showSound=()=>{ if(!sndBtn) return; sndBtn.textContent=soundOn?"🔊 SOUND ON":"🔇 SOUND OFF"; sndBtn.setAttribute("aria-pressed",String(soundOn)); sndBtn.setAttribute("aria-label",soundOn?"Sound and vibration on. Tap to turn off":"Sound and vibration off. Tap to turn on"); };
+  if(sndBtn){ showSound(); sndBtn.addEventListener("click",()=>{ soundOn=!soundOn; try{ localStorage.setItem("td-arena-sound",soundOn?"on":"off"); }catch(e){} if(soundOn){ unlockAudio(); sfx("pickup"); } showSound(); }); }
+  window.__arena={ get sounds(){ return sndLog.slice(); }, dropPickup:(k,x,y)=>{ if(G) G.orbs.push({k,x:x??G.f[0].x,y:y??G.f[0].y}); }, step, dailyPlan, shareText, special:()=>!!(G&&useSpecial(G.f[0])), useSpecialFor:i=>!!(G&&G.f[i]&&useSpecial(G.f[i])), get fighters(){ return G&&G.f; }, setInput:(x,y)=>{ testInput=(x==null)?null:[x,y]; }, get state(){ return G&&{over:G.over,win:G.win,place:G.place,playerOut:G.playerOut,arena:G.arena,alive:G.f.filter(f=>f.alive).length,total:G.f.length,mode:G.mode,practice:!!G.practice,kos:G.kos,dmg:G.dmg,ids:G.f.map(f=>f.id),target:target&&{x:target.x,y:target.y},ctrl:ctrlMode,spUsed:G.spUsed,aiSp:G.aiSp||0,player:{x:G.f[0].x,y:G.f[0].y,hp:G.f[0].hp,id:G.f[0].id,sp:G.f[0].sp,spT:G.f[0].spT,phase:G.f[0].phase,boost:G.f[0].boost,shield:G.f[0].shield,speed:G.f[0].speed},picks:G.picks||0,orbs:G.orbs.map(o=>o.k)}; } };
 })();
 
 /* ============================================================
