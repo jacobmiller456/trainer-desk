@@ -44,7 +44,9 @@ const sitemap = fs.readFileSync(path.join(root, 'sitemap.xml'), 'utf8');
     await page.goto(base + '/go/events');
     const idx = await page.textContent('main');
     check(`schedule page lists happening-now and coming-up events (${scheme})`, /Happening now/.test(idx) && /Coming up/.test(idx) && (await page.$$eval('main .setlist a', a => a.length)) > 3);
-    if (hasH) check('schedule links guides to their page and others to the live app', !!(await page.$(`main a[href="/go/${halloween}"]`)) && !!(await page.$('main a[href^="/go?event="]')));
+    // the schedule only lists current + upcoming events, so check against guides whose event hasn't ended (Halloween Part 1 ended Oct 31)
+    const listedGuides = await page.$$eval('main a[href^="/go/"]', (a, pg) => a.map(x => x.getAttribute('href').slice(4)).filter(id => pg.includes(id + '.html')), pages);
+    check('schedule links guides to their page and others to the live app', listedGuides.length > 0 && !!(await page.$('main a[href^="/go?event="]')), listedGuides);
     const bad2 = (await page.evaluate(`(${scan.toString()})(${scheme === 'dark' ? 4.5 : 3}, '${scheme === 'dark' ? 'rgb(14,33,23)' : 'rgb(45,106,79)'}')`));
     check(`${scheme}: schedule page text is readable`, !bad2.length, bad2.slice(0, 5));
     check(`no JS errors (${scheme})`, !errs.length, errs);
