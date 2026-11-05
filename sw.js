@@ -3,9 +3,11 @@
 // price files; the saved copy is used only when the network fails. Other sites (card/sprite images, the live APIs) are
 // never touched: the app's own offline fallbacks cover those, and nothing from them is saved here.
 // Bump VERSION to drop old saved copies after a big change.
-const VERSION = 'v1';
+// v2 (Nov 2026): install no longer pre-downloads all five tab pages (~95 KB each compressed, so ~0.5 MB per new
+// visitor on Vercel's data allowance); pages are saved only as people open them.
+const VERSION = 'v2';
 const CACHE = 'td-' + VERSION;
-const CORE = ['/', '/go', '/tcg', '/pokedex', '/arena', '/go/events', '/favicon.svg', '/site.webmanifest', '/assets/dex-page.css', '/assets/icons/icon-192.png'];
+const CORE = ['/favicon.svg', '/site.webmanifest', '/assets/icons/icon-192.png']; // small files only; see VERSION note
 const NAV_TIMEOUT = 5000; // slow network: show the saved copy of a page after 5s (if there is one) rather than a blank screen
 
 self.addEventListener('install', e => {

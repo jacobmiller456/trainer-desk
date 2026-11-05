@@ -76,18 +76,19 @@ const cardState = page => page.evaluate(() => { const c = document.getElementByI
   await page.evaluate(() => navigator.serviceWorker.ready); await page.reload();
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 10000 });
   check('service worker registers and controls the page', true);
-  await page.waitForFunction(async () => { const c = await caches.open('td-v1'); return (await c.keys()).length >= 8; }, null, { timeout: 10000 }).catch(() => {});
-  const saved = await page.evaluate(async () => (await (await caches.open('td-v1')).keys()).map(r => new URL(r.url).pathname));
-  check('install saves the 5 tab pages + event schedule', ['/', '/go', '/tcg', '/pokedex', '/arena', '/go/events'].every(p => saved.includes(p)), saved);
-  check('nothing from other sites is saved', !(await page.evaluate(async () => (await (await caches.open('td-v1')).keys()).some(r => new URL(r.url).origin !== location.origin))));
+  await page.goto(base + '/go'); await page.goto(base + '/tcg'); // pages are saved as they're opened
+  await page.waitForFunction(async () => { const c = await caches.open('td-v2'); const k = (await c.keys()).map(r => new URL(r.url).pathname); return ['/', '/go', '/tcg'].every(p => k.includes(p)); }, null, { timeout: 10000 }).catch(() => {});
+  const saved = await page.evaluate(async () => (await (await caches.open('td-v2')).keys()).map(r => new URL(r.url).pathname));
+  check('pages are saved as they are opened, nothing big downloaded ahead (data allowance)', ['/', '/go', '/tcg'].every(p => saved.includes(p)) && !['/pokedex', '/arena', '/go/events'].some(p => saved.includes(p)), saved);
+  check('nothing from other sites is saved', !(await page.evaluate(async () => (await (await caches.open('td-v2')).keys()).some(r => new URL(r.url).origin !== location.origin))));
   close(); // the site goes away: from here on only the saved copies can answer
   await page.goto(base + '/go').catch(() => {});
   check('offline: a saved tab still opens', /POKEMON GO/.test(await page.textContent('#view-go h1').catch(() => '')));
   await page.goto(base + '/tcg?set=sv1').catch(() => {});
   check('offline: /tcg?set=… opens the saved /tcg', !!(await page.$('#view-tcg')));
-  await page.goto(base + '/pokedex/bulbasaur').catch(() => {});
+  await page.goto(base + '/arena').catch(() => {});
   const off = await page.textContent('body').catch(() => '');
-  check('offline: an unsaved page shows a friendly offline page with a way back', /You're offline/.test(off) && (await page.getAttribute('a', 'href')) === '/', off.slice(0, 80));
+  check('offline: a page never opened shows a friendly offline page with a way back', /You're offline/.test(off) && (await page.getAttribute('a', 'href')) === '/', off.slice(0, 80));
   errs = errs.concat(page.errors.filter(e => !/Failed to fetch|NetworkError|ERR_INTERNET_DISCONNECTED/.test(e))); await ctx.close();
 
   check('no uncaught JS errors', !errs.length, errs);
