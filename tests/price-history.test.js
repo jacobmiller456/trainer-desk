@@ -1,4 +1,4 @@
-// Price history: the daily snapshot script (fake API, temp folder) and the sparkline on card backs (mocked API + price files).
+// Price history: the daily snapshot script (fake TCGdex, temp folder) and the sparkline on card backs (mocked API + price files).
 // Usage: node tests/price-history.test.js
 const { chromium } = require('playwright');
 const { serve } = require('./serve');
@@ -10,41 +10,47 @@ const GIF = Buffer.from('R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAE
 
 async function scriptChecks() {
   const S = await import('../scripts/snapshot-prices.mjs');
-  check('usdPrice: first variant with market, else mid', S.usdPrice({ tcgplayer: { prices: { normal: { mid: 0.5 }, holofoil: { market: 3 } } } }) === 0.5 && S.usdPrice({ tcgplayer: { prices: { holofoil: { market: 2.345 } } } }) === 2.35 && S.usdPrice({}) === null);
-  const plan = S.planSets([{ id: 'old1', rel: '2001-01-01' }, { id: 'old2', rel: '2003-01-01' }, { id: 'new1', rel: '2026-03-01' }, { id: 'new2', rel: '2026-09-01' }, { id: 'done', rel: '2026-10-01' }, { id: 'bad id', rel: '' }],
-    { day: '2026-10-15', last: id => ({ old1: '2026-10-14', old2: '', done: '2026-10-15', new1: '2026-10-14' })[id] || '' });
-  check('planSets: skips saved-today, recent sets first, then stalest', JSON.stringify(plan) === '["new2","new1","old2","old1"]', plan);
+  const tp = (o) => ({ pricing: { tcgplayer: { updated: '2026-11-05', unit: 'USD', ...o } } });
+  check('usdPrice (TCGdex): first variant with market, else mid; ignores non-variant fields', S.usdPrice(tp({ normal: { midPrice: 0.5 }, holofoil: { marketPrice: 3 } })) === 0.5 && S.usdPrice(tp({ holofoil: { marketPrice: 2.345 } })) === 2.35 && S.usdPrice(tp({ normal: { marketPrice: 0, midPrice: null } })) === null && S.usdPrice({}) === null && S.usdPrice(null) === null);
+  const plan = S.planSets([{ id: 'old1', rel: '2001-01-01' }, { id: 'old2', rel: '2003-01-01' }, { id: 'oldwk', rel: '2004-01-01' }, { id: 'new1', rel: '2026-03-01' }, { id: 'new2', rel: '2026-09-01' }, { id: 'done', rel: '2026-10-01' }, { id: 'bad id', rel: '' }],
+    { day: '2026-10-15', last: id => ({ old1: '2026-10-08', old2: '', oldwk: '2026-10-10', done: '2026-10-15', new1: '2026-10-14' })[id] || '' });
+  check('planSets: recent sets daily (skip saved today), older sets weekly, recent first then stalest', JSON.stringify(plan) === '["new2","new1","old2","old1"]', plan);
   check('setOf keeps dashes inside set ids', S.setOf('sv3pt5-1') === 'sv3pt5' && S.setOf('swsh12pt5gg-GG01') === 'swsh12pt5gg');
+  check('cardIds: pokemontcg.io sets via the ID map, TCGdex-added sets by their own IDs', JSON.stringify(S.cardIds({ id: 'sv1', cards: [['1']] }, { sets: { sv1: { id: 'sv01', cards: { 1: 'sv01-001' } } } })) === '{"sv1-1":"sv01-001"}' && JSON.stringify(S.cardIds({ id: 'me06', src: 'tcgdex', cards: [['004']] }, null)) === '{"me06-004":"me06-004"}');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-prices-'));
-  const cards = Array.from({ length: 6 }, (_, i) => ({ id: (i < 4 ? 'sv1-' : 'me2-') + (i + 1), tcgplayer: i === 5 ? undefined : { prices: { normal: { market: i + 1 } } } }));
-  // fake API: /sets lists sv1 + me2 + bad1; /cards?q=set.id:X pages 2 per page; bad1 always 502s; me2 fails once (then retried)
-  let me2Fails = 0;
-  const fake = (list, opts = {}) => async url => {
-    const u = new URL(url), sp = u.searchParams;
-    if (u.pathname.endsWith('/sets')) return { ok: true, json: async () => ({ data: [{ id: 'bad1' }, { id: 'me2' }, { id: 'sv1' }] }) };
-    const set = sp.get('q').split(':')[1], page = +sp.get('page');
-    if (set === 'bad1' || (set === 'me2' && opts.flaky && me2Fails++ < 5)) return { ok: false, status: 502 };
-    const all = list.filter(c => c.id.startsWith(set + '-'));
-    return { ok: true, json: async () => ({ data: all.slice((page - 1) * 250, page * 250), totalCount: all.length }) };
+  // our data: sv1 (4 cards, recent), me2 (2 cards, recent), bad1 (always fails), tdx1 (added from TCGdex)
+  fs.writeFileSync(path.join(dir, 'tcg.json'), JSON.stringify([
+    { id: 'sv1', releaseDate: '2026-01-01', cards: [['1'], ['2'], ['3'], ['4']] }, { id: 'me2', releaseDate: '2026-02-01', cards: [['5'], ['6']] },
+    { id: 'bad1', releaseDate: '2026-03-01', cards: [['1']] }, { id: 'tdx1', src: 'tcgdex', releaseDate: '2026-10-01', cards: [['007']] }, { id: 'nomap', releaseDate: '2026-04-01', cards: [['1']] }]));
+  fs.writeFileSync(path.join(dir, 'map.json'), JSON.stringify({ sets: { sv1: { id: 'sv01', cards: { 1: 'sv01-001', 2: 'sv01-002', 3: 'sv01-003', 4: 'sv01-004' } }, me2: { id: 'me02', cards: { 5: 'me02-005', 6: 'me02-006' } }, bad1: { id: 'bad01', cards: { 1: 'bad01-001' } } } }));
+  let me2Fails = 0, calls = [];
+  const fake = (mult, opts = {}) => async url => {
+    const id = decodeURIComponent(new URL(url).pathname.split('/').pop()); calls.push(id);
+    if (id.startsWith('bad01') || (opts.flaky && id.startsWith('me02') && me2Fails++ < 6)) return { ok: false, status: 502 };
+    if (id === 'me02-006') return { ok: true, status: 200, json: async () => ({ id, pricing: { cardmarket: { trend: 3 } } }) }; // no TCGplayer price
+    if (id === 'sv01-004' && opts.gone) return { ok: false, status: 404 };
+    const n = parseInt(id.split('-')[1], 10);
+    return { ok: true, status: 200, json: async () => ({ id, pricing: { tcgplayer: { normal: { marketPrice: n * mult } } } }) };
   };
   const logs = [];
-  const run = (day, mult, list, opts) => S.snapshot({ dir, dataFile: path.join(dir, 'none.json'), now: new Date(day + 'T08:00:00Z'), fetchImpl: fake(list.map(c => c.tcgplayer ? { ...c, tcgplayer: { prices: { normal: { market: c.tcgplayer.prices.normal.market * mult } } } } : c), opts), delay: 0, fast: true, minCards: 3, log: m => logs.push(m) });
-  const r1 = await run('2026-10-30', 1, cards, { flaky: true });
-  check('a failing set is retried, then skipped without failing the run', JSON.stringify(r1.failed) === '["bad1"]' && r1.sets === 2 && logs.some(l => /me2 failed.*will retry/.test(l)) && logs.some(l => /bad1 failed.*skipped today/.test(l)), { r1, logs });
-  await run('2026-10-31', 2, cards);
-  const again = await run('2026-10-31', 3, cards); // same-day rerun: everything already saved today
-  await run('2026-11-01', 1, cards.slice(1)); // sv1-1 no longer listed
+  const run = (day, mult, opts) => S.snapshot({ dir, dataFile: path.join(dir, 'tcg.json'), mapFile: path.join(dir, 'map.json'), now: new Date(day + 'T08:00:00Z'), fetchImpl: fake(mult, opts), retryMs: 0, minCards: 3, log: m => logs.push(m) });
+  const r1 = await run('2026-10-30', 1, { flaky: true });
+  check('a failing set is retried, then skipped without failing the run', JSON.stringify(r1.failed) === '["bad1"]' && r1.sets === 3 && logs.some(l => /me2 failed.*will retry/.test(l)) && logs.some(l => /bad1 failed.*skipped this run/.test(l)), { r1, logs });
+  check('sets with no ID map entry are left out', !calls.some(c => /nomap/.test(c)) && !fs.existsSync(path.join(dir, '2026-10/nomap.json')));
+  await run('2026-10-31', 2);
+  calls = []; const again = await run('2026-10-31', 3); const againCalls = calls.slice(); // same-day rerun: everything already saved today
+  await run('2026-11-01', 1, { gone: true }); // sv01-004 no longer on TCGdex
   const oct = JSON.parse(fs.readFileSync(path.join(dir, '2026-10/sv1.json'), 'utf8'));
   const nov = JSON.parse(fs.readFileSync(path.join(dir, '2026-11/sv1.json'), 'utf8'));
-  check('month file: one column per day; a second run the same day skips saved sets', again.sets === 0 && JSON.stringify(oct.days) === '["2026-10-30","2026-10-31"]' && JSON.stringify(oct.cards['sv1-2']) === '[2,4]', { again, oct });
+  check('month file keyed by our card IDs: one column per day; a second run the same day only retries the set that failed', again.sets === 0 && againCalls.length && againCalls.every(c => c.startsWith('bad01')) && JSON.stringify(oct.days) === '["2026-10-30","2026-10-31"]' && JSON.stringify(oct.cards['sv1-2']) === '[2,4]', { again, againCalls, oct });
   check('mergeDay replaces a column it already has', JSON.stringify(S.mergeDay({ days: ['d1'], cards: { a: [1], b: [2] } }, 'd1', { a: 5 }).cards) === '{"a":[5],"b":[null]}');
-  check('new month starts a new file, past month untouched', JSON.stringify(nov.days) === '["2026-11-01"]' && !nov.cards['sv1-1'] && nov.cards['sv1-3'][0] === 3);
-  const me2 = JSON.parse(fs.readFileSync(path.join(dir, '2026-10/me2.json'), 'utf8'));
-  check('unpriced cards are skipped', !me2.cards['me2-6'] && me2.cards['me2-5'][0] === 5);
+  check('new month starts a new file, past month untouched; a card gone from TCGdex is simply unpriced', JSON.stringify(nov.days) === '["2026-11-01"]' && !nov.cards['sv1-4'] && nov.cards['sv1-3'][0] === 3);
+  const me2 = JSON.parse(fs.readFileSync(path.join(dir, '2026-10/me2.json'), 'utf8')), tdx = JSON.parse(fs.readFileSync(path.join(dir, '2026-10/tdx1.json'), 'utf8'));
+  check('cards without a TCGplayer price are skipped; TCGdex-added sets priced by their own IDs', !me2.cards['me2-6'] && me2.cards['me2-5'][0] === 5 && tdx.cards['tdx1-007'][0] === 7, { me2, tdx });
   const idx = JSON.parse(fs.readFileSync(path.join(dir, 'latest.json'), 'utf8'));
-  check('latest.json lists sets per month', JSON.stringify(idx.months) === '{"2026-10":["me2","sv1"],"2026-11":["me2","sv1"]}', idx);
-  let threw = false; try { await S.snapshot({ dir, dataFile: path.join(dir, 'none.json'), fetchImpl: async u => new URL(u).pathname.endsWith('/sets') ? { ok: true, json: async () => ({ data: [{ id: 'x1' }, { id: 'x2' }, { id: 'x3' }] }) } : { ok: false, status: 502 }, delay: 0, fast: true, log: () => {} }); } catch (e) { threw = /keeping the previous files/.test(e.message); }
-  check('API trouble (most sets fail): refuses to write', threw && fs.readdirSync(dir).length === 3);
+  check('latest.json lists sets per month and names the source', idx.source === 'tcgdex' && JSON.stringify(idx.months) === '{"2026-10":["me2","sv1","tdx1"],"2026-11":["me2","sv1","tdx1"]}', idx);
+  let threw = false; try { await S.snapshot({ dir, dataFile: path.join(dir, 'tcg.json'), mapFile: path.join(dir, 'map.json'), now: new Date('2026-11-02T08:00:00Z'), fetchImpl: async () => ({ ok: false, status: 502 }), retryMs: 0, log: () => {} }); } catch (e) { threw = /keeping the previous files/.test(e.message); }
+  check('TCGdex trouble (most sets fail): refuses to write', threw && !fs.existsSync(path.join(dir, '2026-11', 'x')) && JSON.parse(fs.readFileSync(path.join(dir, '2026-11/sv1.json'), 'utf8')).days.length === 1);
   fs.rmSync(dir, { recursive: true });
 }
 

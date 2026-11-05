@@ -20,7 +20,7 @@ Status (Oct 28, 2026): **owner approved** — prices from TCGdex, TCGdex images 
 ## Phases
 1. **ID map** ✅ built: `scripts/fetch-tcgdex.mjs` → `data/tcg-id-map.json` mapping every pokemontcg.io card/set ID to its TCGdex ID (match sets by name + release date + card count, cards by number; report anything unmatched for hand-fixing).
 2. **Set data** ✅ built: sets newer than the pokemon-tcg-data snapshot are added from TCGdex (`src:"tcgdex"`, cached in `data/tcgdex-sets.json`), so new sets keep getting pages. Their `/tcg?set=` button only works once phase 4 lands.
-3. **Prices** (decision: TCGdex; sets from the last ~2–3 years daily, older sets weekly): new daily snapshot source, writing the same `prices/<month>/<set>.json` format (keyed by TCGdex IDs, old files converted with the ID map so history continues).
+3. **Prices** ✅ built Nov 5, 2026 (`scripts/snapshot-prices.mjs` reads TCGdex; sets from the last 2 years daily, older sets weekly; same files and card IDs, so history continues; `sourceSince` in `prices/latest.json` keeps weekly changes from spanning the switch). Original plan: new daily snapshot source, writing the same `prices/<month>/<set>.json` format (keyed by TCGdex IDs, old files converted with the ID map so history continues).
 4. **App switch**: TCGdex becomes the primary card source (pokemontcg.io becomes backup until it's gone); binders, deep links and price lookups translate old IDs through the map on load (no data loss).
 5. **Cut-over** by mid-February 2027: remove pokemontcg.io from the app, scripts and workflows; update CLAUDE.md guardrails (card images then hotlinked from TCGdex as the main source) and tests.
 

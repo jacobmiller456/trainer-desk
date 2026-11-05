@@ -22,6 +22,10 @@ async function scriptChecks() {
   check('fallers ranked; flat and cheap (<$2) cards left out; cards not priced today left out', m.fallers[0].id === 'zz1-2' && m.fallers[0].pct === -30 && !m.risers.concat(m.fallers).some(r => ['zz1-3', 'zz1-4', 'zz1-5'].includes(r.id)), m);
   check('rows carry name, set name, number, rarity and the hotlinked image URL', m.risers[0].name === 'Card 1' && m.risers[0].setName === 'Test Set' && m.risers[0].num === '1' && m.risers[0].img === 'https://images.pokemontcg.io/zz1/1.png');
   check('movers.json written', fs.existsSync(path.join(dir, 'movers.json')));
+  // the price source changed on Nov 1 (latest.json sourceSince): changes only measured from then -> nothing yet
+  fs.writeFileSync(path.join(dir, 'latest.json'), JSON.stringify({ source: 'tcgdex', sourceSince: '2026-11-01', months: {} }));
+  const m2 = M.run({ dir, dataFile: data, log: () => {} }), w = JSON.parse(fs.readFileSync(path.join(dir, 'movers.json'), 'utf8'));
+  check('after a price-source switch: no fake week-long moves; movers.json says it is waiting', m2 === null && w.waiting === true && w.since === '2026-11-01' && !w.risers.length && !w.fallers.length, w);
   fs.rmSync(dir, { recursive: true });
 }
 
@@ -37,7 +41,7 @@ async function open(b, base, movers = true) {
   const page = await ctx.newPage(); page.errors = []; page.on('pageerror', e => page.errors.push(e.message));
   await page.route('**/*', r => {
     const u = r.request().url(), p = new URL(u).pathname;
-    if (u.startsWith(base) && p === '/prices/movers.json') return movers ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOVERS) }) : r.abort();
+    if (u.startsWith(base) && p === '/prices/movers.json') return movers ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(movers === true ? MOVERS : movers) }) : r.abort();
     if (u.startsWith(base) && p.startsWith('/prices/')) return r.abort();
     if (u.startsWith(base)) return r.continue();
     if (u.startsWith('https://api.pokemontcg.io/v2/sets')) return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify({ data: [{ id: 'other', name: 'Other Set', releaseDate: '2026/02/01' }, { id: 'zz1', name: 'Test Set', releaseDate: '2026/01/01' }] }) });
@@ -70,6 +74,9 @@ async function open(b, base, movers = true) {
   await page.waitForFunction(() => document.getElementById('card-detail').open, null, { timeout: 10000 });
   check('tapping a mover switches to that set and opens the card detail', /Card 2/.test(await page.textContent('#cdd-body')) && (await page.inputValue('#set-select')) === 'zz1' && !(await page.$eval('#tcg-browse', e => e.hidden)));
   const errs = page.errors; await ctx.close();
+  ({ ctx, page } = await open(b, base, { updated: '2026-11-05', window: 7, minPrice: 2, considered: 0, waiting: true, since: '2026-11-05', risers: [], fallers: [] }));
+  check('just after the price source changed: explains the wait instead of an empty list', /Card prices now come from TCGdex \(since Nov 5\)/.test(await page.textContent('#mv-list')), await page.textContent('#mv-list'));
+  await ctx.close();
   ({ ctx, page } = await open(b, base, false));
   check('offline: friendly message, not a blank list', /couldn't load/.test(await page.textContent('#mv-intro')));
   check('no uncaught JS errors', !errs.length && !page.errors.length, errs.concat(page.errors));

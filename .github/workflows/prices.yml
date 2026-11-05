@@ -1,12 +1,12 @@
 name: Daily card price snapshot
 
-# Daily (in up to three runs): save every card's TCGplayer market price (from pokemontcg.io) into prices/<month>/<set>.json for the
-# price-history sparklines on card backs, then commit (the push to main redeploys the site). Can also be run by hand.
-# Optional repo secret POKEMONTCG_API_KEY raises the API's rate limit; without it the job just runs slower.
+# Daily (in up to three runs): save TCGplayer market prices from TCGdex into prices/<month>/<set>.json (recent sets daily,
+# older sets weekly; see scripts/snapshot-prices.mjs) for the price charts, price movers and the set pages' most valuable
+# cards, rebuild the set pages, then commit (the push to main redeploys the site). Can also be run by hand.
 on:
   schedule:
-    - cron: '41 7 * * *'   # three runs each morning (UTC): without an API key one run covers ~95 sets in its 40 minutes;
-    - cron: '41 8 * * *'   # each run skips sets already saved today, so together they cover every set
+    - cron: '41 7 * * *'   # three runs each morning (UTC); each skips sets that are already up to date, so a slow or
+    - cron: '41 8 * * *'   # interrupted run is finished by the next one
     - cron: '41 9 * * *'
   workflow_dispatch:
 
@@ -27,8 +27,6 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/snapshot-prices.mjs
-        env:
-          POKEMONTCG_API_KEY: ${{ secrets.POKEMONTCG_API_KEY }}
       - run: node scripts/price-movers.mjs   # weekly risers/fallers for the TCG tab (prices/movers.json)
       - run: node scripts/build-pages.mjs    # set pages show each set's most valuable cards from these prices
       - name: Commit changes

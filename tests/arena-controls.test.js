@@ -36,7 +36,7 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   check('pad shows during a match: 136px, left of a still-wide SPECIAL button, fits 375px', padBox.w === 136 && padBox.h === 136 && padBox.pRight <= padBox.sLeft && padBox.sw >= 150 && padBox.overflow <= 0, padBox);
   const padDrag = async (fx, fy) => { const bb = await page.locator('#arena-pad').boundingBox(); const cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2;
     await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx + fx * 42, cy + fy * 42, { steps: 3 });
-    const moved = await page.evaluate(() => { const A = window.__arena, p = A.fighters[0]; p.x = 120; p.y = 320; const x0 = p.x, y0 = p.y; for (let i = 0; i < 10; i++) A.step(0.05); return { dx: p.x - x0, dy: p.y - y0, full: p.speed * 0.5 }; });
+    const moved = await page.evaluate(() => { const A = window.__arena, p = A.fighters[0]; p.x = 120; p.y = 320; const x0 = p.x, y0 = p.y; for (let i = 0; i < 10; i++) { p.boost = 0; A.step(0.05); } /* a random speed pickup would skew the measurement */ return { dx: p.x - x0, dy: p.y - y0, full: p.speed * 0.5 }; });
     await page.mouse.up(); return moved; };
   await freeze();
   const full = await padDrag(1.3, 0), half = await padDrag(0.5, 0), tiny = await padDrag(0.08, 0), up = await padDrag(0, -1.3);

@@ -20,6 +20,7 @@ const SHOW_SPRITES = /const SHOW_SPRITES=true/.test(indexHtml);
 // Daily TCGplayer market prices (USD) saved by prices.yml, for each set page's "most valuable cards" list.
 // prices.yml rebuilds the pages after each save, so --check stays deterministic.
 const priceHist = fs.existsSync(path.join(root, 'prices')) ? loadHistory(path.join(root, 'prices')) : {};
+let priceSince = ''; try { priceSince = JSON.parse(fs.readFileSync(path.join(root, 'prices/latest.json'), 'utf8')).sourceSince || ''; } catch (e) {} // weekly changes only within one price source
 const priceDay = Object.values(priceHist).reduce((m, pts) => (pts.length && pts[pts.length - 1][0] > m ? pts[pts.length - 1][0] : m), '');
 // Last day any saved price actually moved: the source can stop refreshing (pokemontcg.io froze its prices on Oct 16, 2026),
 // so pages say when prices last changed rather than claiming they're current.
@@ -235,15 +236,15 @@ function cardsSection(p) {
 }
 const dayShift = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const usd = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-// The set's priciest cards on the latest saved day (cards not priced in the last 3 days are left out), with the change
+// The set's priciest cards on the latest saved day (cards not priced in the last 8 days are left out; older sets are priced weekly), with the change
 // over about a week when there's at least 5 days of history.
 export function topCards(s, hist = priceHist, day = priceDay, n = 10) {
   if (!day) return [];
-  const fresh = dayShift(day, -3), wk = dayShift(day, -7), rows = [], seen = new Set();
+  const fresh = dayShift(day, -8), wk = dayShift(day, -7), rows = [], seen = new Set();
   for (const c of s.cards) {
     const id = `${s.id}-${c[0]}`, pts = hist[id]; if (!pts || !pts.length || seen.has(id)) continue; seen.add(id);
     const last = pts[pts.length - 1]; if (last[0] < fresh) continue;
-    const start = pts.find(p => p[0] >= wk), span = start ? (Date.parse(last[0]) - Date.parse(start[0])) / 864e5 : 0;
+    const start = pts.find(p => p[0] >= wk && p[0] >= priceSince), span = start ? (Date.parse(last[0]) - Date.parse(start[0])) / 864e5 : 0;
     rows.push({ c, id, price: last[1], pct: span >= 5 ? Math.round((last[1] - start[1]) / start[1] * 100) : null });
   }
   return rows.sort((a, b) => b.price - a.price || (parseInt(a.c[0], 10) || 0) - (parseInt(b.c[0], 10) || 0)).slice(0, n);

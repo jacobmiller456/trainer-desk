@@ -26,7 +26,8 @@ export function loadHistory(dir) {
 }
 
 // minPrice: ignore cards under this at both ends (cheap cards swing wildly in % terms). window: days to look back.
-export function computeMovers(hist, cardInfo, { window = 7, minPrice = 2, top = 40, minDays = 3 } = {}) {
+// since: ignore points before this day (the day the price source changed; see snapshot-prices.mjs sourceSince).
+export function computeMovers(hist, cardInfo, { window = 7, minPrice = 2, top = 40, minDays = 3, since = '' } = {}) {
   let latest = '';
   for (const pts of Object.values(hist)) if (pts.length && pts[pts.length - 1][0] > latest) latest = pts[pts.length - 1][0];
   if (!latest) return null;
@@ -34,7 +35,7 @@ export function computeMovers(hist, cardInfo, { window = 7, minPrice = 2, top = 
   const rows = [];
   for (const [id, pts] of Object.entries(hist)) {
     const end = pts[pts.length - 1]; if (end[0] !== latest) continue;          // must be priced today
-    const start = pts.find(p => p[0] >= from); if (!start || start[0] === latest) continue;
+    const start = pts.find(p => p[0] >= from && p[0] >= since); if (!start || start[0] === latest) continue;
     const span = Math.round((Date.parse(latest) - Date.parse(start[0])) / DAY); if (span < minDays) continue;
     if (Math.max(start[1], end[1]) < minPrice || Math.min(start[1], end[1]) <= 0) continue;
     const info = cardInfo[id]; if (!info) continue;
@@ -60,8 +61,14 @@ export function cardInfoFrom(tcg) {
 export function run({ dir = path.join(root, 'prices'), dataFile = path.join(root, 'data/tcg.json'), log = console.log } = {}) {
   const hist = loadHistory(dir);
   const info = cardInfoFrom(JSON.parse(fs.readFileSync(dataFile, 'utf8')));
-  const m = computeMovers(hist, info);
-  if (!m || !m.considered) { log('not enough price history for movers yet'); return null; }
+  let since = ''; try { since = JSON.parse(fs.readFileSync(path.join(dir, 'latest.json'), 'utf8')).sourceSince || ''; } catch (e) {}
+  const m = computeMovers(hist, info, { since });
+  if (!m || !m.considered) {
+    // not enough history (e.g. just after the price source changed): say so rather than leaving last month's list up
+    const latest = Object.values(hist).reduce((x, pts) => (pts.length && pts[pts.length - 1][0] > x ? pts[pts.length - 1][0] : x), '');
+    fs.writeFileSync(path.join(dir, 'movers.json'), JSON.stringify({ updated: latest, window: 7, minPrice: 2, considered: 0, waiting: true, since, risers: [], fallers: [] }) + '\n');
+    log('not enough price history for movers yet; wrote an empty list'); return null;
+  }
   fs.writeFileSync(path.join(dir, 'movers.json'), JSON.stringify(m) + '\n');
   log(`movers ${m.updated}: ${m.risers.length} risers, ${m.fallers.length} fallers from ${m.considered} cards`);
   return m;

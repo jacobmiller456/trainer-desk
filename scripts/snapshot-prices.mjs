@@ -1,22 +1,26 @@
-// Daily price snapshot for the card price-history sparklines. Reads every card's TCGplayer market price from the
-// pokemontcg.io API (the same prices the TCG tab shows live) and appends today's value to one file per set per month:
+// Daily price snapshot for the card price-history sparklines, price movers and the set pages' most valuable cards.
+// Reads each card's TCGplayer market price from TCGdex (api.tcgdex.net; free, no key) and appends it to one file per set
+// per month, keyed by the site's card IDs (pokemontcg.io IDs, translated with data/tcg-id-map.json; sets added from
+// TCGdex use their own IDs):
 //   prices/<YYYY-MM>/<setId>.json = {"days":["2026-10-15",...],"cards":{"<cardId>":[1.23,null,...]}}
 //   prices/latest.json            = {"updated":"<ISO time>","months":{"<YYYY-MM>":["<setId>",...]}}
-// Past months are never rewritten, so the repo only grows by one column a day. Prices only (numbers), no card text.
-// Fetched one set at a time; a set that keeps failing is skipped for the day (a gap in its line, not a failed job).
-// Run daily by .github/workflows/prices.yml, or: node scripts/snapshot-prices.mjs   (optional env: POKEMONTCG_API_KEY)
+// Sets released in the last 2 years are priced daily, older sets weekly (about 5,000 card lookups a day, 4 at a time,
+// since TCGdex has no bulk price endpoint and no published rate limit). Until Nov 2026 this read pokemontcg.io, which
+// stopped refreshing prices on Oct 16, 2026 (docs/tcg-migration.md); the files and IDs are unchanged, so history continues.
+// Past months are never rewritten. Prices only (numbers), no card text. A set that keeps failing is skipped for the day.
+// Run by .github/workflows/prices.yml, or: node scripts/snapshot-prices.mjs
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const API = 'https://api.pokemontcg.io/v2';
+export const TCGDEX = 'https://api.tcgdex.net/v2/en';
 const pos = v => (typeof v === 'number' && isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : null);
 
-// Same rule as cardPrice() in index.html, USD only: first variant with a market (else mid) price.
-export function usdPrice(c) {
-  const tp = c && c.tcgplayer && c.tcgplayer.prices; if (!tp) return null;
-  for (const v of Object.keys(tp)) { const n = tp[v] && (pos(tp[v].market) ?? pos(tp[v].mid)); if (n != null) return n; }
+// Same rule as the TCG tab's TCGdex prices (index.html): first TCGplayer variant with a market (else mid) price, USD.
+export function usdPrice(card) {
+  const tp = card && card.pricing && card.pricing.tcgplayer; if (!tp || typeof tp !== 'object') return null;
+  for (const k of Object.keys(tp)) { const v = tp[k]; const n = v && typeof v === 'object' ? (pos(v.marketPrice) ?? pos(v.midPrice)) : null; if (n != null) return n; }
   return null;
 }
 export const setOf = id => id.slice(0, id.lastIndexOf('-'));
@@ -38,75 +42,80 @@ export function mergeDay(file, day, prices) {
 export const stringify = f => '{"days":' + JSON.stringify(f.days) + ',"cards":{\n' +
   Object.keys(f.cards).sort().map(id => JSON.stringify(id) + ':' + JSON.stringify(f.cards[id])).join(',\n') + '\n}}\n';
 
-async function getJSON(url, { key, fetchImpl, tries = 3 }) {
-  for (let a = 1; a <= tries; a++) {
-    try {
-      const r = await fetchImpl(url, { headers: key ? { 'X-Api-Key': key } : {}, signal: AbortSignal.timeout(60000) });
-      if (!r.ok) throw new Error(r.status);
-      return await r.json();
-    } catch (e) { if (a === tries) throw e; await new Promise(res => setTimeout(res, Math.min(60000, 4000 * 2 ** (a - 1)) * backoffScale)); }
-  }
+// Which sets to price this run: sets released in the last 2 years if not saved today; older sets once a week (not saved in
+// the last 6 days). Recent first, then the longest-unsaved, so the three runs a day (prices.yml) share out the work.
+export function planSets(list, { day, last }) {
+  const recentFrom = String(+day.slice(0, 4) - 2) + day.slice(4);
+  const weekAgo = new Date(Date.parse(day + 'T00:00:00Z') - 6 * 864e5).toISOString().slice(0, 10);
+  return list.filter(s => /^[a-z0-9.]+$/i.test(s.id))
+    .map(s => ({ ...s, recent: s.rel >= recentFrom ? 1 : 0, last: last(s.id) }))
+    .filter(s => s.recent ? s.last !== day : s.last <= weekAgo)
+    .sort((a, b) => b.recent - a.recent || a.last.localeCompare(b.last) || b.rel.localeCompare(a.rel))
+    .map(s => s.id);
 }
-let backoffScale = 1; // tests set this to 0
+// Our card ID -> TCGdex card ID for one set: from the ID map (pokemontcg.io sets), or the set's own IDs (sets added from TCGdex).
+export function cardIds(set, idMap) {
+  const out = {};
+  if (set.src === 'tcgdex') for (const c of set.cards || []) out[`${set.id}-${c[0]}`] = `${set.id}-${c[0]}`;
+  else { const m = idMap && idMap.sets && idMap.sets[set.id]; if (m) for (const [num, tid] of Object.entries(m.cards || {})) out[`${set.id}-${num}`] = tid; }
+  return out;
+}
 
-// Sets with release dates: from data/tcg.json (refreshed weekly) when present, else from the API (newest last).
-async function setList(opts, dataFile) {
-  try { const l = JSON.parse(fs.readFileSync(dataFile, 'utf8')).filter(s => s && s.id).map(s => ({ id: s.id, rel: s.releaseDate || '' })); if (l.length > 100) return l; } catch (e) {}
-  const j = await getJSON(`${API}/sets?pageSize=250&select=id,releaseDate`, opts);
-  return (j.data || []).map(s => ({ id: s.id, rel: (s.releaseDate || '').replace(/\//g, '-') }));
-}
 // Last day a set was saved (this month or last), '' if never.
 function lastSaved(dir, id, month, prevMonth) {
   for (const m of [month, prevMonth]) { try { const d = JSON.parse(fs.readFileSync(path.join(dir, m, id + '.json'), 'utf8')).days; if (d && d.length) return d[d.length - 1]; } catch (e) {} }
   return '';
 }
-// Order for one run: skip sets already saved today; sets released in the last 2 years first (most looked at), then the
-// rest by how long since they were last saved, so a few runs a day (see prices.yml) cover every set.
-export function planSets(list, { day, last }) {
-  const recentFrom = String(+day.slice(0, 4) - 2) + day.slice(4);
-  return list.filter(s => /^[a-z0-9.]+$/i.test(s.id) && last(s.id) !== day)
-    .map(s => ({ ...s, recent: s.rel >= recentFrom ? 1 : 0, last: last(s.id) }))
-    .sort((a, b) => b.recent - a.recent || a.last.localeCompare(b.last) || b.rel.localeCompare(a.rel))
-    .map(s => s.id);
+async function pool(items, n, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) { const k = i++; await fn(items[k], k); } }));
 }
 
-// One set per request (like the site itself): a bad set is retried at the end and then skipped, not fatal.
-export async function snapshot({ dir = path.join(root, 'prices'), dataFile = path.join(root, 'data/tcg.json'), now = new Date(), key = process.env.POKEMONTCG_API_KEY, fetchImpl = fetch, delay, minCards = 5000, log = console.log, fast = false, budgetMs = 40 * 60e3 } = {}) {
+export async function snapshot({ dir = path.join(root, 'prices'), dataFile = path.join(root, 'data/tcg.json'), mapFile = path.join(root, 'data/tcg-id-map.json'),
+  now = new Date(), fetchImpl = fetch, log = console.log, retryMs = 3000, concurrency = 4, budgetMs = 40 * 60e3, minCards = 1000 } = {}) {
   const stopAt = Date.now() + budgetMs; // stop starting new sets after this, and save what we have
-  backoffScale = fast ? 0 : 1;
-  const wait = delay ?? (key ? 300 : 2100); // no key: the API allows ~30 requests a minute
-  const opts = { key, fetchImpl };
+  const getJSON = async url => {
+    for (let a = 1; ; a++) {
+      try { const r = await fetchImpl(url, { signal: AbortSignal.timeout(30000) }); if (r.status === 404) return null; if (!r.ok) throw new Error(r.status); return await r.json(); }
+      catch (e) { if (a >= 3) throw e; await new Promise(res => setTimeout(res, retryMs * a)); }
+    }
+  };
+  const sets = JSON.parse(fs.readFileSync(dataFile, 'utf8')).filter(s => s && s.id);
+  let idMap = null; try { idMap = JSON.parse(fs.readFileSync(mapFile, 'utf8')); } catch (e) {}
+  if (!idMap) log('::warning::data/tcg-id-map.json missing; only sets added from TCGdex can be priced');
   const day = now.toISOString().slice(0, 10), month = day.slice(0, 7);
   const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)).toISOString().slice(0, 7);
-  const all = await setList(opts, dataFile);
-  const ids = planSets(all, { day, last: id => lastSaved(dir, id, month, prev) });
-  log(`${ids.length} of ${all.length} sets to fetch today`);
-  if (!ids.length) { log('every set is already saved today'); return { priced: 0, sets: 0, failed: [] }; }
-  const bySet = {};
-  let priced = 0, failed = [];
+  const byId = new Map(sets.map(s => [s.id, s]));
+  // First run after the switch from pokemontcg.io: every set is due once (today's frozen pokemontcg.io column gets replaced).
+  let prevIdx = {}; try { prevIdx = JSON.parse(fs.readFileSync(path.join(dir, 'latest.json'), 'utf8')); } catch (e) {}
+  const switching = prevIdx.source !== 'tcgdex';
+  const ids = planSets(sets.filter(s => Object.keys(cardIds(s, idMap)).length).map(s => ({ id: s.id, rel: s.releaseDate || '' })), { day, last: id => (switching ? '' : lastSaved(dir, id, month, prev)) });
+  if (switching) log('first TCGdex run: pricing every set once');
+  log(`${ids.length} of ${sets.length} sets to price this run`);
+  if (!ids.length) { log('every set is up to date'); return { priced: 0, sets: 0, failed: [] }; }
+
   const fetchSet = async id => {
-    const out = {};
-    for (let page = 1; ; page++) {
-      const j = await getJSON(`${API}/cards?q=set.id:${id}&page=${page}&pageSize=250&select=id,tcgplayer`, opts);
-      const data = Array.isArray(j && j.data) ? j.data : [];
-      for (const c of data) { const v = usdPrice(c); if (v != null && c.id) out[c.id] = v; }
-      if (!data.length || page * 250 >= (j.totalCount || 0)) break;
-      await new Promise(res => setTimeout(res, wait));
-    }
+    const want = Object.entries(cardIds(byId.get(id), idMap)), out = {}; let errors = 0;
+    await pool(want, concurrency, async ([ours, theirs]) => {
+      try { const j = await getJSON(`${TCGDEX}/cards/${encodeURIComponent(theirs)}`); const v = usdPrice(j); if (v != null) out[ours] = v; }
+      catch (e) { errors++; }
+    });
+    if (errors > want.length / 2) throw new Error(`${errors} of ${want.length} lookups failed`);
     return out;
   };
+  const bySet = {}; let priced = 0, failed = [], tried = 0;
   for (const round of [ids, null]) {
     const list = round || failed; if (!round) failed = [];
     for (const id of list) {
-      if (Date.now() > stopAt) { log(`time budget used up; ${list.length - list.indexOf(id)} sets not fetched today`); break; }
+      if (Date.now() > stopAt) { log(`time budget used up; ${list.length - list.indexOf(id)} sets left for the next run`); break; }
+      if (round) tried++;
       try { const p = await fetchSet(id); if (Object.keys(p).length) { bySet[id] = p; priced += Object.keys(p).length; } }
-      catch (e) { failed.push(id); log(`set ${id} failed (${e.message})${round ? ', will retry' : ', skipped today'}`); }
-      await new Promise(res => setTimeout(res, wait));
+      catch (e) { failed.push(id); log(`set ${id} failed (${e.message})${round ? ', will retry' : ', skipped this run'}`); }
     }
     if (!failed.length) break;
   }
-  // API trouble: most sets failed, or a big run came back nearly empty. Fail the job (visible in Actions) and write nothing.
-  if ((failed.length > 1 && failed.length >= ids.length / 2) || (ids.length >= 50 && priced < minCards)) throw new Error(`only ${priced} priced cards (${failed.length} of ${ids.length} sets failed); keeping the previous files`);
+  // TCGdex trouble: most sets failed, or a big run came back nearly empty. Fail the job (visible in Actions) and write nothing.
+  if ((failed.length > 1 && failed.length >= tried / 2) || (tried >= 20 && priced < minCards)) throw new Error(`only ${priced} priced cards (${failed.length} of ${tried} sets failed); keeping the previous files`);
   if (!priced) { log(`no prices fetched this run${failed.length ? ` (${failed.join(' ')} failed)` : ''}`); return { priced: 0, sets: 0, failed }; }
   fs.mkdirSync(path.join(dir, month), { recursive: true });
   for (const [set, prices] of Object.entries(bySet)) {
@@ -117,8 +126,11 @@ export async function snapshot({ dir = path.join(root, 'prices'), dataFile = pat
   const months = {};
   for (const m of fs.readdirSync(dir).filter(m => /^\d{4}-\d{2}$/.test(m)).sort())
     months[m] = fs.readdirSync(path.join(dir, m)).filter(f => f.endsWith('.json')).map(f => f.slice(0, -5)).sort();
-  fs.writeFileSync(path.join(dir, 'latest.json'), JSON.stringify({ updated: now.toISOString(), months }) + '\n');
-  log(`prices ${day}: ${priced} priced cards in ${Object.keys(bySet).length} of ${ids.length} sets fetched this run${failed.length ? `, ${failed.length} skipped: ${failed.join(' ')}` : ''}`);
+  // sourceSince: first day saved from TCGdex. Weekly changes (movers, set pages) are only measured from then on, so the switch
+  // from pokemontcg.io's frozen October prices doesn't show up as one week's movement.
+  const sourceSince = prevIdx.source === 'tcgdex' && prevIdx.sourceSince ? prevIdx.sourceSince : day;
+  fs.writeFileSync(path.join(dir, 'latest.json'), JSON.stringify({ updated: now.toISOString(), source: 'tcgdex', sourceSince, months }) + '\n');
+  log(`prices ${day}: ${priced} priced cards in ${Object.keys(bySet).length} of ${tried} sets this run${failed.length ? `, ${failed.length} skipped: ${failed.join(' ')}` : ''}`);
   return { priced, sets: Object.keys(bySet).length, failed };
 }
 
