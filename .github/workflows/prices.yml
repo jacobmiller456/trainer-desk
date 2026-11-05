@@ -30,9 +30,10 @@ jobs:
         env:
           POKEMONTCG_API_KEY: ${{ secrets.POKEMONTCG_API_KEY }}
       - run: node scripts/price-movers.mjs   # weekly risers/fallers for the TCG tab (prices/movers.json)
+      - run: node scripts/build-pages.mjs    # set pages show each set's most valuable cards from these prices
       - name: Commit changes
         run: |
-          git add -A prices
+          git add -A prices tcg sitemap.xml
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git config user.name "trainer-desk-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

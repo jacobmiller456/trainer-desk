@@ -66,6 +66,19 @@ footer a{ color:var(--gold); }
 .setlist small{ color:var(--ink-soft); font-size:13px; margin:0; }
 
 /* Dark mode: follows the device setting (the main app also has a toggle). */
+/* most valuable cards (set pages) */
+.top-cards{ list-style:none; margin:0; padding:0; counter-reset:tc; }
+.top-cards li{ display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px solid rgba(27,67,50,.15); counter-increment:tc; }
+.top-cards li:first-child{ border-top:0; }
+.top-cards li::before{ content:counter(tc); flex:0 0 22px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink-soft); text-align:right; }
+.top-cards a{ display:flex; align-items:center; gap:10px; flex:1; min-width:0; min-height:44px; color:inherit; text-decoration:none; }
+.top-cards img, .top-cards .noimg{ flex:0 0 44px; width:44px; height:auto; aspect-ratio:245/342; border-radius:3px; background:var(--parchment-2); }
+.top-cards .tc-name{ min-width:0; font-weight:700; overflow-wrap:anywhere; }
+.top-cards .tc-name small{ display:block; font-weight:400; font-size:13px; color:var(--ink-soft); }
+.top-cards .tc-price{ flex:0 0 auto; text-align:right; font-weight:800; font-variant-numeric:tabular-nums; }
+.top-cards .tc-price small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); }
+.top-cards .up{ color:#1E7A46 !important; } .top-cards .down{ color:#B3261E !important; }
+.box .note{ font-size:14px; color:var(--ink-soft); margin:0 0 8px; }
 @media (prefers-color-scheme: dark){
   :root{ --ink:#E4EEE7; --ink-soft:rgba(228,238,231,.70); color-scheme:dark; }
   body{ background:linear-gradient(180deg,#07130D,#0E2117 55%,#143022); background-attachment:fixed; }
@@ -77,6 +90,9 @@ footer a{ color:var(--gold); }
   .stats .bar span{ background:var(--meadow); }
   .stats .total th, .stats .total .v{ border-top-color:#A8E6C1; }
   .links a{ background:#1C2822; }
+  .top-cards li{ border-top-color:rgba(228,238,231,.12); }
+  .top-cards img, .top-cards .noimg{ background:#26352D; }
+  .top-cards .up{ color:#7BE0A4 !important; } .top-cards .down{ color:#FF8F86 !important; }
 }
 
 /* GO event guide pages (go/*.html) */

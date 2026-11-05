@@ -125,6 +125,8 @@ Solo battle-royale minigame on a `<canvas>` (single page, no backend). Pick a fi
 - **How:** `scripts/fetch-pokedex-data.mjs` (PokéAPI's open CSV data → `data/pokedex.json`) and `scripts/fetch-tcg-data.mjs` (github.com/PokemonTCG/pokemon-tcg-data → `data/tcg.json`), then `scripts/build-pages.mjs` writes `pokedex/`, `tcg/` and `sitemap.xml` (`npm run data` does all three; `npm run static-pages` only rebuilds). Generated files are committed and served as-is (`cleanUrls`); stale pages are removed on rebuild. `.github/workflows/refresh-data.yml` refreshes both datasets every Monday and commits changes, which redeploys.
 - **Tests:** `tests/pokedex-pages.test.js` and `tests/tcg-pages.test.js` (up to date, facts, links, title/description limits, 320px layout, the `?set=` deep link).
 
+- **Most valuable cards** (set pages): top 10 by the latest saved TCGplayer market price from `prices/` (`topCards()` in `scripts/build-pages.mjs`; cards not priced in the last 3 days are left out; ▲/▼ weekly change only when a price moved), each linking to the card in the live app (`/tcg?set=&card=`), images hotlinked. The note gives the date prices last actually changed (`priceChanged`), not "updated daily": pokemontcg.io stopped refreshing prices on Oct 16, 2026. `prices.yml` and `event-pages.yml` rebuild and commit `tcg/` so the pages never go stale. Covered by `tests/tcg-pages.test.js`.
+
 ## Network resilience
 
 All `fetch()` calls go through `fetchWithTimeout()` (6s default AbortController; the TCG calls use 12s/15s because pokemontcg.io is slow

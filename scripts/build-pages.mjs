@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadHistory } from './price-movers.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = 'https://www.trainerdesk.net';
@@ -16,6 +17,13 @@ const dex = JSON.parse(fs.readFileSync(path.join(root, 'data/pokedex.json'), 'ut
 const tcg = JSON.parse(fs.readFileSync(path.join(root, 'data/tcg.json'), 'utf8'));
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const SHOW_SPRITES = /const SHOW_SPRITES=true/.test(indexHtml);
+// Daily TCGplayer market prices (USD) saved by prices.yml, for each set page's "most valuable cards" list.
+// prices.yml rebuilds the pages after each save, so --check stays deterministic.
+const priceHist = fs.existsSync(path.join(root, 'prices')) ? loadHistory(path.join(root, 'prices')) : {};
+const priceDay = Object.values(priceHist).reduce((m, pts) => (pts.length && pts[pts.length - 1][0] > m ? pts[pts.length - 1][0] : m), '');
+// Last day any saved price actually moved: the source can stop refreshing (pokemontcg.io froze its prices on Oct 16, 2026),
+// so pages say when prices last changed rather than claiming they're current.
+const priceChanged = Object.values(priceHist).reduce((m, pts) => { for (let k = pts.length - 1; k > 0; k--) if (pts[k][1] !== pts[k - 1][1]) return pts[k][0] > m ? pts[k][0] : m; return m; }, '');
 const ROUTES = Function('return ' + indexHtml.match(/const ROUTES=(\{[\s\S]*?\n\});/)[1])();
 
 const REGION = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unova', 6: 'Kalos', 7: 'Alola', 8: 'Galar', 9: 'Paldea' };
@@ -225,6 +233,31 @@ function cardsSection(p) {
   </section>
 `;
 }
+const dayShift = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+const usd = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// The set's priciest cards on the latest saved day (cards not priced in the last 3 days are left out), with the change
+// over about a week when there's at least 5 days of history.
+export function topCards(s, hist = priceHist, day = priceDay, n = 10) {
+  if (!day) return [];
+  const fresh = dayShift(day, -3), wk = dayShift(day, -7), rows = [], seen = new Set();
+  for (const c of s.cards) {
+    const id = `${s.id}-${c[0]}`, pts = hist[id]; if (!pts || !pts.length || seen.has(id)) continue; seen.add(id);
+    const last = pts[pts.length - 1]; if (last[0] < fresh) continue;
+    const start = pts.find(p => p[0] >= wk), span = start ? (Date.parse(last[0]) - Date.parse(start[0])) / 864e5 : 0;
+    rows.push({ c, id, price: last[1], pct: span >= 5 ? Math.round((last[1] - start[1]) / start[1] * 100) : null });
+  }
+  return rows.sort((a, b) => b.price - a.price || (parseInt(a.c[0], 10) || 0) - (parseInt(b.c[0], 10) || 0)).slice(0, n);
+}
+function topCardsBox(s) {
+  const top = topCards(s); if (top.length < 3) return '';
+  const trend = p => !p ? '' : p > 0 ? `<small class="up">▲ ${p}% this week</small>` : `<small class="down">▼ ${-p}% this week</small>`;
+  return `<section class="box">
+    <h2>Most valuable ${esc(s.name)} cards</h2>
+    <p class="note">TCGplayer market prices in US dollars${priceChanged ? `, as last updated by our price source on ${fmtDate(priceChanged)}` : ''}. Market estimates, not offers to sell.</p>
+    <ol class="top-cards">${top.map(({ c, id, price, pct }) => `<li><a href="/tcg?set=${encodeURIComponent(s.id)}&amp;card=${encodeURIComponent(id)}">${c[6] ? `<img src="${esc(c[6])}" alt="" loading="lazy" decoding="async" width="61" height="85">` : '<span class="noimg"></span>'}<span class="tc-name">${esc(c[1])}<small>#${esc(c[0])}${c[2] ? ' · ' + esc(c[2]) : ''}</small></span></a><span class="tc-price">${usd(price)}${trend(pct)}</span></li>`).join('')}</ol>
+  </section>
+`;
+}
 function setPage(s, i) {
   const url = `${SITE}/tcg/${setSlug.get(s.id)}`;
   const n = s.cards.length, secret = Math.max(0, (s.total || n) - (s.printedTotal || 0));
@@ -264,7 +297,7 @@ function setPage(s, i) {
   </section>
   <p class="intro">${esc(intro)}</p>
   <p class="cta"><a class="btn" href="/tcg?set=${encodeURIComponent(s.id)}">See live prices &amp; add cards to your binder</a></p>
-
+  ${topCardsBox(s)}
   <section class="box two">
     <div>
       <h2>Cards by rarity</h2>

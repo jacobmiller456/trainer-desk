@@ -15,6 +15,8 @@ Status (Oct 28, 2026): **owner approved** — prices from TCGdex, TCGdex images 
 | Card IDs in binders, `prices/` files, deep links `/tcg?set=&card=` | pokemontcg.io IDs (e.g. `sv3pt5-199`) | TCGdex IDs differ (e.g. `sv03.5-199`): old binders/links/history won't match |
 | TCG set pages `tcg/<slug>.html`, `data/tcg.json`, pack opener sets | pokemon-tcg-data (GitHub) | new sets missing |
 
+**Update Nov 5, 2026:** pokemontcg.io has stopped refreshing prices: none of the ~19,500 saved card prices has changed since Oct 16, 2026, so sparklines, price movers and the set pages' "most valuable cards" lists are frozen until phase 3 (TCGdex prices) lands. Phase 3 should move ahead of January.
+
 ## Phases
 1. **ID map** ✅ built: `scripts/fetch-tcgdex.mjs` → `data/tcg-id-map.json` mapping every pokemontcg.io card/set ID to its TCGdex ID (match sets by name + release date + card count, cards by number; report anything unmatched for hand-fixing).
 2. **Set data** ✅ built: sets newer than the pokemon-tcg-data snapshot are added from TCGdex (`src:"tcgdex"`, cached in `data/tcgdex-sets.json`), so new sets keep getting pages. Their `/tcg?set=` button only works once phase 4 lands.
