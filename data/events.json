@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-05",
+ "fetchedAt": "2026-11-06",
  "events": [
   {
    "id": "season-24-twilight-trails",
@@ -329,6 +329,15 @@
    "spotlight": null
   },
   {
+   "id": "go-wild-area-gigantamax-machamp-power-up-timed-research",
+   "name": "GO Wild Area: Gigantamax Machamp Power Up! Timed Research",
+   "type": "timed-research",
+   "start": "2026-11-06T10:00:00.000",
+   "end": "2026-11-15T23:59:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
    "id": "pokemon-go-wild-area-2026-mexico-city",
    "name": "Pokémon GO Wild Area 2026: Mexico City",
    "type": "wild-area",
@@ -560,6 +569,15 @@
     ],
     "bonus": "2× Catch Candy"
    }
+  },
+  {
+   "id": "clefable-super-mega-raid-day-2026",
+   "name": "Clefable Super Mega Raid Day",
+   "type": "raid-day",
+   "start": "2026-11-28T14:00:00.000",
+   "end": "2026-11-28T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
   },
   {
    "id": "super-mega-raid-day-november-2026",
