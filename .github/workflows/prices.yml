@@ -31,7 +31,7 @@ jobs:
       - run: node scripts/build-pages.mjs    # set pages show each set's most valuable cards from these prices
       - name: Commit changes
         run: |
-          git add -A prices tcg sitemap.xml
+          git add -A prices tcg sitemap.xml assets/tcg-new-sets.json
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git config user.name "trainer-desk-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

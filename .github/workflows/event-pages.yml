@@ -18,17 +18,18 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: node scripts/fetch-events.mjs
+      - run: node scripts/fetch-tcgdex.mjs   # new sets TCGdex has added (e.g. on release week) reach the TCG tab within a day
       - run: node scripts/build-pages.mjs
       - name: Commit changes
         run: |
-          git add -A data/events.json go tcg sitemap.xml
+          git add -A data go tcg sitemap.xml assets/tcg-new-sets.json
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git config user.name "trainer-desk-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

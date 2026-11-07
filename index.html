@@ -1107,7 +1107,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
 <footer><div class="wrap">
   Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
-  Pokémon and all related names are trademarks of their respective owners. Card data, images and prices via the community Pokémon TCG API. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (it also lists TCGplayer and Cardmarket prices) and, since Nov 2026, the source of the saved daily price history (charts, price movers). GO event schedule and Community Day data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed, sourced from <a href="https://leekduck.com" target="_blank" rel="noopener" style="text-decoration:underline;">LeekDuck</a>. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
+  Pokémon and all related names are trademarks of their respective owners. Card data and images via the community Pokémon TCG API; card prices are TCGplayer market prices saved daily from TCGdex. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (it also lists TCGplayer and Cardmarket prices) and, since Nov 2026, the source of the saved daily price history (charts, price movers). GO event schedule and Community Day data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed, sourced from <a href="https://leekduck.com" target="_blank" rel="noopener" style="text-decoration:underline;">LeekDuck</a>. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
   This site uses Google Analytics (cookies) to count visits, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
 </div></footer>
 
@@ -1673,6 +1673,9 @@ const emptyEl=document.getElementById("tcg-empty");
 const searchEl=document.getElementById("card-search");
 let allCards=[];
 let tcgSource=tcgCacheGet("source")||"ptcg"; // "ptcg" = pokemontcg.io, "tcgdex" = backup; sticks for the session once the primary fails
+// Source of the cards on screen: tcgSource, except sets only TCGdex has (newer than pokemontcg.io's list, from
+// assets/tcg-new-sets.json, built from data/tcg.json by scripts/build-pages.mjs) always load from TCGdex.
+let cardSrc=tcgSource, tcgdexOnly=new Set();
 async function fetchSets(src){
   if(src==="tcgdex"){
     const r=await fetchWithTimeout(`${TCGDEX}/sets`,TCGDEX_TIMEOUT);
@@ -1722,7 +1725,7 @@ function tcgdexPrice(j){
 }
 // Backup-mode status line: "N cards · via TCGdex · prices: X found, Y not listed, Z failed" so a blank price is explainable.
 function updatePriceStatus(){
-  if(tcgSource!=="tcgdex"||!allCards.length) return;
+  if(cardSrc!=="tcgdex"||!allCards.length) return;
   const n=st=>allCards.filter(c=>c.priceState===st).length, ok=n("ok"), none=n("none"), fail=n("fail");
   if(!ok&&!none&&!fail) return;
   statusEl.textContent=allCards.length+" cards · via TCGdex · prices: "+ok+" found, "+none+" not listed"+(fail?", "+fail+" failed":"");
@@ -1774,14 +1777,16 @@ function backInner(c){
   if(c.sample) return `<div class="tb-src">Sample card — no price</div>`;
   if(c.price) return `<div class="tb-price">${esc(fmtPrice(c.price))}</div><div class="tb-src">${esc(c.price.src)} market price</div>${sparkline(c)||(c.price.at?`<div class="tb-date">Updated ${esc(c.price.at)}</div>`:"")}`;
   if(c.priceState==="fail") return `<div class="tb-src">Couldn't load the price</div><div class="tb-date">Flip again to retry</div>`;
-  if(tcgSource==="tcgdex"&&c.priceState===undefined) return `<div class="tb-src">Loading price…</div>`;
+  if(cardSrc==="tcgdex"&&c.priceState===undefined) return `<div class="tb-src">Loading price…</div>`;
   return `<div class="tb-src">No price listed</div>`;
 }
 /* ---- Price history sparklines: daily TCGplayer prices saved by .github/workflows/prices.yml into prices/<month>/<set>.json.
    Only for the main source (pokemontcg.io card ids); quietly absent if the files can't load. ---- */
 const PRICE_HIST_MONTHS=3; let priceHistIndex=null; const priceHist=new Map(); // card id -> [[day, usd], ...]
+// The latest saved price (TCGdex, refreshed every morning by prices.yml) replaces the card source's own price, which for
+// pokemontcg.io has been frozen since Oct 16, 2026; cards the daily saves don't cover keep the source's price.
 async function loadPriceHistory(setId){
-  if(tcgSource!=="ptcg"||!setId||setId==="sample"||location.protocol==="file:") return;
+  if(!setId||setId==="sample"||location.protocol==="file:") return;
   try{
     if(!priceHistIndex){ const r=await fetchWithTimeout("prices/latest.json",6000); if(!r.ok) throw new Error(r.status); priceHistIndex=await r.json(); }
     const months=Object.keys(priceHistIndex.months||{}).sort().filter(m=>(priceHistIndex.months[m]||[]).includes(setId)).slice(-PRICE_HIST_MONTHS);
@@ -1789,8 +1794,18 @@ async function loadPriceHistory(setId){
     const hist={};
     files.forEach(f=>{ if(!f||!Array.isArray(f.days)||!f.cards) return;
       Object.entries(f.cards).forEach(([id,vals])=>{ if(!Array.isArray(vals)) return; f.days.forEach((d,i)=>{ const v=vals[i]; if(typeof v==="number"&&v>0) (hist[id]=hist[id]||[]).push([d,v]); }); }); });
-    Object.entries(hist).forEach(([id,pts])=>priceHist.set(id,pts));
-    allCards.forEach(c=>{ if(hist[c.id]) paintBackFor(c); });
+    const since=priceHistIndex.sourceSince||""; // charts and % changes only within one price source (no jump at the switch)
+    Object.entries(hist).forEach(([id,pts])=>{ const keep=since?pts.filter(p=>p[0]>=since):pts; if(keep.length) priceHist.set(id,keep); else priceHist.delete(id); });
+    const latest=Object.values(hist).reduce((m,pts)=>pts[pts.length-1][0]>m?pts[pts.length-1][0]:m,"");
+    const fresh=latest?new Date(Date.parse(latest+"T00:00:00Z")-8*864e5).toISOString().slice(0,10):"";
+    let changed=false;
+    allCards.forEach(c=>{
+      const pts=hist[c.id]; if(!pts||setSel.value!==setId) return;
+      const last=pts[pts.length-1];
+      if(since&&last[0]>=since&&last[0]>=fresh){ c.price={v:last[1],cur:"USD",src:"TCGplayer",at:last[0],saved:true}; c.priceState="ok"; changed=true; }
+      paintBackFor(c);
+    });
+    if(changed){ updateSetValue(); if(sortEl.value!=="number") renderCards(); }
     if(typeof refreshCardDetail==="function") refreshCardDetail();
   }catch(e){ /* no history yet or offline: card backs just show today's price */ }
 }
@@ -1870,13 +1885,13 @@ function renderCardDetail(){
     <div class="cdd-art${rarityTier(c.rarity)>=3?" holo tilt":""}">${img?`<img src="${esc(img)}" alt="${esc(c.name)}" draggable="false" data-small="${esc(c.images.small)}">`:placeholderCardSVG(c)}</div>
     <h2 id="cdd-name">${esc(c.name)}</h2>
     <dl class="cdd-facts">${facts.map(f=>`<dt>${f[0]}</dt><dd>${esc(String(f[1]))}</dd>`).join("")}</dl>
-    <div class="cdd-price">${c.price?`<b>${esc(fmtPrice(c.price))}</b><span>${esc(c.price.src)} market price${c.price.at?` · updated ${esc(c.price.at)}`:""}</span>`:`<span>${tcgSource==="tcgdex"&&c.priceState===undefined?"Loading price…":"No price listed"}</span>`}</div>
-    ${pts&&pts.length>=2?priceChart(pts):`<p class="cdd-note">${c.price&&tcgSource!=="tcgdex"?"Price history builds up from our daily price saves; the chart appears once this card has two or more days.":"Price history is only kept for prices from the main card source (TCGplayer, US dollars)."}</p>`}
+    <div class="cdd-price">${c.price?`<b>${esc(fmtPrice(c.price))}</b><span>${esc(c.price.src)} market price${c.price.at?` · updated ${esc(c.price.at)}`:""}</span>`:`<span>${cardSrc==="tcgdex"&&c.priceState===undefined?"Loading price…":"No price listed"}</span>`}</div>
+    ${pts&&pts.length>=2?priceChart(pts):`<p class="cdd-note">${c.price&&c.price.cur==="USD"?"Price history builds up from our daily price saves; the chart appears once this card has two or more days.":"Price history is only kept for TCGplayer prices in US dollars."}</p>`}
     <div class="cdd-actions">
       <button type="button" class="today-btn" id="cdd-binder">${inB?"✓ IN BINDER":"+ ADD TO BINDER"}</button>
       <button type="button" class="today-btn" id="cdd-share">SHARE</button>
     </div>
-    <p class="cdd-note">Card image from ${tcgSource==="tcgdex"?"TCGdex":"the Pokémon TCG API"}. Swipe or use ◀ ▶ to see other cards.</p>`;
+    <p class="cdd-note">Card image from ${cardSrc==="tcgdex"?"TCGdex":"the Pokémon TCG API"}. Swipe or use ◀ ▶ to see other cards.</p>`;
   const im=cddBody.querySelector(".cdd-art img");
   if(im) im.addEventListener("error",()=>{ if(im.dataset.small&&im.src!==im.dataset.small) im.src=im.dataset.small; else im.closest(".cdd-art").innerHTML=placeholderCardSVG(c); });
   if(pts&&pts.length>=2) wireChart(pts);
@@ -1886,7 +1901,7 @@ function renderCardDetail(){
     try{ if(navigator.share){ await navigator.share({title:c.name+" · Trainer Desk",url}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
     try{ await navigator.clipboard.writeText(url); toast("Link copied"); }catch(e){ toast(url); }
   });
-  if(tcgSource==="tcgdex"&&!c.sample&&c.priceState===undefined) queuePrice(c);
+  if(cardSrc==="tcgdex"&&!c.sample&&c.priceState===undefined) queuePrice(c);
 }
 function openCardDetail(id){
   if(!cddEl||!allCards.some(c=>c.id===id)) return;
@@ -1975,7 +1990,7 @@ function toggleCard(el){
   el.setAttribute("aria-pressed",on?"true":"false");
   if(!on) return;
   const c=allCards.find(x=>x.id===el.dataset.id); if(!c) return;
-  if(tcgSource==="tcgdex"&&!c.sample){ if(c.priceState==="fail"){ c.priceTried=false; c.priceState=undefined; } queuePrice(c); }
+  if(cardSrc==="tcgdex"&&!c.sample){ if(c.priceState==="fail"){ c.priceTried=false; c.priceState=undefined; } queuePrice(c); }
   paintBackFor(c);
 }
 async function fetchCards(src,setId){
@@ -2002,15 +2017,26 @@ async function switchToBackup(){
   await loadSets();
 }
 function showOffline(){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; }
+// Sets newer than pokemontcg.io's list that TCGdex already has (e.g. a just-released set), newest first.
+async function loadNewSets(){
+  if(location.protocol==="file:") return [];
+  try{ const r=await fetchWithTimeout("assets/tcg-new-sets.json",5000); if(!r.ok) return []; const j=await r.json(); return Array.isArray(j)?j.filter(x=>x&&x.id&&x.name):[]; }catch(e){ return []; }
+}
+function withNewSets(sets,extra){
+  const have=new Set(sets.map(s=>s.id)), add=extra.filter(x=>!have.has(x.id)).map(x=>({id:x.id,name:x.name,releaseDate:String(x.releaseDate||"").replace(/-/g,"/")||"—"}));
+  tcgdexOnly=new Set(add.map(x=>x.id));
+  return add.length?[...add,...sets].sort((a,b)=>(b.releaseDate==="—"?"":b.releaseDate).localeCompare(a.releaseDate==="—"?"":a.releaseDate)):sets;
+}
 async function loadSets(){
   const src=tcgSource;
+  const extraP=src==="ptcg"?loadNewSets():Promise.resolve([]); // in backup mode TCGdex's own list already has them
   const cachedSets=tcgCacheGet("sets-v2-"+src);
-  if(cachedSets){ fillSets(cachedSets); return; }
+  if(cachedSets){ fillSets(withNewSets(cachedSets,await extraP)); return; }
   statusEl.textContent="Loading sets…";
   try{
     const sets=await fetchSets(src);
     tcgCacheSet("sets-v2-"+src,sets);
-    fillSets(sets);
+    fillSets(withNewSets(sets,await extraP));
     statusEl.textContent="";
   }catch(err){
     if(src==="ptcg") return switchToBackup();
@@ -2029,8 +2055,8 @@ async function loadCards(setId){
   grid.innerHTML=""; emptyEl.style.display="none";
   bulk=false; loadBtn.hidden=true; valueEl.textContent="";
   if(setId==="sample"){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; return; }
-  const showBulk=()=>{ loadBtn.hidden=tcgSource!=="tcgdex"; };
-  const src=tcgSource, tag=src==="tcgdex"?" · via TCGdex":"";
+  const showBulk=()=>{ loadBtn.hidden=cardSrc!=="tcgdex"; };
+  const src=tcgdexOnly.has(setId)?"tcgdex":tcgSource, tag=src==="tcgdex"?" · via TCGdex":""; cardSrc=src;
   const cachedCards=tcgCacheGet("cards-v4-"+src+"-"+setId);
   if(cachedCards){ allCards=cachedCards.map(c=>src==="tcgdex"?applyCachedPrice(c):c); statusEl.textContent=allCards.length+" cards"+tag; showBulk(); renderCards(); loadPriceHistory(setId); openLinkedCard(); return; }
   statusEl.textContent="Loading cards…";
@@ -2065,14 +2091,14 @@ function updateSetValue(){
   if(bulk){ const done=real.filter(c=>c.priceState).length; valueEl.textContent="Loading prices… "+done+"/"+real.length; return; }
   let usd=0,eur=0,n=0;
   real.forEach(c=>{ if(!c.price) return; n++; if(c.price.cur==="EUR") eur+=c.price.v; else usd+=c.price.v; });
-  if(!n){ valueEl.textContent=tcgSource==="tcgdex"?"Prices load when you flip a card, or press LOAD ALL PRICES.":""; return; }
+  if(!n){ valueEl.textContent=cardSrc==="tcgdex"?"Prices load when you flip a card, or press LOAD ALL PRICES.":""; return; }
   const parts=[]; if(usd) parts.push("$"+usd.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})); if(eur) parts.push("€"+eur.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
-  const all=tcgSource!=="tcgdex"||real.every(c=>c.priceState);
+  const all=cardSrc!=="tcgdex"||real.every(c=>c.priceState);
   valueEl.textContent="Set value"+(all?"":" so far")+": "+parts.join(" + ")+" · "+n+" of "+real.length+" cards priced";
 }
 function bulkCheck(){ if(bulk&&allCards.every(c=>c.sample||c.priceState)){ bulk=false; renderCards(); } else if(bulk) updateSetValue(); }
 loadBtn.addEventListener("click",()=>{
-  if(tcgSource!=="tcgdex") return;
+  if(cardSrc!=="tcgdex") return;
   bulk=true;
   allCards.forEach(c=>{ if(c.sample) return; if(c.priceState==="fail"){ c.priceTried=false; c.priceState=undefined; } if(c.priceState===undefined) queuePrice(c); });
   updateSetValue(); bulkCheck();

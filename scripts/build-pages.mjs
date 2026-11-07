@@ -433,6 +433,8 @@ for (const e of pagedEvents) files.set(path.join('go', e.id + '.html'), eventPag
 files.set(path.join('go', 'events.html'), eventsIndex());
 // compact name list for the Who's That Pokémon? puzzle: [id, name, types, generation, page slug]
 files.set(path.join('assets', 'pokedex-names.json'), JSON.stringify(dex.map(p => [p.id, p.name, p.types, p.gen, p.slug])));
+// sets only TCGdex has (newer than the pokemon-tcg-data snapshot): the TCG tab adds these to pokemontcg.io's set list
+files.set(path.join('assets', 'tcg-new-sets.json'), JSON.stringify(tcg.filter(s => s.src === 'tcgdex').map(s => ({ id: s.id, name: s.name, releaseDate: s.releaseDate }))) + '\n');
 files.set('sitemap.xml', sitemap());
 const stale = [];
 if (!check) for (const d of ['pokedex', 'tcg', 'go']) fs.mkdirSync(path.join(root, d), { recursive: true });
