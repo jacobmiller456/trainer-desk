@@ -15,8 +15,10 @@
 
   gtag('config', 'G-S7NHPZKHJQ');
 </script>
-<!-- TCGplayer affiliate program (Impact): owner-approved Nov 2026. Turns TCGplayer links into affiliate links. Owner's code, pasted verbatim. -->
-<script type="text/javascript">(function(i,m,p,a,c,t){c.ire_o=p;c[p]=c[p]||function(){(c[p].a=c[p].a||[]).push(arguments)};t=a.createElement(m);var z=a.getElementsByTagName(m)[0];t.async=1;t.src=i;z.parentNode.insertBefore(t,z)})('https://utt.impactcdn.com/P-A8144240-1017-492d-8f0d-20edb5f4bbee1.js','script','impactStat',document,window);impactStat('transformLinks');impactStat('trackImpression');</script>
+<!-- TCGplayer affiliate program (Impact): owner-approved Nov 2026. Turns TCGplayer links into affiliate links. The owner's
+     Impact code, unchanged inside tdLoadImpact(), which runs only once the visitor accepts cookies (banner below), since
+     Impact sets tracking cookies. -->
+<script type="text/javascript">window.tdLoadImpact=function(){if(window.ire_o)return;(function(i,m,p,a,c,t){c.ire_o=p;c[p]=c[p]||function(){(c[p].a=c[p].a||[]).push(arguments)};t=a.createElement(m);var z=a.getElementsByTagName(m)[0];t.async=1;t.src=i;z.parentNode.insertBefore(t,z)})('https://utt.impactcdn.com/P-A8144240-1017-492d-8f0d-20edb5f4bbee1.js','script','impactStat',document,window);impactStat('transformLinks');impactStat('trackImpression');};try{if(localStorage.getItem('td-cookie-consent')==='granted')window.tdLoadImpact();}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pokémon GO Events &amp; Community Day Countdown | Trainer Desk</title>
 <meta name="description" content="Live countdowns for current and upcoming Pokémon GO events, plus this month's Community Day: featured Pokémon, shinies, bonuses and times in your timezone.">
@@ -290,6 +292,9 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .cdd td{ padding:2px 14px 2px 0; }
 .cdd-actions{ display:flex; flex-wrap:wrap; gap:8px; }
 .cdd-actions .today-btn{ margin-top:0; }
+.cdd-shop{ margin-top:12px; }
+.cdd-shop .today-btn{ display:inline-flex; align-items:center; text-decoration:none; }
+.cdd-shop + .cdd-note{ margin:6px 0 12px; }
 .cdd-note{ margin:0; font-size:13px; color:var(--ink-soft,rgba(27,46,31,.68)); }
 .tb-spark{ display:flex; align-items:center; gap:5px; line-height:1; font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
 .tback:has(.tb-spark){ gap:5px; }
@@ -1111,12 +1116,12 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <footer><div class="wrap">
   Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
   Pokémon and all related names are trademarks of their respective owners. Card data and images via the community Pokémon TCG API; card prices are TCGplayer market prices saved daily from TCGdex. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (it also lists TCGplayer and Cardmarket prices) and, since Nov 2026, the source of the saved daily price history (charts, price movers). GO event schedule and Community Day data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed, sourced from <a href="https://leekduck.com" target="_blank" rel="noopener" style="text-decoration:underline;">LeekDuck</a>. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
-  This site uses Google Analytics (cookies) to count visits, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
+  This site uses Google Analytics (cookies) to count visits and Impact (cookies) for TCGplayer affiliate links, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. Some shop links (TCGplayer, eBay) are affiliate links: Trainer Desk may earn a small commission if you buy through them, at no extra cost to you. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
 </div></footer>
 
 <div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Cookie consent" hidden>
   <div class="cookie-inner">
-    <p>We'd like to use Google Analytics cookies to count visits and see which tabs are useful. Nothing is collected unless you accept. <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Learn more</a></p>
+    <p>We'd like to use cookies from Google Analytics, to count visits and see which tabs are useful, and from Impact, TCGplayer's affiliate partner, to credit us when you buy through our TCGplayer links. Nothing is set unless you accept. <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Learn more</a></p>
     <div class="cookie-actions">
       <button type="button" class="cookie-btn" id="cookie-decline">DECLINE</button>
       <button type="button" class="cookie-btn primary" id="cookie-accept">ACCEPT</button>
@@ -1131,6 +1136,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   function choose(v){
     save(v);
     gtag('consent','update',{ analytics_storage: v });
+    if(v==='granted'&&window.tdLoadImpact) window.tdLoadImpact(); // TCGplayer affiliate tracking only after consent
     banner.hidden=true;
   }
   document.getElementById('cookie-accept').addEventListener('click',function(){ choose('granted'); });
@@ -1653,6 +1659,20 @@ const API="https://api.pokemontcg.io/v2";
 const TCG_TIMEOUT=12000; // pokemontcg.io is often slow; give it 12s, then switch to the backup source
 const TCGDEX="https://api.tcgdex.net/v2/en"; // backup card source (TCGdex): sets + cards, images hotlinked from assets.tcgdex.net
 const TCGDEX_TIMEOUT=15000;
+// Shop links (owner-approved Nov 2026), disclosed beside them: TCGplayer (Impact affiliate program) and eBay (eBay Partner
+// Network). tcgplayerBase: optional Impact deep-link base from the Impact dashboard (e.g. "https://tcgplayer.pxf.io/c/1/2/3");
+// empty = plain TCGplayer links, which Impact's script (after cookie consent) turns into affiliate links. ebayCampid: the
+// owner's eBay Partner Network campaign ID; empty = plain eBay search links (no commission). scripts/build-pages.mjs reads this too.
+const AFFILIATE={tcgplayerBase:"",ebayCampid:""};
+const tcgpIds=new Map(); // card id -> TCGplayer product id (prices/ids/<set>.json, saved by the daily price job)
+function shopUrls(c,setName){
+  const pid=tcgpIds.get(c.id);
+  let tcg=pid?`https://www.tcgplayer.com/product/${pid}`:`https://www.tcgplayer.com/search/pokemon/product?productLineName=pokemon&q=${encodeURIComponent(c.name)}`;
+  if(AFFILIATE.tcgplayerBase) tcg=`${AFFILIATE.tcgplayerBase}?u=${encodeURIComponent(tcg)}`;
+  let ebay=`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent([c.name,setName,c.number].filter(Boolean).join(" "))}`;
+  if(AFFILIATE.ebayCampid) ebay+=`&mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=${encodeURIComponent(AFFILIATE.ebayCampid)}&toolid=10001&mkevt=1`;
+  return {tcg,ebay,exact:!!pid};
+}
 const tcgMem=new Map(); // in-memory fallback if sessionStorage is unavailable
 function tcgCacheGet(key){
   if(tcgMem.has(key)) return tcgMem.get(key);
@@ -1797,6 +1817,8 @@ async function loadPriceHistory(setId){
     const hist={};
     files.forEach(f=>{ if(!f||!Array.isArray(f.days)||!f.cards) return;
       Object.entries(f.cards).forEach(([id,vals])=>{ if(!Array.isArray(vals)) return; f.days.forEach((d,i)=>{ const v=vals[i]; if(typeof v==="number"&&v>0) (hist[id]=hist[id]||[]).push([d,v]); }); }); });
+    fetchWithTimeout(`prices/ids/${encodeURIComponent(setId)}.json?v=${encodeURIComponent(priceHistIndex.updated||"")}`,6000).then(r=>r.ok?r.json():null)
+      .then(j=>{ if(!j||typeof j!=="object") return; Object.entries(j).forEach(([id,n])=>{ if(Number.isInteger(n)&&n>0) tcgpIds.set(id,n); }); refreshCardDetail(); }).catch(()=>{});
     const since=priceHistIndex.sourceSince||""; // charts and % changes only within one price source (no jump at the switch)
     Object.entries(hist).forEach(([id,pts])=>{ const keep=since?pts.filter(p=>p[0]>=since):pts; if(keep.length) priceHist.set(id,keep); else priceHist.delete(id); });
     const latest=Object.values(hist).reduce((m,pts)=>pts[pts.length-1][0]>m?pts[pts.length-1][0]:m,"");
@@ -1890,6 +1912,11 @@ function renderCardDetail(){
     <dl class="cdd-facts">${facts.map(f=>`<dt>${f[0]}</dt><dd>${esc(String(f[1]))}</dd>`).join("")}</dl>
     <div class="cdd-price">${c.price?`<b>${esc(fmtPrice(c.price))}</b><span>${esc(c.price.src)} market price${c.price.at?` · updated ${esc(c.price.at)}`:""}</span>`:`<span>${cardSrc==="tcgdex"&&c.priceState===undefined?"Loading price…":"No price listed"}</span>`}</div>
     ${pts&&pts.length>=2?priceChart(pts):`<p class="cdd-note">${c.price&&c.price.cur==="USD"?"Price history builds up from our daily price saves; the chart appears once this card has two or more days.":"Price history is only kept for TCGplayer prices in US dollars."}</p>`}
+    ${c.sample?"":(()=>{ const u=shopUrls(c,setName); return `<div class="cdd-actions cdd-shop">
+      <a class="today-btn" id="cdd-tcgp" href="${esc(u.tcg)}" target="_blank" rel="sponsored noopener">BUY ON TCGPLAYER</a>
+      <a class="today-btn" id="cdd-ebay" href="${esc(u.ebay)}" target="_blank" rel="sponsored noopener">FIND ON EBAY</a>
+    </div>
+    <p class="cdd-note">Shop links are affiliate links: Trainer Desk may earn a small commission if you buy through them, at no extra cost to you.</p>`; })()}
     <div class="cdd-actions">
       <button type="button" class="today-btn" id="cdd-binder">${inB?"✓ IN BINDER":"+ ADD TO BINDER"}</button>
       <button type="button" class="today-btn" id="cdd-share">SHARE</button>

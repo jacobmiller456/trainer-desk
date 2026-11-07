@@ -22,6 +22,7 @@ const FILES = {
   '/prices/2026-10/zz1.json': { days: ['2026-10-30'], cards: { 'zz1-1': [100], 'zz1-2': [5], 'zz1-4': [9] } },
   '/prices/2026-11/zz1.json': { days: ['2026-11-04', '2026-11-05', '2026-11-07'], cards: { 'zz1-1': [100, 80, 82.5], 'zz1-2': [5, 30, 31], 'zz1-4': [9, null, null] } },
   '/prices/2026-11/me06.json': { days: ['2026-11-07'], cards: { 'me06-001': [44] } },
+  '/prices/ids/zz1.json': { 'zz1-2': 517045 },
   '/assets/tcg-new-sets.json': [{ id: 'me06', name: 'Delta Reign', releaseDate: '2026-11-06' }],
 };
 
@@ -68,6 +69,12 @@ const FILES = {
   await page.waitForFunction(() => document.getElementById('card-detail').open, null, { timeout: 8000 });
   const det = (await page.textContent('#cdd-body')).replace(/\s+/g, ' ');
   check('card detail: saved price with its date', /\$31\.00 ?TCGplayer market price · updated 2026-11-07/.test(det), det.slice(0, 200));
+  const shop = await page.evaluate(() => [...document.querySelectorAll('#cdd-body .cdd-shop a')].map(a => ({ href: a.getAttribute('href'), rel: a.rel, t: a.target, txt: a.textContent, h: a.getBoundingClientRect().height })));
+  check('card detail: BUY ON TCGPLAYER goes to the exact product (saved product ID); FIND ON EBAY searches name + set + number', shop.length === 2 && shop[0].href === 'https://www.tcgplayer.com/product/517045' && shop[1].href === 'https://www.ebay.com/sch/i.html?_nkw=Riser%20Test%20Set%202' && shop.every(x => /sponsored/.test(x.rel) && x.t === '_blank' && x.h >= 44), shop);
+  check('card detail: affiliate disclosure next to the shop links', /Shop links are affiliate links: Trainer Desk may earn a small commission/.test(det));
+  await page.click('#cdd-next'); await page.waitForTimeout(200);
+  const shop2 = await page.$eval('#cdd-body .cdd-shop a', a => a.getAttribute('href'));
+  check('card without a saved product ID: TCGplayer search by name instead', /^https:\/\/www\.tcgplayer\.com\/search\/pokemon\/product\?productLineName=pokemon&q=/.test(shop2), shop2);
   await page.keyboard.press('Escape');
   check('no per-card TCGdex lookups for a pokemontcg.io set', !hits.some(h => h.startsWith('/v2/en/cards/')), hits);
 

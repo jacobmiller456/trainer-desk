@@ -25,6 +25,18 @@ const priceDay = Object.values(priceHist).reduce((m, pts) => (pts.length && pts[
 // Last day any saved price actually moved: the source can stop refreshing (pokemontcg.io froze its prices on Oct 16, 2026),
 // so pages say when prices last changed rather than claiming they're current.
 const priceChanged = Object.values(priceHist).reduce((m, pts) => { for (let k = pts.length - 1; k > 0; k--) if (pts[k][1] !== pts[k - 1][1]) return pts[k][0] > m ? pts[k][0] : m; return m; }, '');
+// Shop links (TCGplayer / eBay affiliate programs, owner-approved Nov 2026): same settings as the app (AFFILIATE in index.html)
+// and the TCGplayer product IDs saved by the daily price job (prices/ids/<set>.json).
+const AFFILIATE = Function('return ' + (indexHtml.match(/const AFFILIATE=(\{[^;]*\});/) || [, '{}'])[1])();
+const tcgpIdsFor = setId => { try { return JSON.parse(fs.readFileSync(path.join(root, 'prices/ids', setId + '.json'), 'utf8')); } catch (e) { return {}; } };
+function tcgUrl(pid, q) {
+  const u = pid ? `https://www.tcgplayer.com/product/${pid}` : `https://www.tcgplayer.com/search/pokemon/product?productLineName=pokemon&q=${encodeURIComponent(q)}`;
+  return AFFILIATE.tcgplayerBase ? `${AFFILIATE.tcgplayerBase}?u=${encodeURIComponent(u)}` : u;
+}
+function ebayUrl(q) {
+  const u = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(q)}`;
+  return AFFILIATE.ebayCampid ? u + `&mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=${encodeURIComponent(AFFILIATE.ebayCampid)}&toolid=10001&mkevt=1` : u;
+}
 const ROUTES = Function('return ' + indexHtml.match(/const ROUTES=(\{[\s\S]*?\n\});/)[1])();
 
 const REGION = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unova', 6: 'Kalos', 7: 'Alola', 8: 'Galar', 9: 'Paldea' };
@@ -251,11 +263,13 @@ export function topCards(s, hist = priceHist, day = priceDay, n = 10) {
 }
 function topCardsBox(s) {
   const top = topCards(s); if (top.length < 3) return '';
+  const pids = tcgpIdsFor(s.id);
   const trend = p => !p ? '' : p > 0 ? `<small class="up">▲ ${p}% this week</small>` : `<small class="down">▼ ${-p}% this week</small>`;
   return `<section class="box">
     <h2>Most valuable ${esc(s.name)} cards</h2>
     <p class="note">TCGplayer market prices in US dollars${priceChanged ? `, as last updated by our price source on ${fmtDate(priceChanged)}` : ''}. Market estimates, not offers to sell.</p>
-    <ol class="top-cards">${top.map(({ c, id, price, pct }) => `<li><a href="/tcg?set=${encodeURIComponent(s.id)}&amp;card=${encodeURIComponent(id)}">${c[6] ? `<img src="${esc(c[6])}" alt="" loading="lazy" decoding="async" width="61" height="85">` : '<span class="noimg"></span>'}<span class="tc-name">${esc(c[1])}<small>#${esc(c[0])}${c[2] ? ' · ' + esc(c[2]) : ''}</small></span></a><span class="tc-price">${usd(price)}${trend(pct)}</span></li>`).join('')}</ol>
+    <ol class="top-cards">${top.map(({ c, id, price, pct }) => `<li><a href="/tcg?set=${encodeURIComponent(s.id)}&amp;card=${encodeURIComponent(id)}">${c[6] ? `<img src="${esc(c[6])}" alt="" loading="lazy" decoding="async" width="61" height="85">` : '<span class="noimg"></span>'}<span class="tc-name">${esc(c[1])}<small>#${esc(c[0])}${c[2] ? ' · ' + esc(c[2]) : ''}</small></span></a><span class="tc-price">${usd(price)}${trend(pct)}</span><a class="tc-buy" href="${esc(tcgUrl(pids[id], c[1] + ' ' + s.name))}" target="_blank" rel="sponsored noopener" aria-label="Buy ${esc(c[1])} on TCGplayer">Buy</a></li>`).join('')}</ol>
+    <p class="note shop">Shop ${esc(s.name)}: <a href="${esc(tcgUrl(null, s.name))}" target="_blank" rel="sponsored noopener">TCGplayer</a> · <a href="${esc(ebayUrl(s.name + ' pokemon card'))}" target="_blank" rel="sponsored noopener">eBay</a>. Shop links are affiliate links: Trainer Desk may earn a small commission if you buy through them, at no extra cost to you.</p>
   </section>
 `;
 }

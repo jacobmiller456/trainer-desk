@@ -23,6 +23,13 @@ export function usdPrice(card) {
   for (const k of Object.keys(tp)) { const v = tp[k]; const n = v && typeof v === 'object' ? (pos(v.marketPrice) ?? pos(v.midPrice)) : null; if (n != null) return n; }
   return null;
 }
+// TCGplayer product ID for "Buy on TCGplayer" links: from the priced TCGplayer variant, else the first variant that lists one.
+export function tcgplayerId(card) {
+  const tp = card && card.pricing && card.pricing.tcgplayer;
+  if (tp && typeof tp === 'object') for (const k of Object.keys(tp)) { const v = tp[k]; if (v && typeof v === 'object' && Number.isInteger(v.productId) && v.productId > 0 && (pos(v.marketPrice) ?? pos(v.midPrice)) != null) return v.productId; }
+  for (const v of (card && Array.isArray(card.variants_detailed) ? card.variants_detailed : [])) { const n = v && v.thirdParty && v.thirdParty.tcgplayer; if (Number.isInteger(n) && n > 0) return n; }
+  return null;
+}
 export const setOf = id => id.slice(0, id.lastIndexOf('-'));
 
 // Put today's prices into one month file (replacing today's column if the job already ran today).
@@ -95,15 +102,16 @@ export async function snapshot({ dir = path.join(root, 'prices'), dataFile = pat
   if (!ids.length) { log('every set is up to date'); return { priced: 0, sets: 0, failed: [] }; }
 
   const fetchSet = async id => {
-    const want = Object.entries(cardIds(byId.get(id), idMap)), out = {}; let errors = 0;
+    const want = Object.entries(cardIds(byId.get(id), idMap)), out = {}, pids = {}; let errors = 0;
     await pool(want, concurrency, async ([ours, theirs]) => {
-      try { const j = await getJSON(`${TCGDEX}/cards/${encodeURIComponent(theirs)}`); const v = usdPrice(j); if (v != null) out[ours] = v; }
+      try { const j = await getJSON(`${TCGDEX}/cards/${encodeURIComponent(theirs)}`); const v = usdPrice(j); if (v != null) out[ours] = v; const pid = tcgplayerId(j); if (pid) pids[ours] = pid; }
       catch (e) { errors++; }
     });
     if (errors > want.length / 2) throw new Error(`${errors} of ${want.length} lookups failed`);
+    if (Object.keys(pids).length) pidsBySet[id] = pids;
     return out;
   };
-  const bySet = {}; let priced = 0, failed = [], tried = 0;
+  const bySet = {}, pidsBySet = {}; let priced = 0, failed = [], tried = 0;
   for (const round of [ids, null]) {
     const list = round || failed; if (!round) failed = [];
     for (const id of list) {
@@ -122,6 +130,16 @@ export async function snapshot({ dir = path.join(root, 'prices'), dataFile = pat
     const fp = path.join(dir, month, set + '.json');
     let old = null; try { old = JSON.parse(fs.readFileSync(fp, 'utf8')); } catch (e) {}
     fs.writeFileSync(fp, stringify(mergeDay(old, day, prices)));
+  }
+  // prices/ids/<setId>.json = {"<cardId>": <TCGplayer product id>} for "Buy on TCGplayer" links (rewritten only when it changes)
+  fs.mkdirSync(path.join(dir, 'ids'), { recursive: true });
+  for (const [set, pids] of Object.entries(pidsBySet)) {
+    const fp = path.join(dir, 'ids', set + '.json');
+    let old = {}; try { old = JSON.parse(fs.readFileSync(fp, 'utf8')); } catch (e) {}
+    const merged = { ...old, ...pids }, sorted = Object.fromEntries(Object.keys(merged).sort().map(k => [k, merged[k]]));
+    const txt = '{\n' + Object.entries(sorted).map(([k, v]) => JSON.stringify(k) + ':' + v).join(',\n') + '\n}\n';
+    let cur = ''; try { cur = fs.readFileSync(fp, 'utf8'); } catch (e) {}
+    if (txt !== cur) fs.writeFileSync(fp, txt);
   }
   const months = {};
   for (const m of fs.readdirSync(dir).filter(m => /^\d{4}-\d{2}$/.test(m)).sort())

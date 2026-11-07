@@ -25,6 +25,9 @@ check('live prices deep link', pb.includes('href="/tcg?set=me5"'));
   check('151: top 10 most valuable cards, highest first', items.length === 10 && items.every((x, i) => !i || items[i - 1].price >= x.price), items.slice(0, 3));
   check('151: each links to that card in the live app; images hotlinked', items.every(x => x.href === `/tcg?set=sv3pt5&card=sv3pt5-${x.num}` && (!x.img || /^https:\/\/(images\.pokemontcg\.io|images\.scrydex\.com|assets\.tcgdex\.net)\//.test(x.img))), items.slice(0, 2));
   check('price note says when prices last changed (no "updated daily" claim)', /as last updated by our price source on [A-Z][a-z]+ \d+, \d{4}\. Market estimates, not offers to sell\./.test(p151) && !/updated daily/.test(p151));
+  const buys = [...p151.matchAll(/<a class="tc-buy" href="([^"]+)" target="_blank" rel="sponsored noopener"/g)].map(m => m[1].replace(/&amp;/g, '&'));
+  check('151: each top card has a sponsored TCGplayer buy link; set-wide TCGplayer + eBay links', buys.length === 10 && buys.every(u => /^https:\/\/www\.tcgplayer\.com\/(product\/\d+|search\/pokemon\/product\?)/.test(u)) && /<p class="note shop">Shop 151: <a href="https:\/\/www\.tcgplayer\.com\/[^"]+" target="_blank" rel="sponsored noopener">TCGplayer<\/a> · <a href="https:\/\/www\.ebay\.com\/sch\/i\.html\?_nkw=[^"]+" target="_blank" rel="sponsored noopener">eBay<\/a>/.test(p151), buys.slice(0, 2));
+  check('151: affiliate disclosure next to the shop links', /Shop links are affiliate links: Trainer Desk may earn a small commission/.test(p151));
   const withList = fs.readdirSync(path.join(root, 'tcg')).filter(f => read('tcg/' + f).includes('class="top-cards"')).length;
   check('most sets have a list (sets without recent prices are skipped)', withList > 100 && withList <= tcg.length, withList);
 }
@@ -72,7 +75,7 @@ server.listen(0, async () => {
     await page.goto(base + p);
     const lay = await page.evaluate(() => {
       const vw = document.documentElement.clientWidth;
-      const small = [...document.querySelectorAll('header a, .pager a, .related a, .cta a, .setlist a, .top-cards a')].filter(a => { const r = a.getBoundingClientRect(); return r.height < 44 || r.width < 44; }).map(a => a.textContent.trim()).slice(0, 5);
+      const small = [...document.querySelectorAll('header a, .pager a, .related a, .cta a, .setlist a, .top-cards a, .note.shop a')].filter(a => { const r = a.getBoundingClientRect(); return r.height < 44 || r.width < 44; }).map(a => a.textContent.trim()).slice(0, 5);
       const tiny = [...document.querySelectorAll('body *')].filter(e => [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()) && parseFloat(getComputedStyle(e).fontSize) < 12).map(e => e.tagName);
       return { overflow: document.documentElement.scrollWidth - vw, small, tiny };
     });

@@ -79,6 +79,9 @@ footer a{ color:var(--gold); }
 .top-cards .tc-price small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); }
 .top-cards .up{ color:#1E7A46 !important; } .top-cards .down{ color:#B3261E !important; }
 .box .note{ font-size:14px; color:var(--ink-soft); margin:0 0 8px; }
+.top-cards .tc-buy{ flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; padding:0 8px; border-radius:4px; background:var(--gold); color:var(--forest-dark); font-weight:800; font-size:14px; text-decoration:none; }
+.box .note.shop{ margin:10px 0 0; }
+.box .note.shop a{ display:inline-flex; align-items:center; justify-content:center; min-height:44px; min-width:44px; }
 @media (prefers-color-scheme: dark){
   :root{ --ink:#E4EEE7; --ink-soft:rgba(228,238,231,.70); color-scheme:dark; }
   body{ background:linear-gradient(180deg,#07130D,#0E2117 55%,#143022); background-attachment:fixed; }

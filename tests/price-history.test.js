@@ -30,7 +30,7 @@ async function scriptChecks() {
     if (id === 'me02-006') return { ok: true, status: 200, json: async () => ({ id, pricing: { cardmarket: { trend: 3 } } }) }; // no TCGplayer price
     if (id === 'sv01-004' && opts.gone) return { ok: false, status: 404 };
     const n = parseInt(id.split('-')[1], 10);
-    return { ok: true, status: 200, json: async () => ({ id, pricing: { tcgplayer: { normal: { marketPrice: n * mult } } } }) };
+    return { ok: true, status: 200, json: async () => ({ id, pricing: { tcgplayer: { normal: { productId: 9000 + n, marketPrice: n * mult } } } }) };
   };
   const logs = [];
   const run = (day, mult, opts) => S.snapshot({ dir, dataFile: path.join(dir, 'tcg.json'), mapFile: path.join(dir, 'map.json'), now: new Date(day + 'T08:00:00Z'), fetchImpl: fake(mult, opts), retryMs: 0, minCards: 3, log: m => logs.push(m) });
@@ -47,6 +47,9 @@ async function scriptChecks() {
   check('new month starts a new file, past month untouched; a card gone from TCGdex is simply unpriced', JSON.stringify(nov.days) === '["2026-11-01"]' && !nov.cards['sv1-4'] && nov.cards['sv1-3'][0] === 3);
   const me2 = JSON.parse(fs.readFileSync(path.join(dir, '2026-10/me2.json'), 'utf8')), tdx = JSON.parse(fs.readFileSync(path.join(dir, '2026-10/tdx1.json'), 'utf8'));
   check('cards without a TCGplayer price are skipped; TCGdex-added sets priced by their own IDs', !me2.cards['me2-6'] && me2.cards['me2-5'][0] === 5 && tdx.cards['tdx1-007'][0] === 7, { me2, tdx });
+  const pid = JSON.parse(fs.readFileSync(path.join(dir, 'ids/sv1.json'), 'utf8'));
+  check('TCGplayer product IDs saved per set for buy links (kept after a card disappears)', pid['sv1-1'] === 9001 && pid['sv1-4'] === 9004 && fs.existsSync(path.join(dir, 'ids/me2.json')), pid);
+  check('tcgplayerId: priced variant first, else variants_detailed', S.tcgplayerId({ pricing: { tcgplayer: { normal: { productId: 5, marketPrice: 0 }, holofoil: { productId: 6, marketPrice: 2 } } } }) === 6 && S.tcgplayerId({ variants_detailed: [{ thirdParty: { tcgplayer: 7 } }] }) === 7 && S.tcgplayerId({}) === null);
   const idx = JSON.parse(fs.readFileSync(path.join(dir, 'latest.json'), 'utf8'));
   check('latest.json lists sets per month and names the source', idx.source === 'tcgdex' && JSON.stringify(idx.months) === '{"2026-10":["me2","sv1","tdx1"],"2026-11":["me2","sv1","tdx1"]}', idx);
   let threw = false; try { await S.snapshot({ dir, dataFile: path.join(dir, 'tcg.json'), mapFile: path.join(dir, 'map.json'), now: new Date('2026-11-02T08:00:00Z'), fetchImpl: async () => ({ ok: false, status: 502 }), retryMs: 0, log: () => {} }); } catch (e) { threw = /keeping the previous files/.test(e.message); }

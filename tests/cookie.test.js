@@ -19,7 +19,10 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   check('banner visible on first visit', await page.isVisible('#cookie-banner'));
   check('analytics denied by default', JSON.stringify((await consentState())[0]) === '["default","denied"]', await consentState());
 
+  check('affiliate tracking (Impact) not loaded before consent', !(await page.evaluate(() => !!window.ire_o)) && !(await page.$('script[src*="impactcdn"]')));
+  check('banner mentions the Impact affiliate cookies', /Impact, TCGplayer's affiliate partner/.test(await page.textContent('#cookie-banner')));
   await page.tap('#cookie-accept');
+  check('accepting loads affiliate tracking (Impact)', await page.evaluate(() => window.ire_o === 'impactStat') && !!(await page.$('script[src*="impactcdn"]')));
   check('banner hides after accept', !(await page.isVisible('#cookie-banner')));
   check('consent updated to granted', JSON.stringify((await consentState()).pop()) === '["update","granted"]', await consentState());
 
@@ -34,6 +37,7 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   check('decline revokes consent', JSON.stringify(last) === '["update","denied"]', last);
   await page.reload();
   const after = await consentState();
+  check('after declining, a fresh page load does not load Impact', !(await page.evaluate(() => !!window.ire_o)));
   check('declined choice remembered: banner hidden, analytics stay denied', !(await page.isVisible('#cookie-banner')) && after.length === 1 && after[0][1] === 'denied', after);
   check('no uncaught JS errors', !errors.length, errors);
 
