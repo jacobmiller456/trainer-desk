@@ -21,7 +21,8 @@ function audit({ minTap, minFont, minPixelFont, minInputFont }) {
   const vw = document.documentElement.clientWidth;
   const visible = el => {
     const r = el.getBoundingClientRect(), s = getComputedStyle(el);
-    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none';
+    // .sr-only: deliberately visually hidden (e.g. the scanner's file input, operated through its 44px label)
+    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && !el.classList.contains('sr-only');
   };
   const describe = el => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') +
     (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).join('.') : '');

@@ -191,6 +191,27 @@ header .wrap{display:flex; align-items:center; justify-content:space-between; mi
 
 /* ---- TCG controls ---- */
 .set-value{ font-family:var(--font-retro); font-size:18px; color:var(--gold); margin:-8px 0 18px; min-height:1.3em; }
+/* ---- scan / find a card ---- */
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.scan-box{ padding:14px; margin-bottom:18px; }
+.scan-top{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
+.scan-btn{ display:inline-flex; align-items:center; margin-top:0; }
+.scan-hint{ flex:1 1 220px; margin:0; font-size:14px; color:var(--ink-soft); }
+.scan-form{ display:flex; gap:8px; margin-top:12px; }
+.scan-form input{ flex:1; min-width:0; min-height:44px; font-size:16px; padding:8px 10px; border:3px solid var(--forest-dark); border-radius:4px; background:var(--parchment-2); color:var(--ink); }
+.scan-form .today-btn{ margin-top:0; }
+.scan-status{ margin:10px 0 0; font-size:15px; color:var(--ink); }
+.scan-status:empty{ display:none; }
+.scan-results{ list-style:none; margin:8px 0 0; padding:0; }
+.scan-results li{ border-top:1px solid rgba(27,67,50,.15); }
+.sc-row{ display:flex; align-items:center; gap:10px; min-height:44px; padding:6px 0; color:var(--ink); text-decoration:none; }
+.sc-row img, .sc-row .noimg{ flex:0 0 48px; width:48px; aspect-ratio:245/342; height:auto; border-radius:3px; background:var(--parchment-2); }
+.sc-row .sc-name{ flex:1; min-width:0; font-weight:700; overflow-wrap:anywhere; }
+.sc-row .sc-name small{ display:block; font-weight:400; font-size:13px; color:var(--ink-soft); }
+.sc-row .sc-price{ flex:0 0 auto; font-weight:800; font-variant-numeric:tabular-nums; text-align:right; }
+.sc-row .sc-price small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); }
+:root[data-theme="dark"] .scan-form input{ background:#141E19; color:var(--ink); }
+:root[data-theme="dark"] .scan-results li{ border-top-color:rgba(228,238,231,.12); }
 .tcg-controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:22px; }
 select,input[type=text]{
   background:var(--parchment); border:3px solid var(--forest-dark); color:var(--ink);
@@ -914,6 +935,19 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
   </div>
 
   <div id="tcg-browse">
+  <section class="scan-box pixel-box" id="scan-box" aria-label="Find a card">
+    <div class="scan-top">
+      <label class="today-btn scan-btn" for="scan-file">📷 SCAN A CARD</label>
+      <input type="file" id="scan-file" class="sr-only" accept="image/*" capture="environment" tabindex="-1">
+      <p class="scan-hint">Take a photo of a card (front, flat, good light) to find it and its price. The photo is read on your device and never uploaded.</p>
+    </div>
+    <form class="scan-form" id="scan-form" role="search">
+      <input type="search" id="scan-q" placeholder="Or type a name and/or number, e.g. Charizard 199/165" aria-label="Find a card by name or number" autocomplete="off" enterkeyhint="search">
+      <button type="submit" class="today-btn">FIND</button>
+    </form>
+    <p class="scan-status" id="scan-status" aria-live="polite"></p>
+    <ul class="scan-results" id="scan-results"></ul>
+  </section>
   <div class="tcg-controls">
     <select id="set-select"><option>Loading sets…</option></select>
     <input type="text" id="card-search" placeholder="Filter by card name…">
@@ -1710,7 +1744,7 @@ async function fetchSets(src){
   const r=await fetchWithTimeout(`${API}/sets?orderBy=-releaseDate&pageSize=250`,TCG_TIMEOUT);
   if(!r.ok) throw new Error(r.status);
   const j=await r.json();
-  return j.data.map(x=>({id:x.id,name:x.name,releaseDate:x.releaseDate}));
+  return j.data.map(x=>({id:x.id,name:x.name,releaseDate:x.releaseDate,code:x.ptcgoCode||""}));
 }
 // Market price per card from pokemontcg.io's bundled TCGplayer (USD) / Cardmarket (EUR) data. Returns null if none.
 // Only positive numbers count: sources use null/0 for "no data", and a "$0.00" price would mislead.
@@ -2009,6 +2043,147 @@ if(cddEl){
   window.moversShow=load;
   window.__movers={ get data(){ return data; } };
 })();
+/* ============ SCAN / FIND A CARD: photo -> on-device text recognition (Tesseract.js, loaded from jsDelivr only when
+   someone scans) -> card name + number -> search pokemontcg.io (TCGdex if it fails) -> results with saved prices.
+   The photo never leaves the device. Typing a name and/or number works the same way without a photo. ============ */
+(function(){
+  const box=document.getElementById("scan-box"); if(!box) return;
+  const fileIn=document.getElementById("scan-file"), form=document.getElementById("scan-form"), qIn=document.getElementById("scan-q");
+  const status=document.getElementById("scan-status"), list=document.getElementById("scan-results");
+  const TESSERACT="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+  const SUFFIX=/^(ex|gx|v|vmax|vstar|break|lv\.?x|prime|legend|star)$/i;
+  // Card number like 199/165, 001/198, TG01/TG30, SV049/SV094, GG35/GG70 (OCR often reads "/" as "|" or "l").
+  const NUM=/\b((?:TG|GG|SV|RC)?\d{1,3})\s*[\/|]\s*((?:TG|GG|SV|RC)?\d{1,3})\b/i;
+  const normNum=n=>/^\d+$/.test(n)?String(parseInt(n,10)):n.toUpperCase();
+  // OCR text (or a typed query) -> {name, number, total}. names: the Pokédex list [[id,name,...]], to spot the card's
+  // Pokémon in noisy OCR text; the earliest match wins (the name is at the top of the card), longest on ties.
+  // codes: printed set codes (MEW, PAL, ...), read next to the number on newer cards; used when the number can't be read.
+  function parse(text,names,typed,codes){
+    const t=String(text||"").replace(/[‘’`]/g,"'"), m=t.match(NUM);
+    const number=m?normNum(m[1]):"", total=m&&/^\d+$/.test(m[2])?String(parseInt(m[2],10)):"";
+    const code=((t.match(/\b[A-Z][A-Z0-9]{2,3}\b/g)||[]).find(w=>codes&&codes.has(w))||""); // 3+ characters: 2-letter codes turn up in OCR noise
+    if(typed){ const name=t.replace(NUM,"").split(/\s+/).filter(w=>!(code&&w===code)).join(" ").replace(/[^\p{L}\p{N}'.\- ]+/gu," ").replace(/\s+/g," ").trim(); return {name,number,total,code}; }
+    let best=null; const low=t.toLowerCase();
+    for(const n of names||[]){
+      const nm=String(n[1]||"").toLowerCase(); if(nm.length<3) continue;
+      const re=new RegExp("(^|[^a-z])"+nm.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?![a-z])"), mm=re.exec(low); if(!mm) continue;
+      const at=mm.index+mm[1].length; if(!best||at<best.at||(at===best.at&&nm.length>best.nm.length)) best={at,nm,name:n[1]};
+    }
+    let name=best?best.name:"";
+    if(best){ const after=t.slice(best.at+best.nm.length).trim().split(/\s+/)[0]||""; if(SUFFIX.test(after)) name+=" "+(after.length<=2?after.toLowerCase():after.toUpperCase()); }
+    return {name,number,total,code};
+  }
+  let ocr=null; // lazily loaded recogniser: async (canvas) -> text
+  function loadOCR(){
+    if(window.__scanOCR) return Promise.resolve(window.__scanOCR); // tests inject a fake
+    if(ocr) return ocr;
+    ocr=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src=TESSERACT; sc.async=true; sc.onload=()=>res(); sc.onerror=()=>rej(new Error("reader download failed")); document.head.appendChild(sc); })
+      .then(()=>window.Tesseract.createWorker("eng")).then(w=>async img=>(await w.recognize(img)).data.text)
+      .catch(e=>{ ocr=null; throw e; });
+    return ocr;
+  }
+  // Photo -> canvas scaled to at most 1600px, plus an enlarged crop of the bottom strip where the number is printed.
+  async function canvases(file){
+    const url=URL.createObjectURL(file);
+    try{
+      const im=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error("not an image")); i.src=url; });
+      const k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight)), w=Math.round(im.naturalWidth*k), h=Math.round(im.naturalHeight*k);
+      const full=document.createElement("canvas"); full.width=w; full.height=h; full.getContext("2d").drawImage(im,0,0,w,h);
+      // bottom 12%, enlarged 2x and inverted to dark-on-light (newer cards print the number and set code in white)
+      const sh=Math.max(1,Math.round(h*0.12)), strip=document.createElement("canvas"); strip.width=w*2; strip.height=sh*2;
+      const g=strip.getContext("2d"); g.imageSmoothingQuality="high"; g.drawImage(full,0,h-sh,w,sh,0,0,w*2,sh*2);
+      const d=g.getImageData(0,0,strip.width,strip.height);
+      for(let i=0;i<d.data.length;i+=4){ const v=255-(0.3*d.data[i]+0.59*d.data[i+1]+0.11*d.data[i+2]); d.data[i]=d.data[i+1]=d.data[i+2]=v; }
+      g.putImageData(d,0,0);
+      return {full,strip};
+    }finally{ URL.revokeObjectURL(url); }
+  }
+  const priceCache=new Map(); // set id -> Promise<{cardId: [day, usd]}> from the saved daily prices
+  function savedPrices(setId){
+    if(location.protocol==="file:") return Promise.resolve({});
+    if(!priceCache.has(setId)) priceCache.set(setId,(async()=>{
+      const idx=await (await fetchWithTimeout("prices/latest.json",6000)).json();
+      const m=Object.keys(idx.months||{}).sort().filter(k=>(idx.months[k]||[]).includes(setId)).pop(); if(!m) return {};
+      const f=await (await fetchWithTimeout(`prices/${m}/${encodeURIComponent(setId)}.json?v=${encodeURIComponent(idx.updated||"")}`,6000)).json(), out={};
+      Object.entries(f.cards||{}).forEach(([id,vals])=>{ for(let i=vals.length-1;i>=0;i--) if(typeof vals[i]==="number"&&vals[i]>0){ out[id]=[f.days[i],vals[i]]; break; } });
+      return out;
+    })().catch(()=>({})));
+    return priceCache.get(setId);
+  }
+  // exact name first, then names starting with it ("Charizard" before "Charizard δ"), else keep the source's order
+  const rank=(rows,name)=>{ const n=name.toLowerCase(), sc=r=>{ const x=String(r.name||"").toLowerCase(); return x===n?0:x.startsWith(n+" ")?1:2; }; return rows.map((r,i)=>[sc(r),i,r]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]).map(x=>x[2]); };
+  let dexSets=null; // TCGdex set id -> printed set size, for filtering number-only searches
+  async function tcgdexSetSizes(){
+    if(!dexSets) dexSets=fetchWithTimeout(`${TCGDEX}/sets`,TCGDEX_TIMEOUT).then(r=>r.ok?r.json():[]).then(j=>new Map((Array.isArray(j)?j:[]).map(x=>[x.id,x.cardCount&&x.cardCount.official||0]))).catch(()=>{ dexSets=null; return new Map(); });
+    return dexSets;
+  }
+  async function search({name,number,total,code}){
+    const first=(name.split(" ")[0]||"").replace(/[^\p{L}\p{N}'.\-]/gu,"");
+    // pokemontcg.io: name (first word, so "Charizard" finds "Charizard ex") + number + printed set size; it sometimes
+    // answers 500/503, so one retry before falling back to TCGdex
+    const q=[first&&`name:${first.includes("'")||first.includes(".")?`"${first}*"`:first+"*"}`,number&&`number:${number}`,total&&`set.printedTotal:${total}`,code&&!total&&`set.ptcgoCode:${code}`].filter(Boolean).join(" ");
+    for(let a=0;a<2;a++){
+      try{
+        const r=await fetchWithTimeout(`${API}/cards?q=${encodeURIComponent(q)}&orderBy=-set.releaseDate&pageSize=12&select=id,name,number,images,set,tcgplayer,cardmarket`,TCG_TIMEOUT);
+        if(!r.ok) throw new Error(r.status);
+        const j=await r.json();
+        return rank((j.data||[]).map(c=>({id:c.id,set:c.set&&c.set.id,setName:c.set&&c.set.name,printed:c.set&&c.set.printedTotal,number:c.number,name:c.name,img:c.images&&c.images.small,price:cardPrice(c)})),name);
+      }catch(e){ if(a===0) await new Promise(res=>setTimeout(res,600)); }
+    }
+    // TCGdex: by name and/or number (its matching is loose, so keep exact numbers; with a set size, sets of that size)
+    const params=[first&&"name="+encodeURIComponent(first),number&&"localId="+encodeURIComponent(number)].filter(Boolean).join("&");
+    const r=await fetchWithTimeout(`${TCGDEX}/cards?${params}`,TCGDEX_TIMEOUT); if(!r.ok) throw new Error(r.status);
+    const j=await r.json(), setOf=id=>String(id).slice(0,String(id).lastIndexOf("-"));
+    let rows=(Array.isArray(j)?j:[]).filter(c=>!/^(A\d|B\d|P-A)/.test(c.id)) // not TCG Pocket (a different game)
+      .filter(c=>!number||normNum(String(c.localId||""))===number);
+    if(total){ const sizes=await tcgdexSetSizes(), same=rows.filter(c=>String(sizes.get(setOf(c.id)))===total); if(same.length) rows=same; }
+    return rank(rows.slice(-12).reverse().map(c=>({id:c.id,set:setOf(c.id),setName:"",number:c.localId,name:c.name,img:c.image?c.image+"/low.webp":"",price:null})),name);
+  }
+  function render(rows,saved){
+    list.innerHTML=rows.map(r=>{ const sp=saved[r.set]&&saved[r.set][r.id], p=sp?{v:sp[1],cur:"USD",at:sp[0]}:r.price;
+      return `<li><a class="sc-row" href="/tcg?set=${encodeURIComponent(r.set)}&card=${encodeURIComponent(r.id)}" data-set="${esc(r.set)}" data-card="${esc(r.id)}">${r.img?`<img src="${esc(r.img)}" alt="" loading="lazy">`:'<span class="noimg"></span>'}<span class="sc-name">${esc(r.name)}<small>${esc([r.setName,r.number?"#"+r.number+(r.printed?"/"+r.printed:""):""].filter(Boolean).join(" · "))}</small></span><span class="sc-price">${p?esc(fmtPrice(p))+(p.at?`<small>${esc(String(p.at).replace(/\//g,"-"))}</small>`:""):"<small>no price</small>"}</span></a></li>`; }).join("");
+  }
+  async function run(parsed,readText){
+    const {name,number,total,code}=parsed, said=[name,number&&(number+(total?"/"+total:"")),code].filter(Boolean).join(" ");
+    if(!name&&!number){ status.textContent=readText?"Couldn't read a card name or number. Try again with the card flat and well lit, or type it below.":"Type a card name and/or number, e.g. Charizard 199/165."; list.innerHTML=""; return; }
+    status.textContent="Searching…"; list.innerHTML="";
+    try{
+      const rows=await search(parsed);
+      if(!rows.length){ status.textContent=`No cards found for ${said}. ${readText?"Fix the text below and press FIND.":"Check the spelling or number."}`; return; }
+      const sets=[...new Set(rows.map(r=>r.set))], saved={};
+      await Promise.all(sets.map(async s=>{ saved[s]=await savedPrices(s); }));
+      render(rows,saved);
+      status.textContent=(readText?"Read “"+said+"”. Not right? Edit below and press FIND. ":"")+(rows.length===1?"1 match":rows.length+" matches")+" · tap one for details and current price.";
+    }catch(e){ status.textContent="Couldn't search right now (card database unreachable). Try again in a moment."; }
+  }
+  form.addEventListener("submit",e=>{ e.preventDefault(); run(parse(qIn.value,null,true,setCodes),false); });
+  fileIn.addEventListener("change",async()=>{
+    const f=fileIn.files&&fileIn.files[0]; fileIn.value=""; if(!f) return;
+    list.innerHTML=""; status.textContent=ocr||window.__scanOCR?"Reading the card…":"Reading the card… (the first scan downloads the text reader, about 5 MB)";
+    try{
+      const [read,{full,strip}]=await Promise.all([loadOCR(),canvases(f)]);
+      const names=await (window.tcNamesReady||Promise.resolve(null)).catch(()=>null);
+      // the number is tiny, so it's read again from an enlarged strip of the card's bottom edge; that reading wins
+      const p=parse(await read(full),names,false,setCodes), p2=parse(await read(strip),names,false,setCodes);
+      if(p2.number){ p.number=p2.number; p.total=p2.total; }
+      if(!p.code) p.code=p2.code;
+      if(p.number) p.code=""; // the number is the better key; the set code only helps when the number is unreadable
+      qIn.value=[p.name,p.number&&(p.number+(p.total?"/"+p.total:"")),p.code].filter(Boolean).join(" ");
+      run(p,true);
+    }catch(e){ status.textContent="Couldn't read that photo ("+(e&&e.message||"error")+"). Try again, or type the card name and number below."; }
+  });
+  // results open the card in the browser (same as price movers): switch set if needed, then open the detail
+  list.addEventListener("click",e=>{
+    const a=e.target.closest("a.sc-row"); if(!a||e.metaKey||e.ctrlKey) return;
+    if(![...setSel.options].some(o=>o.value===a.dataset.set)) return; // set not in this source's list: full page load
+    e.preventDefault();
+    try{ history.replaceState(null,"",a.getAttribute("href")); }catch(_){}
+    linkedCardDone=false;
+    if(setSel.value===a.dataset.set&&allCards.some(c=>c.id===a.dataset.card)){ linkedCardDone=true; openCardDetail(a.dataset.card); }
+    else { setSel.value=a.dataset.set; loadCards(a.dataset.set); }
+  });
+  window.__scan={ parse, run, search };
+})();
 function paintBackFor(c){
   const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
   const body=el&&el.querySelector(".tb-body");
@@ -2059,12 +2234,12 @@ function withNewSets(sets,extra){
 async function loadSets(){
   const src=tcgSource;
   const extraP=src==="ptcg"?loadNewSets():Promise.resolve([]); // in backup mode TCGdex's own list already has them
-  const cachedSets=tcgCacheGet("sets-v2-"+src);
+  const cachedSets=tcgCacheGet("sets-v3-"+src);
   if(cachedSets){ fillSets(withNewSets(cachedSets,await extraP)); return; }
   statusEl.textContent="Loading sets…";
   try{
     const sets=await fetchSets(src);
-    tcgCacheSet("sets-v2-"+src,sets);
+    tcgCacheSet("sets-v3-"+src,sets);
     fillSets(withNewSets(sets,await extraP));
     statusEl.textContent="";
   }catch(err){
@@ -2073,7 +2248,9 @@ async function loadSets(){
     statusEl.textContent="offline — sample data";
   }
 }
+const setCodes=new Map(); // printed set code (e.g. MEW) -> set id, for the card scanner
 function fillSets(sets){
+  sets.forEach(s=>{ if(s.code&&/^[A-Z0-9]{2,4}$/.test(s.code)&&!setCodes.has(s.code)) setCodes.set(s.code,s.id); });
   setSel.innerHTML=sets.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}${s.releaseDate!=="—"?" ("+esc(s.releaseDate.slice(0,4))+")":""}</option>`).join("");
   // deep link from the static set pages: /tcg?set=<id> opens that set (if the current card source knows it)
   let want=null; try{ want=new URLSearchParams(location.search).get("set"); }catch(e){}

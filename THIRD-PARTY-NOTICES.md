@@ -12,6 +12,13 @@ not bundle that project's separately licensed lightning, icicle, bone or rock im
 Four arena backgrounds (Indigo Plateau, Viridian Grove, Cinnabar Crater, Seafoam Summit), the medal and the ball icon are original generated artwork
 by the site owner (backgrounds only: no creatures, trainers, text or logos), center-cropped and recompressed for the web.
 
+## Tesseract.js (card scanner)
+
+The TCG tab's SCAN A CARD feature reads card photos on the visitor's device with Tesseract.js 5.1.1
+(https://github.com/naptha/tesseract.js, Apache License 2.0) and its English language data. Nothing is bundled in this
+repository: the library, its worker, WebAssembly core and language data are loaded from the jsDelivr CDN only when someone scans.
+Photos are processed in the browser and never uploaded.
+
 ## Pokémon sprites
 
 Never stored in this repository. The Pokédex, Today and Arena tabs hotlink them from PokéAPI's sprite repository (see `SHOW_SPRITES` in `index.html`).
