@@ -49,11 +49,12 @@ export function computeMovers(hist, cardInfo, { window = 7, minPrice = 2, top = 
 }
 
 // cardId -> {name, set, setName, num, rarity, img} from data/tcg.json (facts + hotlinkable image URL only)
+// Sets added from TCGdex that pokemontcg.io also lists use pokemontcg.io's IDs (ptcgId/ptcgNums), like the prices do.
 export function cardInfoFrom(tcg) {
   const out = {};
   for (const s of tcg) for (const c of s.cards || []) {
-    const [num, name, rarity, , , , img] = c;
-    out[`${s.id}-${num}`] = { name, set: s.id, setName: s.name, num, rarity: rarity || '', img: img || '' };
+    const [n, name, rarity, , , , img] = c, num = s.ptcgId ? (s.ptcgNums || {})[n] || n : n, set = s.ptcgId || s.id;
+    out[`${set}-${num}`] = { name, set, setName: s.name, num, rarity: rarity || '', img: img || '' };
   }
   return out;
 }

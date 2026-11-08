@@ -60,10 +60,13 @@ export function planSets(list, { day, last }) {
     .sort((a, b) => b.recent - a.recent || a.last.localeCompare(b.last) || b.rel.localeCompare(a.rel))
     .map(s => s.id);
 }
-// Our card ID -> TCGdex card ID for one set: from the ID map (pokemontcg.io sets), or the set's own IDs (sets added from TCGdex).
+// The ID the site shows a set under: pokemontcg.io's, also for sets added from TCGdex that pokemontcg.io lists too (ptcgId).
+export const fileId = set => set.ptcgId || set.id;
+// Our card ID -> TCGdex card ID for one set: from the ID map (pokemontcg.io sets), or for sets added from TCGdex their own
+// IDs, translated to pokemontcg.io's (ptcgId + ptcgNums) when it lists the set too.
 export function cardIds(set, idMap) {
   const out = {};
-  if (set.src === 'tcgdex') for (const c of set.cards || []) out[`${set.id}-${c[0]}`] = `${set.id}-${c[0]}`;
+  if (set.src === 'tcgdex') for (const c of set.cards || []) out[set.ptcgId ? `${set.ptcgId}-${(set.ptcgNums || {})[c[0]] || c[0]}` : `${set.id}-${c[0]}`] = `${set.id}-${c[0]}`;
   else { const m = idMap && idMap.sets && idMap.sets[set.id]; if (m) for (const [num, tid] of Object.entries(m.cards || {})) out[`${set.id}-${num}`] = tid; }
   return out;
 }
@@ -92,11 +95,11 @@ export async function snapshot({ dir = path.join(root, 'prices'), dataFile = pat
   if (!idMap) log('::warning::data/tcg-id-map.json missing; only sets added from TCGdex can be priced');
   const day = now.toISOString().slice(0, 10), month = day.slice(0, 7);
   const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)).toISOString().slice(0, 7);
-  const byId = new Map(sets.map(s => [s.id, s]));
+  const byId = new Map(sets.map(s => [fileId(s), s]));
   // First run after the switch from pokemontcg.io: every set is due once (today's frozen pokemontcg.io column gets replaced).
   let prevIdx = {}; try { prevIdx = JSON.parse(fs.readFileSync(path.join(dir, 'latest.json'), 'utf8')); } catch (e) {}
   const switching = prevIdx.source !== 'tcgdex';
-  const ids = planSets(sets.filter(s => Object.keys(cardIds(s, idMap)).length).map(s => ({ id: s.id, rel: s.releaseDate || '' })), { day, last: id => (switching ? '' : lastSaved(dir, id, month, prev)) });
+  const ids = planSets(sets.filter(s => Object.keys(cardIds(s, idMap)).length).map(s => ({ id: fileId(s), rel: s.releaseDate || '' })), { day, last: id => (switching ? '' : lastSaved(dir, id, month, prev)) });
   if (switching) log('first TCGdex run: pricing every set once');
   log(`${ids.length} of ${sets.length} sets to price this run`);
   if (!ids.length) { log('every set is up to date'); return { priced: 0, sets: 0, failed: [] }; }

@@ -67,6 +67,7 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   let tcg = JSON.parse(fs.readFileSync(path.join(dir, 'tcg.json'), 'utf8'));
   const added = tcg.filter(s => s.src === 'tcgdex');
   check('newer TCGdex set added (TCG Pocket skipped)', added.length === 1 && added[0].id === 'me06' && added[0].cards.length === 2 && added[0].cards[0][3] === 'Trainer' && added[0].logo.endsWith('/logo.png') && added[0].standard, added);
+  check('new set that pokemontcg.io lists too: its IDs recorded (ptcgId + card numbers), so prices match the TCG tab', added[0].ptcgId === 'me6' && JSON.stringify(added[0].ptcgNums) === '{"001":"1"}', { ptcgId: added[0].ptcgId, nums: added[0].ptcgNums });
   check('new set without TCGdex pictures: pokemontcg.io pictures of the same set linked by number (hotlinked)', added[0].cards[0][6] === 'https://images.scrydex.com/pokemon/me6-1/small' && added[0].cards[1][6] === '' && ptcgCalls === 2, added[0].cards);
   check('snapshot sets kept unchanged', tcg.length === 122 && tcg[0].id === 'old0');
   await T.run(opts);

@@ -22,6 +22,8 @@ async function scriptChecks() {
   check('fallers ranked; flat and cheap (<$2) cards left out; cards not priced today left out', m.fallers[0].id === 'zz1-2' && m.fallers[0].pct === -30 && !m.risers.concat(m.fallers).some(r => ['zz1-3', 'zz1-4', 'zz1-5'].includes(r.id)), m);
   check('rows carry name, set name, number, rarity and the hotlinked image URL', m.risers[0].name === 'Card 1' && m.risers[0].setName === 'Test Set' && m.risers[0].num === '1' && m.risers[0].img === 'https://images.pokemontcg.io/zz1/1.png');
   check('movers.json written', fs.existsSync(path.join(dir, 'movers.json')));
+  const ci = M.cardInfoFrom([{ id: 'me06', src: 'tcgdex', ptcgId: 'me6', ptcgNums: { '001': '1' }, name: 'Delta Reign', cards: [['001', 'Heracross', 'Common', 'Pokémon', 'Grass', 0, 'https://images.scrydex.com/pokemon/me6-1/small', 'A']] }]);
+  check('card info for a TCGdex-added set uses pokemontcg.io IDs when it lists the set (me6-1, set me6)', ci['me6-1'] && ci['me6-1'].set === 'me6' && ci['me6-1'].num === '1' && !ci['me06-001'], ci);
   // the price source changed on Nov 1 (latest.json sourceSince): changes only measured from then -> nothing yet
   fs.writeFileSync(path.join(dir, 'latest.json'), JSON.stringify({ source: 'tcgdex', sourceSince: '2026-11-01', months: {} }));
   const m2 = M.run({ dir, dataFile: data, log: () => {} }), w = JSON.parse(fs.readFileSync(path.join(dir, 'movers.json'), 'utf8'));
