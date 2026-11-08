@@ -5,6 +5,8 @@ const TYPES = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascrip
 exports.serve = () => new Promise(res => {
   const server = http.createServer((req, rsp) => {
     let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html';
+    // assets/tcg-new-sets.json is live data (sets only TCGdex has); tests that need it mock it, the rest get an empty list
+    if (p === '/assets/tcg-new-sets.json') { rsp.writeHead(200, { 'Content-Type': 'application/json' }); return rsp.end('[]'); }
     else if (!path.extname(p) && fs.existsSync(path.join(root, p + '.html'))) p += '.html';
     const f = path.join(root, p);
     if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { rsp.writeHead(404); return rsp.end(); }

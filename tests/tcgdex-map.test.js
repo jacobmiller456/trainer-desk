@@ -50,9 +50,12 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
       return { id, name: s.name, releaseDate: s.releaseDate, cardCount: { official: s.printedTotal }, cards: s.cards.map(c => ({ id: id + '-00' + c[0], localId: '00' + c[0] })) };
     },
   };
-  let cardCalls = 0, down = false;
+  let cardCalls = 0, ptcgCalls = 0, down = false;
   const fake = async url => {
     if (down) throw new Error('ECONNREFUSED');
+    if (url.startsWith('https://api.pokemontcg.io/')) { ptcgCalls++; const q = new URL(url).searchParams.get('q');
+      const json = /^name:/.test(q) ? { data: [{ id: 'me6', name: 'Brand New' }] } : { data: [{ number: '1', images: { small: 'https://images.scrydex.com/pokemon/me6-1/small' } }] };
+      return { ok: true, json: async () => json }; }
     const p = new URL(url).pathname.replace('/v2/en/', '');
     const json = p === 'sets' ? api.sets : p.startsWith('sets/') ? api.detail(decodeURIComponent(p.slice(5))) : (cardCalls++, { id: p.slice(6), localId: p.slice(6).split('-')[1], name: 'New ' + p.slice(-1), category: 'Trainer', rarity: 'None' });
     return { ok: true, json: async () => json };
@@ -64,6 +67,7 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   let tcg = JSON.parse(fs.readFileSync(path.join(dir, 'tcg.json'), 'utf8'));
   const added = tcg.filter(s => s.src === 'tcgdex');
   check('newer TCGdex set added (TCG Pocket skipped)', added.length === 1 && added[0].id === 'me06' && added[0].cards.length === 2 && added[0].cards[0][3] === 'Trainer' && added[0].logo.endsWith('/logo.png') && added[0].standard, added);
+  check('new set without TCGdex pictures: pokemontcg.io pictures of the same set linked by number (hotlinked)', added[0].cards[0][6] === 'https://images.scrydex.com/pokemon/me6-1/small' && added[0].cards[1][6] === '' && ptcgCalls === 2, added[0].cards);
   check('snapshot sets kept unchanged', tcg.length === 122 && tcg[0].id === 'old0');
   await T.run(opts);
   tcg = JSON.parse(fs.readFileSync(path.join(dir, 'tcg.json'), 'utf8'));

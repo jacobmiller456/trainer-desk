@@ -50,6 +50,8 @@ const FILES = {
   await page.waitForFunction(() => document.querySelectorAll('#card-grid .tcard').length > 0, null, { timeout: 15000 });
   const opts = await page.$$eval('#set-select option', o => o.map(x => x.value + ':' + x.textContent));
   check('a set only TCGdex has joins the list, newest first', JSON.stringify(opts) === '["me06:Delta Reign (2026)","zz1:Test Set (2026)","zz0:Older Set (2025)"]', opts);
+  const dedup = await page.evaluate(() => { const keep = tcgdexOnly; const r = withNewSets([{ id: 'me6', name: 'Delta Reign', releaseDate: '2026/11/06' }], [{ id: 'me06', name: 'Delta Reign', releaseDate: '2026-11-06' }]).map(x => x.id); tcgdexOnly = keep; return r; }); // withNewSets also records the TCGdex-only sets: put the page's back
+  check('once pokemontcg.io lists a set itself, the TCGdex copy (same name, other id) is not added again', JSON.stringify(dedup) === '["me6"]', dedup);
   check('the newest set (the TCGdex-only one) opens by default', (await page.inputValue('#set-select')) === 'me06');
   { await page.selectOption('#set-select', 'zz1'); await page.waitForFunction(() => document.querySelectorAll('#card-grid .tcard').length === 4 && document.getElementById('set-select').value === 'zz1', null, { timeout: 15000 }); }
   await page.waitForFunction(() => /Set value: \$129\.50/.test(document.getElementById('set-value').textContent), null, { timeout: 8000 }).catch(() => {});

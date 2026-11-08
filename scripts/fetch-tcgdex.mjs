@@ -14,6 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const TCGDEX = 'https://api.tcgdex.net/v2/en';
+export const PTCG = 'https://api.pokemontcg.io/v2';
 // Hand fixes when automatic matching gets a set wrong or misses it: pokemontcg.io set ID -> TCGdex set ID
 export const SET_FIXES = {};
 const DAY = 864e5;
@@ -87,6 +88,23 @@ export const newSets = (theirs, pairs, newest) => {
   return theirs.filter(t => !taken.has(t.id) && t.releaseDate && String(t.releaseDate).slice(0, 10) > newest && !(t.serie && t.serie.id === 'tcgp'));
 };
 
+// New sets: TCGdex often lists a set before it has card pictures. If pokemontcg.io has the same set (by name) with
+// pictures, link those instead (hotlinked from its image server, never copied), matched by card number.
+export async function fillImages(extra, getJSON, log = () => {}) {
+  for (const e of extra) {
+    if (!e.cards.some(c => !c[6])) continue;
+    try {
+      const sets = await getJSON(`${PTCG}/sets?q=${encodeURIComponent(`name:"${e.name.replace(/"/g, '')}"`)}&select=id,name`);
+      const ps = (sets && sets.data || []).find(x => norm(x.name) === norm(e.name)); if (!ps) continue;
+      const cards = await getJSON(`${PTCG}/cards?q=${encodeURIComponent('set.id:' + ps.id)}&pageSize=250&select=number,images`);
+      const img = new Map((cards && cards.data || []).filter(c => c.images && c.images.small).map(c => [normNum(c.number), c.images.small]));
+      let n = 0; for (const c of e.cards) if (!c[6] && img.has(normNum(c[0]))) { c[6] = img.get(normNum(c[0])); n++; }
+      if (n) log(`  ${e.id}: ${n} card pictures linked from pokemontcg.io (${ps.id})`);
+    } catch (err) { log(`  ${e.id}: pokemontcg.io pictures unavailable (${err.message})`); }
+  }
+  return extra;
+}
+
 async function pool(items, n, fn) {
   const out = new Array(items.length); let i = 0;
   await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); } }));
@@ -135,10 +153,11 @@ export async function run({ dir = path.join(root, 'data'), fetchImpl = fetch, lo
   const extra = [];
   for (const t of newSets(theirs, pairs, newest)) {
     const old = cached.find(c => c.id === t.id);
-    if (old && old.cards.length === (t.cards || []).length) { extra.push({ ...setEntry(t, []), cards: old.cards }); continue; }
+    if (old && old.cards.length === (t.cards || []).length) { extra.push({ ...setEntry(t, []), cards: old.cards.map(c => c.slice()) }); continue; }
     const cards = (await pool(t.cards || [], 4, c => getJSON(`${TCGDEX}/cards/${encodeURIComponent(c.id)}`).catch(() => ({ ...c })))).filter(Boolean);
     extra.push(setEntry(t, cards));
   }
+  await fillImages(extra, getJSON, log);
   write('tcgdex-sets.json', extra);
   merge(extra);
   log(`TCGdex: ${Object.keys(sets).length}/${ours.length} sets and ${nMatched}/${nCards} cards matched; ${unmatched.length} sets unmatched${unmatched.length ? ' (' + unmatched.join(' ') + ')' : ''}; ${extra.length} newer sets added${extra.length ? ' (' + extra.map(e => e.id).join(' ') + ')' : ''}`);

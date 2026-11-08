@@ -2227,7 +2227,9 @@ async function loadNewSets(){
   try{ const r=await fetchWithTimeout("assets/tcg-new-sets.json",5000); if(!r.ok) return []; const j=await r.json(); return Array.isArray(j)?j.filter(x=>x&&x.id&&x.name):[]; }catch(e){ return []; }
 }
 function withNewSets(sets,extra){
-  const have=new Set(sets.map(s=>s.id)), add=extra.filter(x=>!have.has(x.id)).map(x=>({id:x.id,name:x.name,releaseDate:String(x.releaseDate||"").replace(/-/g,"/")||"—"}));
+  // skip a TCGdex set once pokemontcg.io lists the same set itself (different id, same name, e.g. me6 / me06 Delta Reign)
+  const nm=x=>String(x.name||"").toLowerCase().replace(/[^a-z0-9]+/g,""), have=new Set(sets.map(s=>s.id)), names=new Set(sets.map(nm));
+  const add=extra.filter(x=>!have.has(x.id)&&!names.has(nm(x))).map(x=>({id:x.id,name:x.name,releaseDate:String(x.releaseDate||"").replace(/-/g,"/")||"—"}));
   tcgdexOnly=new Set(add.map(x=>x.id));
   return add.length?[...add,...sets].sort((a,b)=>(b.releaseDate==="—"?"":b.releaseDate).localeCompare(a.releaseDate==="—"?"":a.releaseDate)):sets;
 }
