@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-09",
+ "fetchedAt": "2026-11-10",
  "events": [
   {
    "id": "season-24-twilight-trails",
@@ -356,6 +356,18 @@
    "spotlight": null
   },
   {
+   "id": "zacian-crowned-sword-zamazenta-crowned-shield-in-5-star-raid-battles-november-2026",
+   "name": "Zacian (Crowned Sword) and Zamazenta (Crowned Shield) in 5-star Raid Battles",
+   "type": "raid-battles",
+   "start": "2026-11-09T10:00:00.000",
+   "end": "2026-11-13T20:00:00.000",
+   "bosses": [
+    "Zacian (Crowned Sword)",
+    "Zamazenta (Crowned Shield)"
+   ],
+   "spotlight": null
+  },
+  {
    "id": "pokemon-night-out-london-2026",
    "name": "Pokémon Night Out 2026 - London",
    "type": "event",
@@ -598,11 +610,110 @@
    "spotlight": null
   },
   {
+   "id": "max-battle-day-december-2026",
+   "name": "Max Battle Day",
+   "type": "max-battles",
+   "start": "2026-12-05T14:00:00.000",
+   "end": "2026-12-05T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
    "id": "minior-showers-geminids-2026",
    "name": "Minior Showers: Geminids 2026",
    "type": "event",
    "start": "2026-12-11T17:00:00.000",
    "end": "2026-12-16T23:59:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "december-communityday2026",
+   "name": "December Community Day",
+   "type": "community-day",
+   "start": "2026-12-12T14:00:00.000",
+   "end": "2026-12-13T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "raid-day-december-2026",
+   "name": "Raid Day",
+   "type": "raid-day",
+   "start": "2026-12-19T14:00:00.000",
+   "end": "2026-12-19T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "hatch-day-december-2026",
+   "name": "Hatch Day",
+   "type": "event",
+   "start": "2026-12-26T11:00:00.000",
+   "end": "2026-12-26T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "january-communitydayclassic2027",
+   "name": "January Community Day Classic",
+   "type": "community-day",
+   "start": "2027-01-02T14:00:00.000",
+   "end": "2027-01-02T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "super-mega-raid-day-january-2027",
+   "name": "Super Mega Raid Day",
+   "type": "raid-day",
+   "start": "2027-01-09T14:00:00.000",
+   "end": "2027-01-09T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "january-communityday2027",
+   "name": "January Community Day",
+   "type": "community-day",
+   "start": "2027-01-16T14:00:00.000",
+   "end": "2027-01-16T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "max-battle-day-january-2027",
+   "name": "Max Battle Day",
+   "type": "max-battles",
+   "start": "2027-01-23T14:00:00.000",
+   "end": "2027-01-23T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "super-mega-raid-day-january-30-2027",
+   "name": "Super Mega Raid Day",
+   "type": "raid-day",
+   "start": "2027-01-30T14:00:00.000",
+   "end": "2027-01-30T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "february-communityday2027",
+   "name": "February Community Day",
+   "type": "community-day",
+   "start": "2027-02-06T14:00:00.000",
+   "end": "2027-02-06T17:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "raid-day-february-2027",
+   "name": "Raid Day",
+   "type": "raid-day",
+   "start": "2027-02-13T14:00:00.000",
+   "end": "2027-02-13T17:00:00.000",
    "bosses": [],
    "spotlight": null
   },
