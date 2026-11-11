@@ -273,6 +273,40 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .tb-src{ font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
 .tb-date{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
 .tb-hint{ font-family:var(--font-retro); font-size:14px; color:var(--gold-ink); }
+/* ---- watchlist ---- */
+#tcg-watch[hidden]{ display:none; }
+.wl-list{ list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.wl-row{ display:flex; align-items:center; gap:10px; padding:10px; }
+.wl-row a{ display:flex; align-items:center; gap:10px; flex:1; min-width:0; min-height:44px; color:var(--ink); text-decoration:none; }
+.wl-row img, .wl-row .noimg{ flex:0 0 48px; width:48px; aspect-ratio:245/342; height:auto; border-radius:3px; background:var(--parchment-2); }
+.wl-name{ flex:1; min-width:0; font-weight:700; overflow-wrap:anywhere; }
+.wl-name small{ display:block; font-weight:400; font-size:13px; color:var(--ink-soft); }
+.wl-price{ flex:0 0 auto; text-align:right; font-weight:800; font-variant-numeric:tabular-nums; }
+.wl-price small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); }
+.wl-price .up{ color:#1E7A46; } .wl-price .down{ color:#B3261E; }
+:root[data-theme="dark"] .wl-price .up{ color:#7BE0A4; } :root[data-theme="dark"] .wl-price .down{ color:#FF8F86; }
+.wl-del{ flex:0 0 44px; width:44px; height:44px; border:0; border-radius:4px; background:none; color:var(--ink-soft); font-size:20px; cursor:pointer; }
+/* ---- set completion ---- */
+.tc-own{ position:absolute; top:2px; left:2px; z-index:3; width:44px; height:44px; padding:0; border:0; background:none; cursor:pointer; display:grid; place-items:center; }
+.tc-own span{ display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.85); color:var(--forest-dark); border:2px solid var(--forest-dark); font-size:16px; font-weight:800; line-height:1; box-shadow:0 1px 3px rgba(0,0,0,.4); opacity:.8; }
+.tc-own.on span{ background:var(--meadow); opacity:1; }
+.tc-own:focus-visible span{ outline:3px solid var(--gold); }
+.own-line{ margin:-12px 0 18px; font-size:15px; color:var(--parchment); }
+.own-line:empty{ display:none; }
+.own-bar{ display:block; height:8px; margin-top:6px; border-radius:4px; background:rgba(255,255,255,.18); overflow:hidden; max-width:420px; }
+.own-bar i{ display:block; height:100%; background:var(--gold); }
+.own-sets{ padding:0 14px; margin-bottom:18px; }
+.own-sets[hidden]{ display:none; }
+.own-sets summary{ min-height:44px; display:flex; align-items:center; cursor:pointer; font-family:var(--font-pixel); font-size:10px; letter-spacing:.04em; color:var(--forest-dark); }
+.own-sets ul{ list-style:none; margin:0 0 10px; padding:0; }
+.own-set{ display:block; width:100%; min-height:44px; padding:8px 0; border:0; border-top:1px solid rgba(27,67,50,.15); background:none; color:var(--ink); font:inherit; font-size:15px; text-align:left; cursor:pointer; }
+.own-set b{ font-weight:700; } .own-set small{ color:var(--ink-soft); font-size:13px; }
+.own-set .own-bar{ background:rgba(27,67,50,.15); max-width:none; }
+.own-set .own-bar i{ background:var(--forest-light); }
+:root[data-theme="dark"] .own-sets summary{ color:var(--mint); }
+:root[data-theme="dark"] .own-set{ border-top-color:rgba(228,238,231,.12); }
+:root[data-theme="dark"] .own-set .own-bar{ background:rgba(228,238,231,.15); }
+:root[data-theme="dark"] .own-set .own-bar i{ background:var(--meadow); }
 .tc-zoom{ position:absolute; top:2px; right:2px; z-index:3; width:44px; height:44px; padding:0; border:0; background:none; cursor:pointer; display:grid; place-items:center; }
 .tc-zoom span{ display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:rgba(27,67,50,.85); color:#fff; font-size:17px; line-height:1; box-shadow:0 1px 3px rgba(0,0,0,.4); }
 .tc-zoom:focus-visible span{ outline:3px solid var(--gold); }
@@ -932,6 +966,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <button type="button" class="seg-btn" data-tcgview="binder" aria-pressed="false">MY BINDER<span id="binder-count"></span></button>
     <button type="button" class="seg-btn" data-tcgview="packs" aria-pressed="false">OPEN PACKS</button>
     <button type="button" class="seg-btn" data-tcgview="movers" aria-pressed="false">PRICE MOVERS</button>
+    <button type="button" class="seg-btn" data-tcgview="watch" aria-pressed="false">WATCHLIST<span id="watch-count"></span></button>
   </div>
 
   <div id="tcg-browse">
@@ -948,6 +983,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <p class="scan-status" id="scan-status" aria-live="polite"></p>
     <ul class="scan-results" id="scan-results"></ul>
   </section>
+  <details class="own-sets pixel-box" id="own-sets" hidden><summary>MY SET PROGRESS <span id="own-sets-n"></span></summary><ul id="own-sets-list"></ul></details>
   <div class="tcg-controls">
     <select id="set-select"><option>Loading sets…</option></select>
     <input type="text" id="card-search" placeholder="Filter by card name…">
@@ -956,13 +992,24 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
       <option value="price-desc">Sort: price, high to low</option>
       <option value="price-asc">Sort: price, low to high</option>
     </select>
+    <select id="own-filter" aria-label="Show cards">
+      <option value="all">Show: all cards</option>
+      <option value="owned">Show: cards I own</option>
+      <option value="missing">Show: cards I'm missing</option>
+    </select>
     <button type="button" class="arena-btn" id="load-prices" hidden>LOAD ALL PRICES</button>
     <span class="status" id="tcg-status"></span>
   </div>
   <div class="set-value" id="set-value" aria-live="polite"></div>
+  <div class="own-line" id="own-line" aria-live="polite"></div>
 
   <div class="card-grid" id="card-grid"></div>
   <div class="empty pixel-box" id="tcg-empty" style="display:none;"></div>
+  </div>
+
+  <div id="tcg-watch" hidden>
+    <p class="mv-intro" id="wl-intro"></p>
+    <ul class="wl-list" id="wl-list"></ul>
   </div>
 
   <div id="tcg-movers" hidden>
@@ -1982,6 +2029,8 @@ function renderCardDetail(){
     </div>
     <p class="cdd-note">Shop links are affiliate links: Trainer Desk may earn a small commission if you buy through them, at no extra cost to you.</p>`; })()}
     <div class="cdd-actions">
+      <button type="button" class="today-btn" id="cdd-watch" aria-pressed="${!!(window.__watch&&window.__watch.has(c.id))}">${window.__watch&&window.__watch.has(c.id)?"★ WATCHING":"☆ WATCH PRICE"}</button>
+      <button type="button" class="today-btn" id="cdd-own" aria-pressed="${isOwned(c.id)}">${isOwned(c.id)?"✓ I OWN THIS":"+ I OWN THIS"}</button>
       <button type="button" class="today-btn" id="cdd-binder">${inB?"✓ IN BINDER":"+ ADD TO BINDER"}</button>
       <button type="button" class="today-btn" id="cdd-share">SHARE</button>
     </div>
@@ -1989,6 +2038,10 @@ function renderCardDetail(){
   const im=cddBody.querySelector(".cdd-art img");
   if(im) im.addEventListener("error",()=>{ if(im.dataset.small&&im.src!==im.dataset.small) im.src=im.dataset.small; else if(c.images&&c.images.alt&&im.src!==c.images.alt) im.src=c.images.alt; else im.closest(".cdd-art").innerHTML=placeholderCardSVG(c); });
   if(pts&&pts.length>=2) wireChart(pts);
+  document.getElementById("cdd-watch").addEventListener("click",e=>{ if(!window.__watch) return; const on=window.__watch.toggle(c,setName);
+    e.currentTarget.textContent=on?"★ WATCHING":"☆ WATCH PRICE"; e.currentTarget.setAttribute("aria-pressed",String(on)); toast(on?"Added to your watchlist: "+c.name:"Removed from your watchlist: "+c.name); });
+  document.getElementById("cdd-own").addEventListener("click",e=>{ const on=toggleOwned(c); e.currentTarget.textContent=on?"✓ I OWN THIS":"+ I OWN THIS"; e.currentTarget.setAttribute("aria-pressed",String(on));
+    const t=grid.querySelector(`.tc-own[data-own="${CSS.escape(c.id)}"]`); if(t){ t.classList.toggle("on",on); t.setAttribute("aria-pressed",String(on)); } });
   document.getElementById("cdd-binder").addEventListener("click",e=>{ if(!window.binderToggleCard) return; const on=window.binderToggleCard(c); e.currentTarget.textContent=on?"✓ IN BINDER":"+ ADD TO BINDER"; });
   document.getElementById("cdd-share").addEventListener("click",async()=>{
     const url=`${location.origin}/tcg?set=${encodeURIComponent(setSel.value)}&card=${encodeURIComponent(c.id)}`;
@@ -2074,6 +2127,20 @@ if(cddEl){
   window.moversShow=load;
   window.__movers={ get data(){ return data; } };
 })();
+// Latest saved price per card of a set (prices/, saved daily from TCGdex): Promise<{cardId: [day, usd]}>. Used by the
+// card finder and the watchlist.
+const savedPriceCache=new Map();
+function savedPricesFor(setId){
+  if(location.protocol==="file:") return Promise.resolve({});
+  if(!savedPriceCache.has(setId)) savedPriceCache.set(setId,(async()=>{
+    const idx=await (await fetchWithTimeout("prices/latest.json",6000)).json();
+    const m=Object.keys(idx.months||{}).sort().filter(k=>(idx.months[k]||[]).includes(setId)).pop(); if(!m) return {};
+    const f=await (await fetchWithTimeout(`prices/${m}/${encodeURIComponent(setId)}.json?v=${encodeURIComponent(idx.updated||"")}`,6000)).json(), out={};
+    Object.entries(f.cards||{}).forEach(([id,vals])=>{ for(let i=vals.length-1;i>=0;i--) if(typeof vals[i]==="number"&&vals[i]>0){ out[id]=[f.days[i],vals[i]]; break; } });
+    return out;
+  })().catch(()=>{ savedPriceCache.delete(setId); return {}; }));
+  return savedPriceCache.get(setId);
+}
 /* ============ SCAN / FIND A CARD: photo -> on-device text recognition (Tesseract.js, loaded from jsDelivr only when
    someone scans) -> card name + number -> search pokemontcg.io (TCGdex if it fails) -> results with saved prices.
    The photo never leaves the device. Typing a name and/or number works the same way without a photo. ============ */
@@ -2129,18 +2196,7 @@ if(cddEl){
       return {full,strip};
     }finally{ URL.revokeObjectURL(url); }
   }
-  const priceCache=new Map(); // set id -> Promise<{cardId: [day, usd]}> from the saved daily prices
-  function savedPrices(setId){
-    if(location.protocol==="file:") return Promise.resolve({});
-    if(!priceCache.has(setId)) priceCache.set(setId,(async()=>{
-      const idx=await (await fetchWithTimeout("prices/latest.json",6000)).json();
-      const m=Object.keys(idx.months||{}).sort().filter(k=>(idx.months[k]||[]).includes(setId)).pop(); if(!m) return {};
-      const f=await (await fetchWithTimeout(`prices/${m}/${encodeURIComponent(setId)}.json?v=${encodeURIComponent(idx.updated||"")}`,6000)).json(), out={};
-      Object.entries(f.cards||{}).forEach(([id,vals])=>{ for(let i=vals.length-1;i>=0;i--) if(typeof vals[i]==="number"&&vals[i]>0){ out[id]=[f.days[i],vals[i]]; break; } });
-      return out;
-    })().catch(()=>({})));
-    return priceCache.get(setId);
-  }
+  const savedPrices=savedPricesFor;
   // exact name first, then names starting with it ("Charizard" before "Charizard δ"), else keep the source's order
   const rank=(rows,name)=>{ const n=name.toLowerCase(), sc=r=>{ const x=String(r.name||"").toLowerCase(); return x===n?0:x.startsWith(n+" ")?1:2; }; return rows.map((r,i)=>[sc(r),i,r]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]).map(x=>x[2]); };
   let dexSets=null; // TCGdex set id -> printed set size, for filtering number-only searches
@@ -2242,6 +2298,57 @@ if(cddEl){
     else { setSel.value=a.dataset.set; loadCards(a.dataset.set); }
   });
   window.__scan={ parse, run, search };
+})();
+/* ============ WATCHLIST: starred cards with their price change since the visitor's last visit and since they started
+   watching, from the saved daily prices. Saved on this device only: td-watch-v1 = {cardId: {name, set, setName, num, img,
+   p0, d0 (price + day when added), last: {p, day} (price shown at the latest visit), cmp: {p, day} (the visit before)}}. ============ */
+(function(){
+  const KEY="td-watch-v1", list=document.getElementById("wl-list"), intro=document.getElementById("wl-intro"), countEl=document.getElementById("watch-count");
+  let w=(()=>{ try{ const v=JSON.parse(localStorage.getItem(KEY)||"{}"); return v&&typeof v==="object"&&!Array.isArray(v)?v:{}; }catch(e){ return {}; } })();
+  const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(w)); }catch(e){} updateCount(); };
+  const updateCount=()=>{ const n=Object.keys(w).length; countEl.textContent=n?` (${n})`:""; };
+  const today=()=>new Date().toISOString().slice(0,10);
+  const usd=v=>"$"+v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  const pctTxt=(a,b,label)=>{ if(!(a>0)||!(b>0)) return ""; const p=Math.round((b-a)/a*1000)/10; return p>0?`<small class="up">▲ ${p}% ${label}</small>`:p<0?`<small class="down">▼ ${-p}% ${label}</small>`:`<small>no change ${label}</small>`; };
+  const fmtDay=d=>{ try{ return new Date(d+"T12:00:00Z").toLocaleDateString(undefined,{month:"short",day:"numeric"}); }catch(e){ return d; } };
+  function toggle(c,setName){
+    if(w[c.id]){ delete w[c.id]; save(); return false; }
+    const p=c.price&&c.price.cur==="USD"?c.price.v:null, day=c.price&&c.price.at?String(c.price.at).replace(/\//g,"-").slice(0,10):today();
+    w[c.id]={name:c.name,set:setOfCard(c.id),setName:setName||"",num:c.number||numOfCard(c.id),img:c.images&&c.images.small||"",p0:p,d0:today(),last:p?{p,day}:null,cmp:null};
+    save(); return true;
+  }
+  async function show(){
+    const ids=Object.keys(w);
+    if(!ids.length){ intro.textContent=""; list.innerHTML=`<li class="pixel-box" style="padding:14px">Your watchlist is empty. Open a card (⤢ on its front) and tap ☆ WATCH PRICE to follow its price here.</li>`; return; }
+    intro.textContent="Loading prices…";
+    const sets=[...new Set(ids.map(id=>w[id].set))], saved={};
+    await Promise.all(sets.map(async s=>{ saved[s]=await savedPricesFor(s); }));
+    let latest="";
+    const rows=ids.map(id=>{
+      const e=w[id], cur=saved[e.set]&&saved[e.set][id]; let since="";
+      if(cur){ const [day,p]=cur; if(day>latest) latest=day;
+        if(!e.last||day>e.last.day){ if(e.last) e.cmp=e.last; e.last={p,day}; } // a newer saved price than at the last visit
+        if(e.cmp) since=pctTxt(e.cmp.p,p,"since "+fmtDay(e.cmp.day)); }
+      const now=cur?cur[1]:(e.last&&e.last.p)||null;
+      return `<li class="wl-row pixel-box"><a href="/tcg?set=${encodeURIComponent(e.set)}&card=${encodeURIComponent(id)}" data-set="${esc(e.set)}" data-card="${esc(id)}">${e.img?`<img src="${esc(e.img)}" alt="" loading="lazy">`:'<span class="noimg"></span>'}<span class="wl-name">${esc(e.name)}<small>${esc([e.setName,e.num?"#"+e.num:""].filter(Boolean).join(" · "))}</small></span><span class="wl-price">${now?usd(now):"<small>no price yet</small>"}${since}${now&&e.p0?pctTxt(e.p0,now,"since you added it"):""}</span></a><button type="button" class="wl-del" data-del="${esc(id)}" aria-label="Stop watching ${esc(e.name)}">✕</button></li>`;
+    });
+    save();
+    list.innerHTML=rows.join("");
+    intro.textContent=`${ids.length} card${ids.length===1?"":"s"} you're watching · TCGplayer market prices${latest?`, updated ${fmtDay(latest)}`:""}. Prices are saved once a day (older sets weekly).`;
+  }
+  list.addEventListener("click",e=>{
+    const d=e.target.closest("[data-del]"); if(d){ delete w[d.dataset.del]; save(); show(); return; }
+    const a=e.target.closest("a[data-card]"); if(!a||e.metaKey||e.ctrlKey||tcgSource==="tcgdex") return;
+    if(![...setSel.options].some(o=>o.value===a.dataset.set)) return;
+    e.preventDefault();
+    try{ history.replaceState(null,"",a.getAttribute("href")); }catch(_){}
+    linkedCardDone=false; if(window.tcgShowView) window.tcgShowView("browse");
+    if(setSel.value===a.dataset.set&&allCards.some(c=>c.id===a.dataset.card)){ linkedCardDone=true; openCardDetail(a.dataset.card); }
+    else { setSel.value=a.dataset.set; loadCards(a.dataset.set); }
+  });
+  updateCount();
+  window.watchShow=show;
+  window.__watch={ has:id=>!!w[id], toggle, get data(){ return w; } };
 })();
 function paintBackFor(c){
   const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
@@ -2364,6 +2471,7 @@ function sortedCards(list){
   });
 }
 function updateSetValue(){
+  updateOwnLine();
   const real=allCards.filter(c=>!c.sample);
   if(!real.length){ valueEl.textContent=""; return; }
   if(bulk){ const done=real.filter(c=>c.priceState).length; valueEl.textContent="Loading prices… "+done+"/"+real.length; return; }
@@ -2382,22 +2490,61 @@ loadBtn.addEventListener("click",()=>{
   updateSetValue(); bulkCheck();
 });
 sortEl.addEventListener("change",()=>renderCards());
+/* ---- Set completion: the cards a visitor owns, per set, saved on this device only (like binders).
+   td-owned-v1 = {setId: {name, n: cards in the set, have: [card numbers]}}. Same card IDs as binders and prices. ---- */
+const OWN_KEY="td-owned-v1", ownFilterEl=document.getElementById("own-filter"), ownLine=document.getElementById("own-line");
+let owned=(()=>{ try{ const v=JSON.parse(localStorage.getItem(OWN_KEY)||"{}"); return v&&typeof v==="object"&&!Array.isArray(v)?v:{}; }catch(e){ return {}; } })();
+const setOfCard=id=>id.slice(0,id.lastIndexOf("-")), numOfCard=id=>id.slice(id.lastIndexOf("-")+1);
+function ownSave(){ try{ localStorage.setItem(OWN_KEY,JSON.stringify(owned)); }catch(e){} }
+function isOwned(id){ const s=owned[setOfCard(id)]; return !!(s&&Array.isArray(s.have)&&s.have.includes(numOfCard(id))); }
+function curSetName(){ const o=setSel.options[setSel.selectedIndex]; return o?o.textContent.replace(/\s*\(\d{4}\)$/,""):""; }
+function toggleOwned(c){
+  const sid=setOfCard(c.id), num=numOfCard(c.id), s=owned[sid]||(owned[sid]={name:"",n:0,have:[]}), i=s.have.indexOf(num);
+  if(i>=0) s.have.splice(i,1); else s.have.push(num);
+  if(sid===setSel.value){ s.name=curSetName(); s.n=allCards.filter(x=>!x.sample).length; }
+  if(!s.have.length) delete owned[sid];
+  ownSave(); updateOwnLine(); renderOwnSets(); return i<0;
+}
+function updateOwnLine(){
+  if(!ownLine) return;
+  const real=allCards.filter(c=>!c.sample); if(!real.length){ ownLine.textContent=""; return; }
+  const mine=real.filter(c=>isOwned(c.id)), pct=Math.round(mine.length/real.length*100);
+  const s=owned[setSel.value]; if(s&&s.n!==real.length){ s.n=real.length; s.name=s.name||curSetName(); ownSave(); }
+  if(!mine.length){ ownLine.innerHTML="Own some of these? Tap ✓ on a card to track your set."; return; }
+  const usd=mine.reduce((t,c)=>t+(c.price&&c.price.cur==="USD"?c.price.v:0),0);
+  ownLine.innerHTML=`✓ You own <b>${mine.length} / ${real.length}</b> (${pct}%)${usd?` · worth about <b>$${usd.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</b>`:""}<span class="own-bar" aria-hidden="true"><i style="width:${pct}%"></i></span>`;
+}
+function renderOwnSets(){
+  const box=document.getElementById("own-sets"); if(!box) return;
+  const ids=Object.keys(owned).filter(k=>owned[k]&&Array.isArray(owned[k].have)&&owned[k].have.length);
+  box.hidden=!ids.length; document.getElementById("own-sets-n").textContent=ids.length?`(${ids.length})`:"";
+  document.getElementById("own-sets-list").innerHTML=ids.map(k=>{ const s=owned[k], n=s.n||0, pct=n?Math.min(100,Math.round(s.have.length/n*100)):0;
+    return `<li><button type="button" class="own-set" data-set="${esc(k)}"><b>${esc(s.name||k)}</b> <small>${s.have.length}${n?` / ${n} · ${pct}%`:" owned"}</small><span class="own-bar" aria-hidden="true"><i style="width:${pct}%"></i></span></button></li>`; }).join("");
+}
+document.getElementById("own-sets-list").addEventListener("click",e=>{
+  const b=e.target.closest("[data-set]"); if(!b) return;
+  if(![...setSel.options].some(o=>o.value===b.dataset.set)) return;
+  if(ownFilterEl) ownFilterEl.value="all";
+  setSel.value=b.dataset.set; loadCards(b.dataset.set); document.getElementById("own-sets").open=false;
+});
+if(ownFilterEl) ownFilterEl.addEventListener("change",()=>renderCards());
+renderOwnSets();
 function renderCards(){
-  const q=searchEl.value.trim().toLowerCase();
-  const list=sortedCards(q?allCards.filter(c=>c.name.toLowerCase().includes(q)):allCards);
+  const q=searchEl.value.trim().toLowerCase(), of=ownFilterEl?ownFilterEl.value:"all";
+  const list=sortedCards(allCards.filter(c=>(!q||c.name.toLowerCase().includes(q))&&(of==="all"||c.sample||(of==="owned")===isOwned(c.id))));
   detailList=list.filter(c=>!c.sample);
-  if(!list.length){ grid.innerHTML=""; emptyEl.style.display="block"; emptyEl.textContent="No cards match that filter."; return; }
+  if(!list.length){ grid.innerHTML=""; emptyEl.style.display="block"; emptyEl.textContent=of==="owned"&&!q?"You haven't marked any cards in this set yet. Tap ✓ on a card you own.":of==="missing"&&!q?"Nothing missing: you own every card in this set!":"No cards match that filter."; updateOwnLine(); return; }
   emptyEl.style.display="none";
   grid.innerHTML=list.map(c=>`
     <div class="tcard" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(c.name)} — flip to see price" data-id="${esc(c.id)}">
       <div class="tflip">
         <div class="tface tfront pixel-box">
-          ${c.sample?"":`<button type="button" class="tc-zoom" data-zoom="${esc(c.id)}" aria-label="Open ${esc(c.name)} details"><span aria-hidden="true">⤢</span></button>`}
+          ${c.sample?"":`<button type="button" class="tc-own${isOwned(c.id)?" on":""}" data-own="${esc(c.id)}" aria-pressed="${isOwned(c.id)}" aria-label="I own ${esc(c.name)} #${esc(c.number)}"><span aria-hidden="true">✓</span></button><button type="button" class="tc-zoom" data-zoom="${esc(c.id)}" aria-label="Open ${esc(c.name)} details"><span aria-hidden="true">⤢</span></button>`}
           <div class="imgwrap${rarityTier(c.rarity)>=3?" holo":""}">
             ${c.images?`<img class="card-img" data-src="${esc(c.images.small)}"${c.images.alt?` data-alt="${esc(c.images.alt)}"`:/\.webp$/.test(c.images.small)?` data-alt="${esc(c.images.small.replace(/\.webp$/,".png"))}"`:""} alt="${esc(c.name)}" decoding="async">`:placeholderCardSVG(c)}
           </div>
           <div class="meta">
-            <div class="nm">${c.name}</div>
+            <div class="nm">${esc(c.name)}</div>
             <div class="sub"><span>#${c.number}</span><span>${c.rarity||"—"}</span></div>
           </div>
         </div>
@@ -2433,6 +2580,10 @@ grid.addEventListener("error",e=>{
   const wrap=im.closest(".imgwrap"); if(wrap) wrap.innerHTML=placeholderCardSVG(c||{name:im.alt||"?"});
 },true);
 grid.addEventListener("click",e=>{
+  const o=e.target.closest("[data-own]");
+  if(o){ e.stopPropagation(); const c=allCards.find(x=>x.id===o.dataset.own); if(!c) return; const on=toggleOwned(c);
+    o.classList.toggle("on",on); o.setAttribute("aria-pressed",String(on)); toast(on?`✓ Marked as owned: ${c.name}`:`Removed from your owned cards: ${c.name}`);
+    if(ownFilterEl&&ownFilterEl.value!=="all") renderCards(); return; }
   const z=e.target.closest("[data-zoom]"); if(z){ e.stopPropagation(); openCardDetail(z.dataset.zoom); return; }
   const el=e.target.closest(".tcard"); if(el) toggleCard(el);
 });
@@ -2525,7 +2676,8 @@ function toast(msg){
   // ---- view switch ----
   function showView(which){
     const binder=which==="binder";
-    browse.hidden=which!=="browse"; view.hidden=!binder; document.getElementById("tcg-packs").hidden=which!=="packs"; document.getElementById("tcg-movers").hidden=which!=="movers";
+    browse.hidden=which!=="browse"; view.hidden=!binder; document.getElementById("tcg-packs").hidden=which!=="packs"; document.getElementById("tcg-movers").hidden=which!=="movers"; document.getElementById("tcg-watch").hidden=which!=="watch";
+    if(which==="watch"&&window.watchShow) window.watchShow();
     if(which==="packs"&&window.packsShow) window.packsShow();
     if(which==="movers"&&window.moversShow) window.moversShow();
     document.querySelectorAll("[data-tcgview]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.tcgview===which)));
@@ -4432,7 +4584,7 @@ loadSets();
   if("serviceWorker" in navigator&&canRoute&&(!navigator.webdriver||window.__tdSwTest)) addEventListener("load",()=>{ navigator.serviceWorker.register("/sw.js").catch(()=>{}); });
   // Home screen shortcuts (site.webmanifest) open /tcg?view=movers and /pokedex?view=collection
   let v=null; try{ v=new URLSearchParams(location.search).get("view"); }catch(e){}
-  if(v==="movers"&&window.tcgShowView) window.tcgShowView("movers");
+  if((v==="movers"||v==="watch")&&window.tcgShowView) window.tcgShowView(v);
   if(v==="collection"&&window.__collection) window.__collection.show("collection");
 
   const card=document.getElementById("today-app"), btn=document.getElementById("app-install"), ios=document.getElementById("app-ios");
