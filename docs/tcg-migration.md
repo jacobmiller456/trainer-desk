@@ -1,6 +1,8 @@
 # Plan: replacing pokemontcg.io before March 1, 2027
 
-Status (Oct 28, 2026): **owner approved** — prices from TCGdex, TCGdex images may be the main source, groundwork now and the app switch in early January. Phases 1–2 built (`scripts/fetch-tcgdex.mjs`, run weekly by `refresh-data.yml`). Keep this file updated as phases land.
+Status (Nov 11, 2026): **app switched** — the TCG tab reads the site's own catalog (`tcgdata/`, from `data/tcg.json`), prices come from the saved TCGdex prices, the card finder searches the catalog, and pictures fall back to TCGdex's copy; pokemontcg.io is only a backup now. Remaining before March 1: once pokemontcg.io is gone, `fetch-tcg-data.mjs` (pokemon-tcg-data on GitHub) may stop changing, and new sets come from TCGdex via `fetch-tcgdex.mjs` as already built; then remove the pokemontcg.io fallbacks.
+
+Earlier status (Oct 28, 2026): **owner approved** — prices from TCGdex, TCGdex images may be the main source, groundwork now and the app switch in early January. Phases 1–2 built (`scripts/fetch-tcgdex.mjs`, run weekly by `refresh-data.yml`). Keep this file updated as phases land.
 
 ## Why
 - The Pokémon TCG API (pokemontcg.io) goes offline on **March 1, 2027**. Its successor, Scrydex, is paid; new pokemontcg.io sign-ups are closed. Scrydex keeps the old card IDs.

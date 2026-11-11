@@ -65,11 +65,11 @@ export function matchCards(nums, theirs) {
   return { map, unmatched };
 }
 
-// One TCGdex card -> our compact row [number, name, rarity, supertype, types, dex no., small image, artist]
+// One TCGdex card -> our compact row [number, name, rarity, supertype, types, dex no., small image, artist, HP]
 const SUPER = { Pokemon: 'Pokémon', Trainer: 'Trainer', Energy: 'Energy' };
 export function cardRow(c) {
   return [c.localId || '', c.name || '', c.rarity && c.rarity !== 'None' ? c.rarity : '', SUPER[c.category] || c.category || '',
-    (c.types || []).join('/'), (c.dexId || [])[0] || 0, c.image ? c.image + '/low.webp' : '', c.illustrator || ''];
+    (c.types || []).join('/'), (c.dexId || [])[0] || 0, c.image ? c.image + '/low.webp' : '', c.illustrator || '', c.hp ? String(c.hp) : ''];
 }
 const byNum = (a, b) => (parseInt(a[0], 10) || 1e9) - (parseInt(b[0], 10) || 1e9) || a[0].localeCompare(b[0]);
 export function setEntry(t, cards) {
@@ -153,7 +153,10 @@ export async function run({ dir = path.join(root, 'data'), fetchImpl = fetch, lo
   for (const o of ours) {
     const t = pairs[o.id] && byId.get(pairs[o.id]); if (!t) continue;
     const { map, unmatched: miss } = matchCards(o.cards.map(c => c[0]), t.cards || []);
-    sets[o.id] = { id: t.id, cards: map };
+    // img: the set's TCGdex picture folder (a card's picture is <img><localId>/low.webp), the site's fallback when the
+    // main picture link stops working (pokemontcg.io's image server after its shutdown)
+    const one = (t.cards || []).find(c => c.image && c.localId);
+    sets[o.id] = { id: t.id, ...(one ? { img: one.image.slice(0, one.image.length - String(one.localId).length) } : {}), cards: map };
     if (miss.length) missingCards[o.id] = miss;
   }
   const nCards = ours.reduce((n, s) => n + s.cards.length, 0), nMatched = Object.values(sets).reduce((n, s) => n + Object.keys(s.cards).length, 0);

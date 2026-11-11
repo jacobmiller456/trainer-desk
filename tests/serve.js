@@ -7,6 +7,8 @@ exports.serve = () => new Promise(res => {
     let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html';
     // assets/tcg-new-sets.json is live data (sets only TCGdex has); tests that need it mock it, the rest get an empty list
     if (p === '/assets/tcg-new-sets.json') { rsp.writeHead(200, { 'Content-Type': 'application/json' }); return rsp.end('[]'); }
+    // tcgdata/ is the real card catalog: tests that want it mock or read it explicitly; the rest exercise the live-API path
+    if (p.startsWith('/tcgdata/')) { rsp.writeHead(404); return rsp.end(); }
     else if (!path.extname(p) && fs.existsSync(path.join(root, p + '.html'))) p += '.html';
     const f = path.join(root, p);
     if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { rsp.writeHead(404); return rsp.end(); }

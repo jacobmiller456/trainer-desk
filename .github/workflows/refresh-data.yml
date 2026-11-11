@@ -30,7 +30,7 @@ jobs:
       - run: node scripts/build-pages.mjs
       - name: Commit changes
         run: |
-          git add -A data pokedex tcg sitemap.xml assets/pokedex-names.json assets/tcg-new-sets.json
+          git add -A data pokedex tcg tcgdata sitemap.xml assets/pokedex-names.json assets/tcg-new-sets.json
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git config user.name "trainer-desk-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

@@ -32,7 +32,7 @@ check('live prices deep link', pb.includes('href="/tcg?set=me5"'));
   check('most sets have a list (sets without recent prices are skipped)', withList > 100 && withList <= tcg.length, withList);
 }
 const me5 = JSON.parse(read('data/tcg.json')).find(s => s.id === 'me5');
-check('data keeps no flavor or attack text', !JSON.stringify(me5).includes('Delicious fruits') && me5.cards[0].length === 8);
+check('data keeps no flavor or attack text', !JSON.stringify(me5).includes('Delicious fruits') && me5.cards[0].length === 9);
 check('apostrophes dropped from slugs', fs.existsSync(path.join(root, 'tcg/champions-path.html')));
 const idx = read('tcg/sets.html');
 check('set index links every set', tcg.every(s => idx.includes(`>${s.name.replace(/&/g, '&amp;').replace(/'/g, '&#39;')}</a>`)) && /All Pokémon TCG sets<\/h1>/.test(idx));

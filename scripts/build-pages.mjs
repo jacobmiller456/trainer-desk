@@ -453,16 +453,39 @@ files.set(path.join('assets', 'pokedex-names.json'), JSON.stringify(dex.map(p =>
 // sets only TCGdex has (newer than the pokemon-tcg-data snapshot): the TCG tab adds these to pokemontcg.io's set list
 files.set(path.join('assets', 'tcg-new-sets.json'), JSON.stringify(tcg.filter(s => s.src === 'tcgdex').map(s => ({ id: s.id, name: s.name, releaseDate: s.releaseDate }))) + '\n');
 files.set('sitemap.xml', sitemap());
+// ---- tcgdata/: the TCG tab's own card catalog (facts + hotlinked picture links, from data/tcg.json; no card text),
+// so it no longer depends on a live card API (pokemontcg.io shuts down March 1, 2027; TCGdex stays as the live backup).
+// Card and set IDs are the site's (siteSet/siteCard), so binders, links and saved prices match. Not under assets/,
+// which browsers cache for a week: new sets must show up the day they're added.
+//   tcgdata/sets.json   [{id, name, series, releaseDate "YYYY/MM/DD", printedTotal, code}] newest first
+//   tcgdata/<id>.json   {id, name, printedTotal, img, cards:[[num, name, rarity, supertype, types, hp, artist, picture, tcgdexLocalId]]}
+//                       img + tcgdexLocalId + "/low.webp" = the card's TCGdex picture, the fallback if the main link fails
+//   tcgdata/search.json {sets:{id:[name, printedTotal, code]}, cards:[[cardId, name, number]]} for the card finder/scanner
+const idMap = (() => { try { return JSON.parse(fs.readFileSync(path.join(root, 'data/tcg-id-map.json'), 'utf8')); } catch (e) { return { sets: {} }; } })();
+const catalog = [...tcg].sort((a, b) => b.releaseDate.localeCompare(a.releaseDate) || a.id.localeCompare(b.id));
+files.set(path.join('tcgdata', 'sets.json'), JSON.stringify(catalog.map(t => ({ id: siteSet(t), name: t.name, series: t.series, releaseDate: t.releaseDate.replace(/-/g, '/'), printedTotal: t.printedTotal || 0, code: t.ptcgoCode || '' }))) + '\n');
+const search = { sets: {}, cards: [] };
+for (const t of catalog) {
+  const sid = siteSet(t), m = idMap.sets && idMap.sets[t.id];
+  let img = (m && m.img) || '';
+  const local = c => { if (t.src === 'tcgdex') return c[0]; const tid = m && m.cards && m.cards[c[0]]; return tid ? tid.slice(tid.lastIndexOf('-') + 1) : ''; };
+  if (!img && t.src === 'tcgdex') { const one = t.cards.find(c => /^https:\/\/assets\.tcgdex\.net\/.+\/low\.webp$/.test(c[6])); if (one) img = one[6].replace(/[^/]+\/low\.webp$/, ''); }
+  files.set(path.join('tcgdata', sid + '.json'), JSON.stringify({ id: sid, name: t.name, printedTotal: t.printedTotal || 0, img,
+    cards: t.cards.map(c => [siteCard(t, c).slice(sid.length + 1), c[1], c[2], c[3], c[4], c[8] || '', c[7], c[6], img ? local(c) : '']) }) + '\n');
+  search.sets[sid] = [t.name, t.printedTotal || 0, t.ptcgoCode || ''];
+  for (const c of t.cards) search.cards.push([siteCard(t, c), c[1], siteCard(t, c).slice(sid.length + 1)]);
+}
+files.set(path.join('tcgdata', 'search.json'), JSON.stringify(search) + '\n');
 const stale = [];
-if (!check) for (const d of ['pokedex', 'tcg', 'go']) fs.mkdirSync(path.join(root, d), { recursive: true });
+if (!check) for (const d of ['pokedex', 'tcg', 'go', 'tcgdata']) fs.mkdirSync(path.join(root, d), { recursive: true });
 for (const [rel, html] of files) {
   const f = path.join(root, rel);
   if (check) { if (!fs.existsSync(f) || fs.readFileSync(f, 'utf8') !== html) stale.push(rel); }
   else fs.writeFileSync(f, html);
 }
-if (!check) for (const d of ['pokedex', 'tcg', 'go']) for (const n of fs.readdirSync(path.join(root, d))) if (!files.has(path.join(d, n))) fs.unlinkSync(path.join(root, d, n));
+if (!check) for (const d of ['pokedex', 'tcg', 'go', 'tcgdata']) for (const n of fs.readdirSync(path.join(root, d))) if (!files.has(path.join(d, n))) fs.unlinkSync(path.join(root, d, n));
 if (check) {
-  const extra = ['pokedex', 'tcg', 'go'].flatMap(d => fs.existsSync(path.join(root, d)) ? fs.readdirSync(path.join(root, d)).filter(n => !files.has(path.join(d, n))) : []);
+  const extra = ['pokedex', 'tcg', 'go', 'tcgdata'].flatMap(d => fs.existsSync(path.join(root, d)) ? fs.readdirSync(path.join(root, d)).filter(n => !files.has(path.join(d, n))) : []);
   if (stale.length || extra.length) { console.error(`Static pages out of date (${stale.length} changed, ${extra.length} extra) — run: npm run static-pages`); process.exit(1); }
   console.log(`static pages up to date (${dex.length} Pokémon, ${tcg.length} sets, ${pagedEvents.length} event guides)`);
 } else console.log(`wrote ${dex.length} Pokémon pages, ${tcg.length} set pages, the set index, ${pagedEvents.length} event guides + index and sitemap.xml`);

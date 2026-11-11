@@ -1746,11 +1746,19 @@ const statusEl=document.getElementById("tcg-status");
 const emptyEl=document.getElementById("tcg-empty");
 const searchEl=document.getElementById("card-search");
 let allCards=[];
-let tcgSource=tcgCacheGet("source")||"ptcg"; // "ptcg" = pokemontcg.io, "tcgdex" = backup; sticks for the session once the primary fails
+// "site" = the site's own catalog in tcgdata/ (built from data/tcg.json by scripts/build-pages.mjs; no live card API),
+// then "ptcg" = pokemontcg.io (shuts down March 1, 2027), then "tcgdex" = TCGdex; a source that fails is skipped for the
+// rest of the session. Card IDs are the same in "site" and "ptcg" (binders, links, saved prices); TCGdex's differ.
+let tcgSource=tcgCacheGet("source")||(location.protocol==="file:"?"ptcg":"site");
 // Source of the cards on screen: tcgSource, except sets only TCGdex has (newer than pokemontcg.io's list, from
 // assets/tcg-new-sets.json, built from data/tcg.json by scripts/build-pages.mjs) always load from TCGdex.
 let cardSrc=tcgSource, tcgdexOnly=new Set();
 async function fetchSets(src){
+  if(src==="site"){
+    const r=await fetchWithTimeout("tcgdata/sets.json",8000); if(!r.ok) throw new Error(r.status);
+    const j=await r.json(); if(!Array.isArray(j)||!j.length) throw new Error("no sets");
+    return j.map(x=>({id:x.id,name:x.name,releaseDate:x.releaseDate||"—",code:x.code||""}));
+  }
   if(src==="tcgdex"){
     const r=await fetchWithTimeout(`${TCGDEX}/sets`,TCGDEX_TIMEOUT);
     if(!r.ok) throw new Error(r.status);
@@ -1852,6 +1860,7 @@ function backInner(c){
   if(c.price) return `<div class="tb-price">${esc(fmtPrice(c.price))}</div><div class="tb-src">${esc(c.price.src)} market price</div>${sparkline(c)||(c.price.at?`<div class="tb-date">Updated ${esc(c.price.at)}</div>`:"")}`;
   if(c.priceState==="fail") return `<div class="tb-src">Couldn't load the price</div><div class="tb-date">Flip again to retry</div>`;
   if(cardSrc==="tcgdex"&&c.priceState===undefined) return `<div class="tb-src">Loading price…</div>`;
+  if(cardSrc==="site"&&histPending) return `<div class="tb-src">Loading price…</div>`;
   return `<div class="tb-src">No price listed</div>`;
 }
 /* ---- Price history sparklines: daily TCGplayer prices saved by .github/workflows/prices.yml into prices/<month>/<set>.json.
@@ -1859,8 +1868,10 @@ function backInner(c){
 const PRICE_HIST_MONTHS=3; let priceHistIndex=null; const priceHist=new Map(); // card id -> [[day, usd], ...]
 // The latest saved price (TCGdex, refreshed every morning by prices.yml) replaces the card source's own price, which for
 // pokemontcg.io has been frozen since Oct 16, 2026; cards the daily saves don't cover keep the source's price.
+let histPending=false; // site catalog: prices arrive with the saved price files
 async function loadPriceHistory(setId){
   if(!setId||setId==="sample"||location.protocol==="file:") return;
+  histPending=cardSrc==="site";
   try{
     if(!priceHistIndex){ const r=await fetchWithTimeout("prices/latest.json",6000); if(!r.ok) throw new Error(r.status); priceHistIndex=await r.json(); }
     const months=Object.keys(priceHistIndex.months||{}).sort().filter(m=>(priceHistIndex.months[m]||[]).includes(setId)).slice(-PRICE_HIST_MONTHS);
@@ -1884,6 +1895,7 @@ async function loadPriceHistory(setId){
     if(changed){ updateSetValue(); if(sortEl.value!=="number") renderCards(); }
     if(typeof refreshCardDetail==="function") refreshCardDetail();
   }catch(e){ /* no history yet or offline: card backs just show today's price */ }
+  if(histPending){ histPending=false; allCards.forEach(c=>paintBackFor(c)); } // cards with no saved price now say so
 }
 function sparkline(c){
   const pts=c.price&&c.price.cur==="USD"&&priceHist.get(c.id);
@@ -1904,6 +1916,7 @@ const fmtDay=d=>{ const t=new Date(d+"T12:00:00Z"); return isNaN(t)?d:t.toLocale
 function largeImg(c){
   const im=c.images; if(!im) return null;
   if(im.large) return im.large;
+  if(/^https:\/\/images\.scrydex\.com\/.+\/small$/.test(im.small)) return im.small.replace(/\/small$/,"/large");
   if(/^https:\/\/images\.pokemontcg\.io\/.+\.png$/.test(im.small)&&!/_hires\.png$/.test(im.small)) return im.small.replace(/\.png$/,"_hires.png");
   return im.small;
 }
@@ -1972,9 +1985,9 @@ function renderCardDetail(){
       <button type="button" class="today-btn" id="cdd-binder">${inB?"✓ IN BINDER":"+ ADD TO BINDER"}</button>
       <button type="button" class="today-btn" id="cdd-share">SHARE</button>
     </div>
-    <p class="cdd-note">Card image from ${cardSrc==="tcgdex"?"TCGdex":"the Pokémon TCG API"}. Swipe or use ◀ ▶ to see other cards.</p>`;
+    <p class="cdd-note">Card image from ${/tcgdex\.net/.test(img||"")?"TCGdex":"the Pokémon TCG API"}. Swipe or use ◀ ▶ to see other cards.</p>`;
   const im=cddBody.querySelector(".cdd-art img");
-  if(im) im.addEventListener("error",()=>{ if(im.dataset.small&&im.src!==im.dataset.small) im.src=im.dataset.small; else im.closest(".cdd-art").innerHTML=placeholderCardSVG(c); });
+  if(im) im.addEventListener("error",()=>{ if(im.dataset.small&&im.src!==im.dataset.small) im.src=im.dataset.small; else if(c.images&&c.images.alt&&im.src!==c.images.alt) im.src=c.images.alt; else im.closest(".cdd-art").innerHTML=placeholderCardSVG(c); });
   if(pts&&pts.length>=2) wireChart(pts);
   document.getElementById("cdd-binder").addEventListener("click",e=>{ if(!window.binderToggleCard) return; const on=window.binderToggleCard(c); e.currentTarget.textContent=on?"✓ IN BINDER":"+ ADD TO BINDER"; });
   document.getElementById("cdd-share").addEventListener("click",async()=>{
@@ -2049,7 +2062,7 @@ if(cddEl){
   minSel.addEventListener("change",render);
   list.addEventListener("error",e=>{ const im=e.target; if(im&&im.tagName==="IMG"&&im.classList.contains("mv-img")) im.outerHTML='<span class="mv-img" aria-hidden="true"></span>'; },true); // unreachable image: plain tile
   list.addEventListener("click",e=>{ // open the card in place when the main card source is up (backup source uses different ids)
-    const a=e.target.closest("a.mv-row"); if(!a||tcgSource!=="ptcg"||e.metaKey||e.ctrlKey) return;
+    const a=e.target.closest("a.mv-row"); if(!a||tcgSource==="tcgdex"||e.metaKey||e.ctrlKey) return;
     if(![...setSel.options].some(o=>o.value===a.dataset.set)) return; // unknown set: let the link do a full load
     e.preventDefault();
     try{ history.replaceState(null,"",a.getAttribute("href")); }catch(_){}
@@ -2135,7 +2148,35 @@ if(cddEl){
     if(!dexSets) dexSets=fetchWithTimeout(`${TCGDEX}/sets`,TCGDEX_TIMEOUT).then(r=>r.ok?r.json():[]).then(j=>new Map((Array.isArray(j)?j:[]).map(x=>[x.id,x.cardCount&&x.cardCount.official||0]))).catch(()=>{ dexSets=null; return new Map(); });
     return dexSets;
   }
-  async function search({name,number,total,code}){
+  // The site's own catalog first (tcgdata/search.json, ~180 KB, loaded on the first search): no live card API needed.
+  let searchIdx=null; const setFiles=new Map();
+  async function siteSearch({name,number,total,code}){
+    if(!searchIdx) searchIdx=fetchWithTimeout("tcgdata/search.json",15000).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }).catch(e=>{ searchIdx=null; throw e; });
+    const ix=await searchIdx, first=(name.split(" ")[0]||"").toLowerCase();
+    const find=useTotal=>{ const out=[];
+      for(const [id,nm,num] of ix.cards){
+        if(number&&normNum(String(num))!==number) continue;
+        if(first&&!String(nm).toLowerCase().startsWith(first)) continue;
+        const sid=id.slice(0,id.length-String(num).length-1), st=ix.sets[sid]||["",0,""];
+        if(useTotal&&total&&String(st[1])!==total) continue;
+        if(code&&!total&&st[2]!==code) continue;
+        out.push({id,set:sid,setName:st[0],printed:st[1],number:num,name:nm,img:"",price:null});
+      }
+      return out; };
+    let rows=find(true); if(!rows.length&&total) rows=find(false); // a misread set size shouldn't hide the card
+    rows=rank(rows,name).slice(0,12);
+    await Promise.all([...new Set(rows.map(r=>r.set))].map(async sid=>{ // pictures from each set's catalog file
+      if(!setFiles.has(sid)) setFiles.set(sid,fetchWithTimeout(`tcgdata/${encodeURIComponent(sid)}.json`,8000).then(r=>r.ok?r.json():null).catch(()=>null));
+      const f=await setFiles.get(sid); if(!f) return; const by=new Map(f.cards.map(c=>[`${sid}-${c[0]}`,c]));
+      rows.forEach(r=>{ if(r.set!==sid) return; const c=by.get(r.id); if(c) r.img=c[7]||(f.img&&c[8]?f.img+c[8]+"/low.webp":""); });
+    }));
+    return rows;
+  }
+  async function search(parsed){
+    if(tcgSource!=="tcgdex") try{ return await siteSearch(parsed); }catch(e){ /* catalog unreachable: live card APIs below */ }
+    return liveSearch(parsed);
+  }
+  async function liveSearch({name,number,total,code}){
     const first=(name.split(" ")[0]||"").replace(/[^\p{L}\p{N}'.\-]/gu,"");
     // pokemontcg.io: name (first word, so "Charizard" finds "Charizard ex") + number + printed set size; it sometimes
     // answers 500/503, so one retry before falling back to TCGdex
@@ -2216,6 +2257,17 @@ function toggleCard(el){
   paintBackFor(c);
 }
 async function fetchCards(src,setId){
+  if(src==="site"){
+    const r=await fetchWithTimeout(`tcgdata/${encodeURIComponent(setId)}.json`,8000); if(!r.ok) throw new Error(r.status);
+    const j=await r.json(); if(!Array.isArray(j.cards)) throw new Error("no cards");
+    // [num, name, rarity, supertype, types, hp, artist, picture, tcgdexLocalId]; prices come from the saved daily prices
+    return j.cards.map(([num,name,rarity,supertype,types,hp,artist,pic,dex])=>{
+      const dexPic=j.img&&dex?j.img+dex:"";
+      const images=pic?{small:pic,large:null,alt:dexPic?dexPic+"/low.webp":null}:(dexPic?{small:dexPic+"/low.webp",large:dexPic+"/high.webp"}:null);
+      return {id:`${setId}-${num}`,name,number:num,rarity:rarity||null,hp:hp||null,images,price:null,supertype:supertype||"",
+        types:String(types||"").split("/").filter(Boolean).slice(0,3),artist:String(artist||"").slice(0,60),printedTotal:j.printedTotal||0};
+    });
+  }
   if(src==="tcgdex"){
     const r=await fetchWithTimeout(`${TCGDEX}/sets/${encodeURIComponent(setId)}`,TCGDEX_TIMEOUT);
     if(!r.ok) throw new Error(r.status);
@@ -2234,8 +2286,8 @@ async function fetchCards(src,setId){
     supertype:c.supertype||"",types:Array.isArray(c.types)?c.types.slice(0,3):[],artist:typeof c.artist==="string"?c.artist.slice(0,60):"",printedTotal:c.set&&c.set.printedTotal||0}));
 }
 async function switchToBackup(){
-  tcgSource="tcgdex"; tcgCacheSet("source","tcgdex");
-  statusEl.textContent="Main card source is down — trying backup…";
+  tcgSource=tcgSource==="site"?"ptcg":"tcgdex"; tcgCacheSet("source",tcgSource);
+  statusEl.textContent="Card list unavailable — trying a backup source…";
   await loadSets();
 }
 function showOffline(){ allCards=SAMPLE_CARDS; renderCards(); statusEl.textContent="offline — sample data"; }
@@ -2263,7 +2315,7 @@ async function loadSets(){
     fillSets(withNewSets(sets,await extraP));
     statusEl.textContent="";
   }catch(err){
-    if(src==="ptcg") return switchToBackup();
+    if(src!=="tcgdex") return switchToBackup();
     fillSets(SAMPLE_SETS);
     statusEl.textContent="offline — sample data";
   }
@@ -2295,7 +2347,7 @@ async function loadCards(setId){
     loadPriceHistory(setId);
     openLinkedCard();
   }catch(err){
-    if(src==="ptcg") return switchToBackup();
+    if(src!=="tcgdex") return switchToBackup();
     showOffline();
   }
 }
@@ -2342,7 +2394,7 @@ function renderCards(){
         <div class="tface tfront pixel-box">
           ${c.sample?"":`<button type="button" class="tc-zoom" data-zoom="${esc(c.id)}" aria-label="Open ${esc(c.name)} details"><span aria-hidden="true">⤢</span></button>`}
           <div class="imgwrap${rarityTier(c.rarity)>=3?" holo":""}">
-            ${c.images?`<img class="card-img" data-src="${esc(c.images.small)}"${/\.webp$/.test(c.images.small)?` data-alt="${esc(c.images.small.replace(/\.webp$/,".png"))}"`:""} alt="${esc(c.name)}" decoding="async">`:placeholderCardSVG(c)}
+            ${c.images?`<img class="card-img" data-src="${esc(c.images.small)}"${c.images.alt?` data-alt="${esc(c.images.alt)}"`:/\.webp$/.test(c.images.small)?` data-alt="${esc(c.images.small.replace(/\.webp$/,".png"))}"`:""} alt="${esc(c.name)}" decoding="async">`:placeholderCardSVG(c)}
           </div>
           <div class="meta">
             <div class="nm">${c.name}</div>
@@ -2372,7 +2424,8 @@ function startCardImages(){
   imgObserver=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ loadCardImg(e.target); imgObserver.unobserve(e.target); } }),{rootMargin:"600px 0px"});
   cards.slice(12).forEach(c=>imgObserver.observe(c));
 }
-// Broken image: try TCGdex's PNG (older iPhones lack WebP), then fall back to the original placeholder art.
+// Broken image: try the card's TCGdex picture (site catalog: if the main picture server is gone) or TCGdex's PNG (older
+// iPhones lack WebP), then fall back to the original placeholder art.
 grid.addEventListener("error",e=>{
   const im=e.target; if(!im||im.tagName!=="IMG"||!im.classList.contains("card-img")) return;
   if(im.dataset.alt&&!im.dataset.tried){ im.dataset.tried="1"; im.src=im.dataset.alt; return; }

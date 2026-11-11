@@ -34,7 +34,7 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   check('cards matched by number; missing ones reported', c.map['1'] === 'swsh12.5-001' && c.map.GG01 === 'swsh12.5-GG01' && JSON.stringify(c.unmatched) === '["999"]', c);
 
   const row = T.cardRow({ localId: '004', name: 'Charizard', rarity: 'Rare', category: 'Pokemon', types: ['Fire'], dexId: [6], image: 'https://assets.tcgdex.net/en/me/me06/004', illustrator: 'A', attacks: [{ name: 'X', effect: 'secret text' }], description: 'flavor' });
-  check('new-set card row: facts + hotlinked image, never attack/flavor text', JSON.stringify(row) === '["004","Charizard","Rare","Pokémon","Fire",6,"https://assets.tcgdex.net/en/me/me06/004/low.webp","A"]', row);
+  check('new-set card row: facts + hotlinked image, never attack/flavor text', JSON.stringify(row) === '["004","Charizard","Rare","Pokémon","Fire",6,"https://assets.tcgdex.net/en/me/me06/004/low.webp","A",""]', row);
 
   // full run against a fake API
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-tcgdex-'));

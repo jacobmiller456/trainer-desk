@@ -23,9 +23,9 @@ for (let i = 0; i < sets.length; i += 6) {           // a few at a time, politel
       releaseDate: s.releaseDate.replace(/\//g, '-'), ptcgoCode: s.ptcgoCode || '',
       standard: s.legalities?.standard === 'Legal', expanded: s.legalities?.expanded === 'Legal',
       logo: s.images?.logo || '', symbol: s.images?.symbol || '',
-      // [number, name, rarity, supertype, types, national dex no., small image, artist]
+      // [number, name, rarity, supertype, types, national dex no., small image, artist, HP]
       cards: cards.map(c => [c.number || '', c.name || '', c.rarity || '', c.supertype || '', (c.types || []).join('/'),
-        (c.nationalPokedexNumbers || [])[0] || 0, c.images?.small || '', c.artist || ''])
+        (c.nationalPokedexNumbers || [])[0] || 0, c.images?.small || '', c.artist || '', c.hp || ''])
         .sort((a, b) => (parseInt(a[0], 10) || 1e9) - (parseInt(b[0], 10) || 1e9) || a[0].localeCompare(b[0]))
     };
   }));
