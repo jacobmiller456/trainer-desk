@@ -17,6 +17,10 @@ async function open(b, base, store = {}) {
   await page.route('**/*', r => {
     const u = r.request().url(), p = new URL(u).pathname;
     if (u.startsWith(base) && p === '/prices/movers.json') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOVERS) });
+    if (u.startsWith(base) && p === '/prices/latest.json') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ updated: '2026-11-13T08:00:00Z', source: 'tcgdex', sourceSince: '2026-11-05', months: { '2026-11': ['sv3pt5'] } }) });
+    if (u.startsWith(base) && p === '/prices/2026-11/sv3pt5.json') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ days: ['2026-11-13'], cards: { 'sv3pt5-199': [300] } }) });
+    if (u.startsWith(base) && p === '/tcgdata/sets.json') return r.fulfill({ status: 200, contentType: 'application/json', body: require('fs').readFileSync(require('path').join(__dirname, '..', 'tcgdata/sets.json')) });
+    if (u.startsWith('https://images.scrydex.com/')) return r.fulfill({ status: 200, contentType: 'image/gif', body: GIF });
     if (u.startsWith(base)) return r.continue();
     if (u.includes('raids.json')) return r.fulfill({ status: 200, headers: cors, contentType: 'application/json', body: JSON.stringify(RAIDS) });
     if (/sprites/.test(u)) return r.fulfill({ status: 200, contentType: 'image/gif', body: GIF });
@@ -36,8 +40,12 @@ const hub = page => page.evaluate(() => document.getElementById('today-hub').inn
   // fresh visitor
   let { ctx, page } = await open(b, base);
   let t = await hub(page);
+  check('Today look: every card has its colour stripe; GO events and Community Day share one card', (await page.$$eval('.today-grid > .ev', e => e.every(x => x.dataset.acc))) && !!(await page.$('#today-go #today-event')) && !!(await page.$('#today-go #today-cd')));
+  const logo = await page.$eval('#today-set .today-set-logo', a => a.getAttribute('href')).catch(() => '');
+  const latest = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'tcgdata/sets.json'), 'utf8'))[0];
+  check('latest TCG set card shows the set logo (hotlinked), linking to the set', !!latest.logo ? logo === '/tcg?set=' + latest.id : true, { logo, latest: latest.id });
   check('hub is the first card on Today', await page.$eval('.today-grid', g => g.firstElementChild.id === 'today-hub'));
-  check('fresh: both dailies unchecked with PLAY buttons, streak 0', /⬜ Who's That Pokémon\? #\d+/.test(t) && /⬜ Arena Daily Challenge #\d+/.test(t) && (await page.$$eval('#today-hub .hub-btn', b => b.filter(x => x.textContent === 'PLAY').length)) === 2 && /🔥 0-day streak/.test(t), t);
+  check('fresh: both dailies unchecked with PLAY buttons, streak 0', /Who's That Pokémon\? #\d+/.test(t) && /Arena Daily Challenge #\d+/.test(t) && (await page.$$eval('#today-hub .hub-check:not(.on)', n => n.length)) === 2 && /0 of 2 daily games done/.test(t) && (await page.$$eval('#today-hub .hub-btn', b => b.filter(x => x.textContent === 'PLAY').length)) === 2 && /🔥 Start a streak today!/.test(t), t);
   check('fresh: Arena row names today\'s fighter', /You're \S+.* today/.test(t), t);
   check('fresh: shiny row invites you to start your collection', /Mark your shinies in My Collection/.test(t));
   check('top riser this week, linking to the card', /Top riser: Gyarados/.test(t) && /▲ \+217\.8%/.test(t) && (await page.getAttribute('#today-hub a.hub-btn', 'href')) === '/tcg?set=hgss1&card=hgss1-4', t);
@@ -47,7 +55,7 @@ const hub = page => page.evaluate(() => document.getElementById('today-hub').inn
   const ans = await page.evaluate(() => window.__whos.answer[1]);
   await page.fill('#whos-input', ans); await page.click('#whos-form button[type=submit]'); await page.waitForTimeout(300);
   t = await hub(page);
-  check('solving the puzzle updates the hub right away (✅, streak 1)', /✅ Who's That Pokémon\? #\d+ Solved in 1\/5/.test(t) && /🔥 1-day streak/.test(t), t);
+  check('solving the puzzle updates the hub right away (✓, streak 1)', /✓ ?Who's That Pokémon\? #\d+ Solved in 1\/5/.test(t) && /1 of 2 daily games done/.test(t) && /🔥 1-day streak/.test(t), t);
   const lay = await page.evaluate(() => { const small = [...document.querySelectorAll('#today-hub button, #today-hub a')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.height < 44 || r.width < 44); }).length; return { small, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
   check('375px: buttons >= 44px, no sideways scroll', !lay.small && lay.overflow <= 0, lay);
   const errs1 = page.errors; await ctx.close();
@@ -58,12 +66,18 @@ const hub = page => page.evaluate(() => document.getElementById('today-hub').inn
     'td-arena-daily-v1': { day, place: 2, of: 12, kos: 3, time: 50, win: false, fighter: 'Pikachu' },
     'td-hub-days-v1': [day - 2, day - 1],
     'td-collection-v1': { c: [1, 4, 483, 484, 6], s: [483], l: [], h: [] },
+    'td-owned-v1': { sv3pt5: { name: '151', n: 207, have: ['1', '4', '7'] }, sv1: { name: 'Scarlet & Violet', n: 258, have: ['1'] } },
+    'td-watch-v1': { 'sv3pt5-199': { name: 'Charizard ex', set: 'sv3pt5', setName: '151', num: '199', img: '', p0: 250, d0: '2026-11-01', last: null, cmp: null } },
   }));
   t = await hub(page);
-  check('done dailies show results; both done message', /✅ Who's That Pokémon\? #\d+ Solved in 3\/5/.test(t) && /✅ Arena Daily Challenge #\d+ 🥈 of 12 · 3 KOs/.test(t) && /Both dailies done/.test(t) && !(await page.$('#today-hub [data-hub="puzzle"]')), t);
+  check('done dailies show results; both done message', /✓ ?Who's That Pokémon\? #\d+ Solved in 3\/5/.test(t) && /✓ ?Arena Daily Challenge #\d+ 🥈 of 12 · 3 KOs/.test(t) && (await page.$$eval('#today-hub .hub-check.on', n => n.length)) === 2 && /Both dailies done/.test(t) && !(await page.$('#today-hub [data-hub="puzzle"]')), t);
   check('streak counts consecutive days (3)', /🔥 3-day streak/.test(t), t);
   check('shiny raid bosses still needed (Dialga owned shiny; unshinyable skipped)', /2 raid bosses you still need shiny/.test(t) && /Palkia, Mega Charizard X/.test(t) && !/Unshinyable/.test(t), t);
   check('collection progress row', /Your collection ✓ 5 \/ 1,025 caught · ✨ 1 shiny/.test(t), t);
+  check('set progress row: the set with the most owned cards, + other sets, opens it', /151: 3 \/ 207 owned \(1%\)/.test(t) && /\+ 1 more set in progress/.test(t) && !!(await page.$('#today-hub a.hub-btn[href="/tcg?set=sv3pt5"]')), t);
+  await page.waitForFunction(() => /since you added it/.test(document.getElementById('today-hub').textContent), null, { timeout: 8000 }).catch(() => {});
+  t = await hub(page);
+  check('watchlist row: count and the biggest move since added (from saved prices), opens the watchlist', /Your watchlist: 1 card/.test(t) && /Charizard ex ▲ \+20% since you added it/.test(t) && !!(await page.$('#today-hub a.hub-btn[href="/tcg?view=watch"]')), t);
   await page.click('#today-hub [data-hub="collection"]'); await page.waitForTimeout(800);
   check('OPEN goes to My Collection', await page.$eval('#view-dex', e => e.classList.contains('active')) && !(await page.$eval('#dex-collection', e => e.hidden)));
   await page.click('.tab[data-view="today"]'); await page.click('#today-hub [data-goto="go"]'); await page.waitForTimeout(300);

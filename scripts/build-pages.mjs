@@ -457,13 +457,13 @@ files.set('sitemap.xml', sitemap());
 // so it no longer depends on a live card API (pokemontcg.io shuts down March 1, 2027; TCGdex stays as the live backup).
 // Card and set IDs are the site's (siteSet/siteCard), so binders, links and saved prices match. Not under assets/,
 // which browsers cache for a week: new sets must show up the day they're added.
-//   tcgdata/sets.json   [{id, name, series, releaseDate "YYYY/MM/DD", printedTotal, code}] newest first
+//   tcgdata/sets.json   [{id, name, series, releaseDate "YYYY/MM/DD", printedTotal, code, logo (hotlinked)}] newest first
 //   tcgdata/<id>.json   {id, name, printedTotal, img, cards:[[num, name, rarity, supertype, types, hp, artist, picture, tcgdexLocalId]]}
 //                       img + tcgdexLocalId + "/low.webp" = the card's TCGdex picture, the fallback if the main link fails
 //   tcgdata/search.json {sets:{id:[name, printedTotal, code]}, cards:[[cardId, name, number]]} for the card finder/scanner
 const idMap = (() => { try { return JSON.parse(fs.readFileSync(path.join(root, 'data/tcg-id-map.json'), 'utf8')); } catch (e) { return { sets: {} }; } })();
 const catalog = [...tcg].sort((a, b) => b.releaseDate.localeCompare(a.releaseDate) || a.id.localeCompare(b.id));
-files.set(path.join('tcgdata', 'sets.json'), JSON.stringify(catalog.map(t => ({ id: siteSet(t), name: t.name, series: t.series, releaseDate: t.releaseDate.replace(/-/g, '/'), printedTotal: t.printedTotal || 0, code: t.ptcgoCode || '' }))) + '\n');
+files.set(path.join('tcgdata', 'sets.json'), JSON.stringify(catalog.map(t => ({ id: siteSet(t), name: t.name, series: t.series, releaseDate: t.releaseDate.replace(/-/g, '/'), printedTotal: t.printedTotal || 0, code: t.ptcgoCode || '', logo: t.logo || '' }))) + '\n');
 const search = { sets: {}, cards: [] };
 for (const t of catalog) {
   const sid = siteSet(t), m = idMap.sets && idMap.sets[t.id];
