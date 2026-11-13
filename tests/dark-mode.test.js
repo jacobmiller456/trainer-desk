@@ -44,7 +44,7 @@ async function scanAll(page, base, min, baseBg) {
   await page.goto(base + '/tcg'); await page.waitForSelector('#card-grid .tcard', { timeout: 15000 }); await page.waitForTimeout(500);
   await page.click('#card-grid .tcard[data-id="zz1-2"]'); await page.waitForTimeout(700); await run('tcg: grid + card back');
   await page.click('#card-grid .tcard[data-id="zz1-1"] .tc-zoom'); await page.waitForTimeout(500); await run('tcg: card detail'); await page.keyboard.press('Escape');
-  for (const v of ['binder', 'packs', 'movers', 'watch']) { await page.click(`[data-tcgview="${v}"]`); await page.waitForTimeout(500); await run('tcg: ' + v); }
+  for (const v of ['binder', 'packs', 'movers', 'watch', 'deck']) { await page.click(`[data-tcgview="${v}"]`); await page.waitForTimeout(500); await run('tcg: ' + v); }
   await page.goto(base + '/pokedex'); await page.waitForTimeout(1200); await run('dex');
   await page.click('[data-dexview="collection"]'); await page.waitForFunction(() => document.querySelectorAll('#col-grid .col-tile').length > 100, null, { timeout: 15000 }); await run('dex: collection');
   await page.goto(base + '/arena'); await page.waitForSelector('#arena-start'); await run('arena');

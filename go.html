@@ -274,6 +274,27 @@ select:hover, input[type=text]:hover{ border-color:var(--gold-dark); }
 .tb-src{ font-family:var(--font-retro); font-size:16px; color:var(--ink-soft); }
 .tb-date{ font-family:var(--font-retro); font-size:14px; color:var(--ink-soft); }
 .tb-hint{ font-family:var(--font-retro); font-size:14px; color:var(--gold-ink); }
+/* ---- deck price ---- */
+#tcg-deck[hidden], .deck-miss[hidden]{ display:none; }
+.deck-box{ padding:14px; margin-bottom:14px; }
+.deck-label{ display:block; font-family:var(--font-pixel); font-size:10px; letter-spacing:.04em; color:var(--forest-dark); margin-bottom:6px; }
+.deck-hint{ margin:0 0 8px; font-size:14px; color:var(--ink-soft); }
+.deck-hint code{ font-size:13px; background:var(--parchment-2); padding:0 4px; border-radius:3px; }
+#deck-in{ width:100%; box-sizing:border-box; font:16px/1.4 ui-monospace,Menlo,Consolas,monospace; padding:10px; border:3px solid var(--forest-dark); border-radius:4px; background:var(--parchment-2); color:var(--ink); resize:vertical; }
+.deck-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.deck-actions .today-btn{ margin-top:0; }
+.deck-list{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.deck-row a{ display:flex; align-items:center; gap:10px; min-height:44px; padding:8px 10px; color:var(--ink); text-decoration:none; }
+.deck-row .dq{ flex:0 0 28px; font-weight:800; text-align:right; font-variant-numeric:tabular-nums; }
+.deck-row img, .deck-row .noimg{ flex:0 0 36px; width:36px; aspect-ratio:245/342; height:auto; border-radius:2px; background:var(--parchment-2); }
+.deck-row .dn{ flex:1; min-width:0; font-weight:700; overflow-wrap:anywhere; }
+.deck-row .dn small{ display:block; font-weight:400; font-size:13px; color:var(--ink-soft); }
+.deck-row .dp{ flex:0 0 auto; text-align:right; font-weight:800; font-variant-numeric:tabular-nums; }
+.deck-row .dp small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); }
+.deck-miss{ margin-top:12px; padding:12px 14px; font-size:15px; color:var(--ink); }
+.deck-miss ul{ margin:6px 0 0; padding-left:20px; }
+:root[data-theme="dark"] .deck-label{ color:var(--mint); }
+:root[data-theme="dark"] #deck-in, :root[data-theme="dark"] .deck-hint code{ background:#141E19; color:var(--ink); }
 /* ---- watchlist ---- */
 #tcg-watch[hidden]{ display:none; }
 .wl-list{ list-style:none; margin:0; padding:0; display:grid; gap:10px; }
@@ -968,6 +989,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
     <button type="button" class="seg-btn" data-tcgview="packs" aria-pressed="false">OPEN PACKS</button>
     <button type="button" class="seg-btn" data-tcgview="movers" aria-pressed="false">PRICE MOVERS</button>
     <button type="button" class="seg-btn" data-tcgview="watch" aria-pressed="false">WATCHLIST<span id="watch-count"></span></button>
+    <button type="button" class="seg-btn" data-tcgview="deck" aria-pressed="false">DECK PRICE</button>
   </div>
 
   <div id="tcg-browse">
@@ -1006,6 +1028,22 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
   <div class="card-grid" id="card-grid"></div>
   <div class="empty pixel-box" id="tcg-empty" style="display:none;"></div>
+  </div>
+
+  <div id="tcg-deck" hidden>
+    <section class="pixel-box deck-box" aria-label="Deck price calculator">
+      <label for="deck-in" class="deck-label">Paste a deck list to price it</label>
+      <p class="deck-hint">One card per line, like the Pokémon TCG Live export: <code>4 Pikachu ex SSP 57</code>. Lines without a set and number (<code>2 Rare Candy</code>) match the newest printing.</p>
+      <textarea id="deck-in" rows="9" spellcheck="false" autocomplete="off" placeholder="Pokémon: 4&#10;4 Pikachu ex SSP 57&#10;Trainer: 8&#10;4 Ultra Ball SVI 196&#10;4 Iono PAL 185&#10;Energy: 8&#10;8 Basic {L} Energy SVE 4"></textarea>
+      <div class="deck-actions">
+        <button type="button" class="today-btn" id="deck-go">PRICE THIS DECK</button>
+        <button type="button" class="today-btn" id="deck-example">TRY AN EXAMPLE</button>
+        <button type="button" class="today-btn" id="deck-clear">CLEAR</button>
+      </div>
+    </section>
+    <p class="mv-intro" id="deck-total" aria-live="polite"></p>
+    <ul class="deck-list" id="deck-list"></ul>
+    <div class="pixel-box deck-miss" id="deck-miss" hidden></div>
   </div>
 
   <div id="tcg-watch" hidden>
@@ -2351,6 +2389,71 @@ function savedPricesFor(setId){
   window.watchShow=show;
   window.__watch={ has:id=>!!w[id], toggle, get data(){ return w; } };
 })();
+/* ============ DECK PRICE: paste a deck list (Pokémon TCG Live export: "4 Pikachu ex SSP 57"), get each card's latest saved
+   price and the deck total. Cards are matched on set code + number in the site's catalog (tcgdata/search.json), else by
+   name (newest printing). The last list is kept on this device (td-deck-v1). Rows open the card (buy links are there). ============ */
+(function(){
+  const inEl=document.getElementById("deck-in"); if(!inEl) return;
+  const listEl=document.getElementById("deck-list"), totalEl=document.getElementById("deck-total"), missEl=document.getElementById("deck-miss");
+  const KEY="td-deck-v1", EXAMPLE="Pokémon: 4\n4 Pikachu ex SSP 57\nTrainer: 14\n4 Ultra Ball SVI 196\n4 Nest Ball SVI 181\n4 Iono PAL 185\n2 Rare Candy\nEnergy: 8\n8 Basic {L} Energy SVE 4";
+  const ENERGY={G:"Grass",R:"Fire",W:"Water",L:"Lightning",P:"Psychic",F:"Fighting",D:"Darkness",M:"Metal",Y:"Fairy"};
+  const usd=v=>"$"+v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  const normNum=n=>/^\d+$/.test(n)?String(parseInt(n,10)):n.toUpperCase();
+  const normName=n=>String(n).toLowerCase().replace(/[’']/g,"'").replace(/\s+/g," ").trim();
+  try{ const v=localStorage.getItem(KEY); if(v) inEl.value=v; }catch(e){}
+  // "4 Pikachu ex SSP 57" -> {qty, name, code, num}; section headers ("Pokémon: 12", "Total Cards: 60") are skipped.
+  function parse(text){
+    const out=[];
+    for(const raw of String(text||"").split(/\r?\n/)){
+      const line=raw.trim(); if(!line||/^(pok[eé]mon|trainers?|energy|total cards?)\b[^\d]*\d*\s*$/i.test(line)) continue;
+      const m=line.match(/^(\d{1,2})\s*x?\s+(.+?)(?:\s+([A-Z0-9]{2,5}(?:-[A-Z0-9]{1,4})?)\s+([A-Za-z]{0,3}\d{1,3}[a-z]?))?$/);
+      if(!m){ out.push({raw:line,bad:true}); continue; }
+      const name=m[2].replace(/\{([A-Z])\}/g,(_,k)=>ENERGY[k]||k).trim();
+      out.push({qty:+m[1],name,code:m[3]||"",num:m[4]?normNum(m[4]):"",raw:line});
+    }
+    return out;
+  }
+  let ixP=null;
+  const index=()=>ixP||(ixP=fetchWithTimeout("tcgdata/search.json",15000).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }).then(ix=>{
+    const byId=new Map(ix.cards.map(c=>[c[0],c])), byCode=new Map();
+    for(const [id,[,,code]] of Object.entries(ix.sets)) if(code) (byCode.get(code)||byCode.set(code,[]).get(code)).push(id);
+    return {ix,byId,byCode};
+  }).catch(e=>{ ixP=null; throw e; }));
+  function resolve(e,{ix,byId,byCode}){
+    if(e.code&&e.num) for(const sid of byCode.get(e.code)||[]){ const id=`${sid}-${e.num}`; if(byId.has(id)) return byId.get(id); } // gallery subsets share a code
+    const n=normName(e.name);
+    return ix.cards.find(c=>normName(c[1])===n)||ix.cards.find(c=>normName(c[1]).startsWith(n+" ")); // newest printing first
+  }
+  async function price(){
+    const text=inEl.value; try{ localStorage.setItem(KEY,text); }catch(e){}
+    const lines=parse(text); listEl.innerHTML=""; missEl.hidden=true;
+    if(!lines.length){ totalEl.textContent="Paste a deck list above, or try the example."; return; }
+    totalEl.textContent="Pricing…";
+    let I; try{ I=await index(); }catch(e){ totalEl.textContent="Couldn't load the card list right now. Try again in a moment."; return; }
+    const rows=[], miss=[];
+    for(const e of lines){ if(e.bad){ miss.push(e.raw); continue; } const c=resolve(e,I); if(!c){ miss.push(e.raw); continue; }
+      const id=c[0], sid=id.slice(0,id.lastIndexOf("-")); rows.push({...e,id,sid,cardName:c[1],cardNum:c[2],set:I.ix.sets[sid]||["",0,""]}); }
+    const prices={}; await Promise.all([...new Set(rows.map(r=>r.sid))].map(async s=>{ prices[s]=await savedPricesFor(s); }));
+    let total=0, cards=0, priced=0, latest="";
+    listEl.innerHTML=rows.map(r=>{ const p=prices[r.sid]&&prices[r.sid][r.id]; cards+=r.qty;
+      if(p){ priced+=r.qty; total+=p[1]*r.qty; if(p[0]>latest) latest=p[0]; }
+      return `<li class="deck-row pixel-box"><a href="/tcg?set=${encodeURIComponent(r.sid)}&card=${encodeURIComponent(r.id)}" data-set="${esc(r.sid)}" data-card="${esc(r.id)}"><span class="dq">${r.qty}×</span><span class="dn">${esc(r.cardName)}<small>${esc([r.set[0],"#"+r.cardNum].filter(Boolean).join(" · "))}${r.code?"":" · newest printing"}</small></span><span class="dp">${p?usd(p[1]*r.qty)+(r.qty>1?`<small>${usd(p[1])} each</small>`:""):"<small>no price yet</small>"}</span></a></li>`; }).join("");
+    if(miss.length){ missEl.hidden=false; missEl.innerHTML=`<b>Couldn't match ${miss.length} line${miss.length===1?"":"s"}:</b><ul>${miss.map(m=>`<li>${esc(m)}</li>`).join("")}</ul>Check the spelling, set code and number.`; }
+    totalEl.innerHTML=rows.length?`Deck total: <b>${usd(total)}</b> · ${cards} card${cards===1?"":"s"}${priced<cards?` (${cards-priced} without a price)`:""}${cards!==60?` · standard decks have 60 cards`:""}. TCGplayer market prices${latest?` from ${new Date(latest+"T12:00:00Z").toLocaleDateString(undefined,{month:"short",day:"numeric"})}`:""}; tap a card for buy links.`:"No cards matched.";
+  }
+  document.getElementById("deck-go").addEventListener("click",price);
+  document.getElementById("deck-example").addEventListener("click",()=>{ inEl.value=EXAMPLE; price(); });
+  document.getElementById("deck-clear").addEventListener("click",()=>{ inEl.value=""; listEl.innerHTML=""; totalEl.textContent=""; missEl.hidden=true; try{ localStorage.removeItem(KEY); }catch(e){} inEl.focus(); });
+  listEl.addEventListener("click",e=>{ // open the card in the set browser, like the watchlist
+    const a=e.target.closest("a[data-card]"); if(!a||e.metaKey||e.ctrlKey||tcgSource==="tcgdex") return;
+    if(![...setSel.options].some(o=>o.value===a.dataset.set)) return;
+    e.preventDefault(); try{ history.replaceState(null,"",a.getAttribute("href")); }catch(_){}
+    linkedCardDone=false; if(window.tcgShowView) window.tcgShowView("browse");
+    if(setSel.value===a.dataset.set&&allCards.some(c=>c.id===a.dataset.card)){ linkedCardDone=true; openCardDetail(a.dataset.card); }
+    else { setSel.value=a.dataset.set; loadCards(a.dataset.set); }
+  });
+  window.__deck={ parse, price };
+})();
 function paintBackFor(c){
   const el=[...grid.querySelectorAll(".tcard")].find(x=>x.dataset.id===c.id);
   const body=el&&el.querySelector(".tb-body");
@@ -2677,7 +2780,7 @@ function toast(msg){
   // ---- view switch ----
   function showView(which){
     const binder=which==="binder";
-    browse.hidden=which!=="browse"; view.hidden=!binder; document.getElementById("tcg-packs").hidden=which!=="packs"; document.getElementById("tcg-movers").hidden=which!=="movers"; document.getElementById("tcg-watch").hidden=which!=="watch";
+    browse.hidden=which!=="browse"; view.hidden=!binder; document.getElementById("tcg-packs").hidden=which!=="packs"; document.getElementById("tcg-movers").hidden=which!=="movers"; document.getElementById("tcg-watch").hidden=which!=="watch"; document.getElementById("tcg-deck").hidden=which!=="deck";
     if(which==="watch"&&window.watchShow) window.watchShow();
     if(which==="packs"&&window.packsShow) window.packsShow();
     if(which==="movers"&&window.moversShow) window.moversShow();
@@ -4585,7 +4688,7 @@ loadSets();
   if("serviceWorker" in navigator&&canRoute&&(!navigator.webdriver||window.__tdSwTest)) addEventListener("load",()=>{ navigator.serviceWorker.register("/sw.js").catch(()=>{}); });
   // Home screen shortcuts (site.webmanifest) open /tcg?view=movers and /pokedex?view=collection
   let v=null; try{ v=new URLSearchParams(location.search).get("view"); }catch(e){}
-  if((v==="movers"||v==="watch")&&window.tcgShowView) window.tcgShowView(v);
+  if((v==="movers"||v==="watch"||v==="deck")&&window.tcgShowView) window.tcgShowView(v);
   if(v==="collection"&&window.__collection) window.__collection.show("collection");
 
   const card=document.getElementById("today-app"), btn=document.getElementById("app-install"), ios=document.getElementById("app-ios");
