@@ -776,6 +776,9 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .hub-streak.off{ border-color:var(--forest-light); color:var(--ink-soft); }
 .hub-check{ display:grid; place-items:center; width:26px; height:26px; margin:0 auto; border:3px solid var(--forest-dark); border-radius:3px; background:var(--parchment-2); color:#fff; font-weight:900; font-size:16px; line-height:1; box-shadow:2px 2px 0 rgba(0,0,0,.2); }
 .hub-check.on{ background:#2E9E5B; border-color:#1B5E36; }
+.hub-check.todo{ font-family:var(--font-body); font-size:15px; }
+.hub-check.todo.puzzle{ background:#7A4FB5; border-color:#4B2F75; }
+.hub-check.todo.arena{ background:#2F6FB5; border-color:#1D4675; }
 .hub-progress{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; font-size:14px; color:var(--ink-soft); margin:2px 0 4px; }
 .hub-progress .bar{ flex:1 1 120px; height:8px; border-radius:4px; background:var(--parchment-2); overflow:hidden; }
 .hub-progress .bar i{ display:block; height:100%; background:#2E9E5B; }
@@ -883,6 +886,8 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 :root[data-theme="dark"] .hub-streak.off{ color:var(--ink-soft); }
 :root[data-theme="dark"] .hub-done{ color:var(--mint); }
 :root[data-theme="dark"] .hub-check{ background:var(--card-2); border-color:var(--mint); }
+:root[data-theme="dark"] .hub-check.todo.puzzle{ background:#7A4FB5; border-color:#C3A6EE; }
+:root[data-theme="dark"] .hub-check.todo.arena{ background:#2F6FB5; border-color:#9CC3F0; }
 :root[data-theme="dark"] .hub-check.on{ background:#2E9E5B; border-color:#7BE0A4; }
 :root[data-theme="dark"] .hub-progress .bar, :root[data-theme="dark"] .go-card .go-part + .go-part{ border-top-color:var(--card-2); }
 :root[data-theme="dark"] .hub-progress .bar{ background:var(--card-2); }
@@ -3722,7 +3727,8 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
   const norm=t=>t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"");
   const goTab=v=>{ const t=document.querySelector('.tab[data-view="'+v+'"]'); if(t) t.click(); };
   let names=null, movers=null, moversTried=false, watchInfo=null, watchBusy=false;
-  const chk=done=>`<span class="hub-check${done?" on":""}" role="img" aria-label="${done?"Done":"Not done yet"}">${done?"✓":""}</span>`;
+  // done: green ✓; not done yet: the game's own coloured tile (an empty box read as a blank white square)
+  const chk=(done,kind)=>`<span class="hub-check${done?" on":" todo "+kind}" role="img" aria-label="${done?"Done":"Not played yet today"}">${done?"✓":kind==="puzzle"?"?":"⚔"}</span>`;
   // the visitor's own collection: owned cards per set (td-owned-v1) and watched cards (td-watch-v1), only if they use them
   function ownedRow(){
     const o=loadJ("td-owned-v1",{}), sets=Object.entries(o||{}).filter(([,v])=>v&&Array.isArray(v.have)&&v.have.length).sort((a,b)=>b[1].have.length-a[1].have.length);
@@ -3776,8 +3782,8 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     const miss=missingShinyRaids();
     const top=movers&&movers.risers&&movers.risers[0];
     const rows=[
-      row(chk(pDone),`<b>Who's That Pokémon? #${d0-PUZZLE_EPOCH+1}</b><small>${pDone?(pWon?`Solved in ${pz.guesses.length}/5`:"Not this time. New one tomorrow"):"Guess today's silhouette"}</small>`,pDone?"":`<button type="button" class="today-btn hub-btn" data-hub="puzzle">PLAY</button>`),
-      row(chk(aDone),`<b>Arena Daily Challenge #${d0-ARENA_EPOCH+1}</b><small>${aDone?`${medal(ar.place)} of ${ar.of} · ${ar.kos} KO${ar.kos===1?"":"s"}`:(fighter?`You're ${esc(fighter)} today`:"Same match for everyone today")}</small>`,aDone?"":`<button type="button" class="today-btn hub-btn" data-goto="arena">PLAY</button>`),
+      row(chk(pDone,"puzzle"),`<b>Who's That Pokémon? #${d0-PUZZLE_EPOCH+1}</b><small>${pDone?(pWon?`Solved in ${pz.guesses.length}/5`:"Not this time. New one tomorrow"):"Guess today's silhouette"}</small>`,pDone?"":`<button type="button" class="today-btn hub-btn" data-hub="puzzle">PLAY</button>`),
+      row(chk(aDone,"arena"),`<b>Arena Daily Challenge #${d0-ARENA_EPOCH+1}</b><small>${aDone?`${medal(ar.place)} of ${ar.of} · ${ar.kos} KO${ar.kos===1?"":"s"}`:(fighter?`You're ${esc(fighter)} today`:"Same match for everyone today")}</small>`,aDone?"":`<button type="button" class="today-btn hub-btn" data-goto="arena">PLAY</button>`),
       watchRow(), ownedRow(),
       miss===null?"":(!caught&&!shinyN
         ?row("✨",`<b>Shiny hunting</b><small>Mark your shinies in My Collection to see which raid bosses you still need.</small>`,`<button type="button" class="today-btn hub-btn" data-hub="collection">START</button>`)
