@@ -39,6 +39,7 @@ async function scanAll(page, base, min, baseBg) {
   const run = async name => { const r = (await page.evaluate(`(${scan.toString()})(${min}, '${baseBg}')`)).filter(x => !EXEMPT(x)); if (r.length) bad[name] = r.slice(0, 6); };
   await page.goto(base + '/'); await page.waitForTimeout(1500); await run('today');
   await page.evaluate(() => window.__app.show('ios')); await run('today: install card');
+  await page.click('#backup-open'); await page.waitForTimeout(300); await run('backup dialog'); await page.click('#bk-close');
   await page.goto(base + '/go'); await page.waitForFunction(() => document.querySelectorAll('#raid-box .raid, .ev-more').length > 2, null, { timeout: 15000 }); await run('go');
   await page.click('.ev-more[data-ev="halloween-2026-part-1"]'); await page.waitForTimeout(600); await run('go: event dialog'); await page.keyboard.press('Escape');
   await page.goto(base + '/tcg'); await page.waitForSelector('#card-grid .tcard', { timeout: 15000 }); await page.waitForTimeout(500);

@@ -487,6 +487,22 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 }
 .cookie-btn.primary{ background:var(--gold); border-color:var(--gold-dark); }
 .cookie-btn:focus-visible{ outline:3px solid var(--forest); outline-offset:2px; }
+/* ---- back up / restore dialog ---- */
+.bk-dlg{ width:min(480px,calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; border:3px solid var(--forest-dark); border-radius:6px; padding:18px; background:var(--parchment); color:var(--ink); box-shadow:4px 4px 0 rgba(0,0,0,.35); }
+.bk-dlg::backdrop{ background:rgba(0,0,0,.55); }
+.bk-dlg h2{ margin:0 0 8px; font-family:var(--font-pixel); font-size:13px; color:var(--forest-dark); }
+.bk-p{ margin:0 0 10px; font-size:15px; }
+.bk-sum{ margin:0 0 12px; padding-left:20px; font-size:15px; }
+.bk-actions{ display:flex; flex-wrap:wrap; gap:8px; }
+.bk-actions .today-btn{ margin-top:0; display:inline-flex; align-items:center; }
+.bk-actions [hidden], .bk-confirm[hidden]{ display:none; }
+.bk-confirm{ margin-top:12px; padding:12px; border:3px dashed var(--gold-dark); border-radius:4px; font-size:15px; }
+.bk-confirm ul{ margin:6px 0 10px; padding-left:20px; }
+.bk-msg{ margin:10px 0 0; font-size:15px; }
+.bk-msg:empty{ display:none; }
+.bk-close{ margin-top:6px; color:var(--ink-soft); min-height:44px; min-width:44px; }
+:root[data-theme="dark"] .bk-dlg{ background:var(--card); border-color:var(--mint); }
+:root[data-theme="dark"] .bk-dlg h2{ color:var(--mint); }
 .link-btn{
   background:none; border:0; padding:0; font:inherit; color:inherit; text-decoration:underline; cursor:pointer;
   min-height:44px; display:inline-flex; align-items:center;
@@ -1261,9 +1277,23 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 <footer><div class="wrap">
   Trainer Desk is an unofficial fan project. Not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, Creatures Inc., Niantic, or The Pokémon Company International.<br>
   Pokémon and all related names are trademarks of their respective owners. Card data and images via the community Pokémon TCG API; card prices are TCGplayer market prices saved daily from TCGdex. Prices are market estimates from TCGplayer (USD) and Cardmarket (EUR), not offers to sell, and may be out of date. <a href="https://tcgdex.dev" target="_blank" rel="noopener" style="text-decoration:underline;">TCGdex</a> is the backup card source (it also lists TCGplayer and Cardmarket prices) and, since Nov 2026, the source of the saved daily price history (charts, price movers). GO event schedule and Community Day data via the <a href="https://github.com/bigfoott/ScrapedDuck" target="_blank" rel="noopener" style="text-decoration:underline;">ScrapedDuck</a> community feed, sourced from <a href="https://leekduck.com" target="_blank" rel="noopener" style="text-decoration:underline;">LeekDuck</a>. Tournament data via <a href="https://limitlesstcg.com" target="_blank" rel="noopener" style="text-decoration:underline;">Limitless TCG</a>. Pokédex data via <a href="https://pokeapi.co" target="_blank" rel="noopener" style="text-decoration:underline;">PokéAPI</a>.<br>
-  This site uses Google Analytics (cookies) to count visits and Impact (cookies) for TCGplayer affiliate links, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. Some shop links (TCGplayer, eBay) are affiliate links: Trainer Desk may earn a small commission if you buy through them, at no extra cost to you. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button>
+  This site uses Google Analytics (cookies) to count visits and Impact (cookies) for TCGplayer affiliate links, only if you accept; see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="text-decoration:underline;">how Google uses this data</a>. Some shop links (TCGplayer, eBay) are affiliate links: Trainer Desk may earn a small commission if you buy through them, at no extra cost to you. <button type="button" class="link-btn" id="cookie-settings">Cookie settings</button> · <button type="button" class="link-btn" id="backup-open">Back up / restore your data</button>
 </div></footer>
 
+<dialog class="bk-dlg" id="backup-dlg" aria-labelledby="bk-title">
+  <h2 id="bk-title">Your data</h2>
+  <p class="bk-p">Everything you save on Trainer Desk stays on this device. Back it up to keep it safe, or to move it to another phone or computer.</p>
+  <ul class="bk-sum" id="bk-sum"></ul>
+  <div class="bk-actions">
+    <button type="button" class="today-btn" id="bk-save">BACK UP</button>
+    <label class="today-btn" for="bk-file">RESTORE…</label>
+    <input type="file" id="bk-file" class="sr-only" accept="application/json,.json" tabindex="-1">
+    <button type="button" class="today-btn" id="bk-undo" hidden>UNDO LAST RESTORE</button>
+  </div>
+  <div class="bk-confirm" id="bk-confirm" hidden></div>
+  <p class="bk-msg" id="bk-msg" role="status"></p>
+  <button type="button" class="link-btn bk-close" id="bk-close">Close</button>
+</dialog>
 <div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Cookie consent" hidden>
   <div class="cookie-inner">
     <p>We'd like to use cookies from Google Analytics, to count visits and see which tabs are useful, and from Impact, TCGplayer's affiliate partner, to credit us when you buy through our TCGplayer links. Nothing is set unless you accept. <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Learn more</a></p>
@@ -4764,6 +4794,79 @@ loadSets();
   const ua=navigator.userAgent||"", iOS=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
   if(iOS&&/Safari/.test(ua)&&!/CriOS|FxiOS|EdgiOS/.test(ua)) show("ios");
   window.__app={ show };
+})();
+</script>
+<script>
+/* ============ BACK UP / RESTORE: everything a visitor saves on this device (localStorage) in one file, to keep it safe or
+   move it to another device. Only the keys below; temporary caches and cookie consent stay per device. Restoring
+   replaces this device's data after a confirmation and keeps a one-step undo copy (td-restore-undo). ============ */
+(function(){
+  const dlg=document.getElementById("backup-dlg"), open=document.getElementById("backup-open"); if(!dlg||!open) return;
+  const KEYS=["td-owned-v1","td-watch-v1","td-binders-v1","td-deck-v1","td-collection-v1","td-packs-v1","td-arena-stats-v1","td-arena-daily-v1","td-whos-v1","td-whos-stats-v1","td-hub-days-v1","td-theme","td-arena-ctrl","td-arena-sound"];
+  const PLAIN=new Set(["td-deck-v1","td-theme","td-arena-ctrl","td-arena-sound"]); // saved as plain text, not JSON
+  const UNDO="td-restore-undo", $=id=>document.getElementById(id), msg=$("bk-msg"), conf=$("bk-confirm");
+  const get=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } };
+  const J=v=>{ try{ return JSON.parse(v); }catch(e){ return null; } };
+  const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const plural=(n,w,ws)=>`${n.toLocaleString()} ${n===1?w:(ws||w+"s")}`;
+  function current(){ const d={}; KEYS.forEach(k=>{ const v=get(k); if(v!=null) d[k]=v; }); return d; }
+  // a readable summary of a set of saved values
+  function summary(d){
+    const out=[], o=J(d["td-owned-v1"]), w=J(d["td-watch-v1"]), b=J(d["td-binders-v1"]), c=J(d["td-collection-v1"]), a=J(d["td-arena-stats-v1"]), z=J(d["td-whos-stats-v1"]);
+    if(o&&typeof o==="object"){ const sets=Object.values(o).filter(x=>x&&Array.isArray(x.have)&&x.have.length); if(sets.length) out.push(`Owned cards: ${plural(sets.reduce((n,x)=>n+x.have.length,0),"card")} in ${plural(sets.length,"set")}`); }
+    if(w&&typeof w==="object"&&Object.keys(w).length) out.push(`Watchlist: ${plural(Object.keys(w).length,"card")}`);
+    const bl=b&&Array.isArray(b.binders)?b.binders:[]; if(bl.some(x=>x&&Array.isArray(x.cards)&&x.cards.length)) out.push(`Binders: ${plural(bl.length,"binder")}, ${plural(bl.reduce((n,x)=>n+((x&&x.cards)||[]).length,0),"card")}`);
+    if(d["td-deck-v1"]&&d["td-deck-v1"].trim()) out.push("A saved deck list");
+    if(c&&(Array.isArray(c.c)&&c.c.length||Array.isArray(c.s)&&c.s.length)) out.push(`Pokédex collection: ${plural((c.c||[]).length,"caught mark")}, ${plural((c.s||[]).length,"shiny","shinies")}`);
+    if(a&&a.played) out.push(`Pixel Arena record: ${plural(a.played,"match","matches")}${a.stars?`, ${a.stars} ★`:""}`);
+    if(z&&z.played) out.push(`Who's That Pokémon?: ${plural(z.played,"puzzle")} played`);
+    if(d["td-theme"]||d["td-arena-ctrl"]||d["td-arena-sound"]) out.push("Your settings (theme, Arena controls and sound)");
+    return out;
+  }
+  function render(){
+    const s=summary(current());
+    $("bk-sum").innerHTML=s.length?s.map(x=>`<li>${esc(x)}</li>`).join(""):"<li>Nothing saved on this device yet.</li>";
+    $("bk-undo").hidden=!get(UNDO);
+  }
+  open.addEventListener("click",()=>{ msg.textContent=""; conf.hidden=true; render(); try{ dlg.showModal(); }catch(e){ dlg.setAttribute("open",""); } });
+  $("bk-close").addEventListener("click",()=>{ try{ dlg.close(); }catch(e){ dlg.removeAttribute("open"); } });
+  $("bk-save").addEventListener("click",async()=>{
+    const data=current();
+    if(!summary(data).length){ msg.textContent="There's nothing to back up yet."; return; } // visit days alone don't count
+    const name=`trainer-desk-backup-${new Date().toISOString().slice(0,10)}.json`;
+    const blob=new Blob([JSON.stringify({app:"trainer-desk",type:"backup",v:1,saved:new Date().toISOString(),data},null,1)],{type:"application/json"});
+    try{ const f=new File([blob],name,{type:"application/json"}); // phones: share sheet (save to Files/Drive, send to yourself)
+      if(navigator.canShare&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:"Trainer Desk backup"}); msg.textContent="Backup shared. Keep the file somewhere safe."; return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+    msg.textContent=`Saved ${name}. Keep it somewhere safe; use RESTORE on another device to move your data.`;
+  });
+  let pending=null;
+  $("bk-file").addEventListener("change",async e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value=""; if(!f) return; conf.hidden=true; msg.textContent="";
+    try{
+      if(f.size>5e6) throw new Error("too big");
+      const j=JSON.parse(await f.text());
+      if(!j||j.app!=="trainer-desk"||j.type!=="backup"||!j.data||typeof j.data!=="object") throw new Error("not a backup");
+      const data={}; for(const k of KEYS){ const v=j.data[k]; if(typeof v==="string"&&v.length<2e6&&(PLAIN.has(k)||J(v)!==null)) data[k]=v; }
+      if(!Object.keys(data).length) throw new Error("empty");
+      pending=data; const s=summary(data);
+      conf.innerHTML=`<b>Backup from ${esc(j.saved?new Date(j.saved).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}):"an unknown date")}</b><ul>${s.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>It will <b>replace</b> what's saved on this device (you can undo it once).<div class="bk-actions" style="margin-top:10px"><button type="button" class="today-btn" id="bk-do">RESTORE</button><button type="button" class="today-btn" id="bk-cancel">CANCEL</button></div>`;
+      conf.hidden=false;
+      $("bk-do").addEventListener("click",()=>apply(pending,true));
+      $("bk-cancel").addEventListener("click",()=>{ conf.hidden=true; pending=null; });
+    }catch(err){ msg.textContent="That file isn't a Trainer Desk backup."; }
+  });
+  function apply(data,keepUndo){
+    try{
+      if(keepUndo) localStorage.setItem(UNDO,JSON.stringify(current())); else localStorage.removeItem(UNDO);
+      KEYS.forEach(k=>{ if(k in data) localStorage.setItem(k,data[k]); else localStorage.removeItem(k); });
+    }catch(e){ msg.textContent="Couldn't save on this device (storage full or blocked)."; return; }
+    conf.hidden=true; msg.textContent=keepUndo?"Restored. Reloading…":"Undone. Reloading…";
+    setTimeout(()=>location.reload(),600);
+  }
+  $("bk-undo").addEventListener("click",()=>{ const u=J(get(UNDO)); if(u&&typeof u==="object") apply(u,false); });
+  window.__backup={ KEYS, summary, current };
 })();
 </script>
 </body>
