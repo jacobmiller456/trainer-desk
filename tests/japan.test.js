@@ -33,17 +33,19 @@ const json = (r, body) => r.fulfill({ status: 200, contentType: 'application/jso
   fs.mkdirSync(dataDir); fs.mkdirSync(pricesDir);
   fs.writeFileSync(path.join(pricesDir, 'latest.json'), JSON.stringify({ updated: 'x', source: 'tcgdex', sourceSince: '2026-11-05', months: {} }));
   const jaSets = [...Array.from({ length: 60 }, (_, i) => ({ id: 'old' + i, name: '古い' + i, cardCount: { total: 0 } })), { id: 'SV2a', name: 'ポケモンカード151', cardCount: { total: 3 } }, { id: 'neo1', name: '金、銀、新世界へ...', cardCount: { total: 1 } }];
-  const tcgdexSet = id => id === 'SV2a' ? { id, name: 'ポケモンカード151', releaseDate: '2023-06-16', cardCount: { official: 165, total: 3 }, cards: [{ id: 'SV2a-001', localId: '001', name: 'フシギダネ', image: 'https://assets.tcgdex.net/ja/SV/SV2a/001' }, { id: 'SV2a-006', localId: '006', name: 'リザードンex', image: 'https://assets.tcgdex.net/ja/SV/SV2a/006' }, { id: 'SV2a-152', localId: '152', name: 'ふしぎなアメ' }] }
-    : id === 'neo1' ? { id, name: '金、銀、新世界へ...', releaseDate: '1999-12-01', cardCount: { official: 1, total: 1 }, cards: [{ id: 'neo1-1', localId: '1', name: 'チコリータ', image: 'https://assets.tcgdex.net/ja/neo/neo1/1' }] } : { id, cards: [] };
+  const tcgdexSet = id => id === 'SV2a' ? { id, name: 'ポケモンカード151', serie: { id: 'SV' }, releaseDate: '2023-06-16', cardCount: { official: 165, total: 3 }, cards: [{ id: 'SV2a-001', localId: '001', name: 'フシギダネ', image: 'https://assets.tcgdex.net/ja/SV/SV2a/001' }, { id: 'SV2a-006', localId: '006', name: 'リザードンex', image: 'https://assets.tcgdex.net/ja/SV/SV2a/006' }, { id: 'SV2a-152', localId: '152', name: 'ふしぎなアメ' }] }
+    : id === 'neo1' ? { id, name: '金、銀、新世界へ...', serie: { id: 'neo' }, releaseDate: '1999-12-01', cardCount: { official: 1, total: 1 }, cards: [{ id: 'neo1-1', localId: '1', name: 'チコリータ' }] } : { id, cards: [] };
   const products = [
     { productId: 20, name: 'Bulbasaur - 001/165', extendedData: [{ name: 'Number', value: '001/165' }, { name: 'Rarity', value: 'Common' }, { name: 'HP', value: '70' }, { name: 'CardType', value: 'Grass' }] },
     { productId: 21, name: 'Charizard ex - 006/165', extendedData: [{ name: 'Number', value: '006/165' }, { name: 'Rarity', value: 'Double Rare' }, { name: 'HP', value: '330' }, { name: 'CardType', value: 'Fire' }, { name: 'Attack 1', value: 'SECRET' }] },
     { productId: 40, name: 'Rare Candy - 152/165', extendedData: [{ name: 'Number', value: '152/165' }, { name: 'Rarity', value: 'Uncommon' }, { name: 'CardType', value: 'Trainer - Item' }] },
   ];
-  let stamp = '2026-11-15T20:00:00+0000', csvDown = false, dexDown = false; const calls = [];
+  let stamp = '2026-11-15T20:00:00+0000', csvDown = false, dexDown = false; const calls = [], heads = []; let picBusy = false;
   const fake = async (url, opt = {}) => {
     calls.push(url);
     const u = new URL(url), ok = body => ({ ok: true, status: 200, json: async () => body, text: async () => body });
+    if (u.host === 'assets.tcgdex.net') { heads.push(url); if (picBusy) return { ok: false, status: 503, headers: { get: () => 'text/plain' } }; const img = url === 'https://assets.tcgdex.net/ja/SV/SV2a/152/low.webp';
+      return { ok: img, status: img ? 200 : 404, headers: { get: () => 'image/webp' } }; }
     if (u.host === 'api.tcgdex.net') { if (dexDown) throw new Error('ECONNREFUSED'); const p = u.pathname.replace('/v2/ja/', ''); return ok(p === 'sets' ? jaSets : tcgdexSet(decodeURIComponent(p.slice(5)))); }
     if (u.host === 'tcgcsv.com') {
       if (csvDown) throw new Error('ECONNREFUSED');
@@ -55,13 +57,14 @@ const json = (r, body) => r.fulfill({ status: 200, contentType: 'application/jso
     }
     return { ok: false, status: 404 };
   };
-  const logs = [], opts = { dataDir, pricesDir, fetchImpl: fake, log: l => logs.push(l), now: new Date('2026-11-17T08:00:00Z'), pauseMs: 0, retryMs: 0 };
+  const logs = [], opts = { dataDir, pricesDir, fetchImpl: fake, log: l => logs.push(l), now: new Date('2026-11-17T08:00:00Z'), pauseMs: 0, picPauseMs: 0, retryMs: 0 };
   const r = await J.run(opts);
   const data = JSON.parse(fs.readFileSync(path.join(dataDir, 'tcg-ja.json'), 'utf8'));
   const sv = data.sets.find(s => s.id === 'jp-sv2a'), neo = data.sets.find(s => s.id === 'jp-neo1');
   check('sets with cards kept, empty TCGdex sets skipped, newest first', data.sets.length === 2 && data.sets[0].id === 'jp-sv2a', data.sets.map(s => s.id));
   check('cards: English name, rarity, type, HP, Japanese name and TCGplayer ID', JSON.stringify(sv.cards[1]) === '["006","Charizard ex","Double Rare","Pokémon","Fire","330","リザードンex",21]' && sv.name === 'Pokémon Card 151' && sv.nameJa === 'ポケモンカード151', sv.cards[1]);
-  check('picture folder from TCGdex; cards without a picture listed', sv.img === 'https://assets.tcgdex.net/ja/SV/SV2a/' && JSON.stringify(sv.nopic) === '["152"]', { img: sv.img, nopic: sv.nopic });
+  check('picture folder from TCGdex; a picture TCGdex hosts but doesn\'t link is found and used', sv.img === 'https://assets.tcgdex.net/ja/SV/SV2a/' && JSON.stringify(sv.nopic) === '[]' && sv.serie === 'SV', { img: sv.img, nopic: sv.nopic });
+  check('set without any hosted pictures: sampled, then left without (no broken pictures)', neo.img === '' && JSON.stringify(neo.nopic) === '["1"]' && heads.filter(u => u.includes('/neo1/')).length <= 3 && logs.some(l => /card pictures: 1 found on TCGdex \(2 checked\)/.test(l)), { neo: neo.img, heads, logs });
   check('set TCGplayer doesn\'t list: Japanese names, no prices', neo.group === 0 && neo.name === '金、銀、新世界へ...' && neo.cards[0][1] === 'チコリータ' && !neo.cards[0][7]);
   check('no card text stored', !fs.readFileSync(path.join(dataDir, 'tcg-ja.json'), 'utf8').includes('SECRET'));
   const pf = JSON.parse(fs.readFileSync(path.join(pricesDir, '2026-11', 'jp-sv2a.json'), 'utf8'));
@@ -77,7 +80,17 @@ const json = (r, body) => r.fulfill({ status: 200, contentType: 'application/jso
   stamp = '2026-11-17T20:00:00+0000'; calls.length = 0; await J.run({ ...opts, now: new Date('2026-11-18T08:00:00Z') });
   check('next day: prices re-read, product list not (nothing new)', calls.some(u => u.endsWith('/85/7/prices')) && !calls.some(u => u.endsWith('/products')), calls);
   check('second day appended', JSON.parse(fs.readFileSync(path.join(pricesDir, '2026-11', 'jp-sv2a.json'), 'utf8')).days.join() === '2026-11-17,2026-11-18');
-  calls.length = 0; await J.run({ ...opts, now: new Date('2026-11-23T08:00:00Z') }); // a Monday
+  jaSets.find(x => x.id === 'SV2a').cardCount.total = 4; calls.length = 0; await J.run({ ...opts, now: new Date('2026-11-18T09:00:00Z') }); // TCGdex count changed, TCGCSV not rebuilt
+  const re = JSON.parse(fs.readFileSync(path.join(dataDir, 'tcg-ja.json'), 'utf8')).sets.find(s => s.id === 'jp-sv2a');
+  check('a set re-read from TCGdex keeps its English names, IDs and found pictures while TCGCSV is skipped', calls.some(u => u.endsWith('/sets/SV2a')) && !calls.some(u => u.includes('tcgcsv.com/tcgplayer')) && re.cards[1][1] === 'Charizard ex' && re.cards[1][7] === 21 && re.name === 'Pokémon Card 151' && JSON.stringify(re.nopic) === '[]', { calls, card: re.cards[1], nopic: re.nopic });
+  calls.length = 0; heads.length = 0; picBusy = true; logs.length = 0; await J.run({ ...opts, now: new Date('2026-11-23T08:00:00Z') }); // a Monday, picture server busy
+  const busyNeo = JSON.parse(fs.readFileSync(path.join(dataDir, 'tcg-ja.json'), 'utf8')).sets.find(s => s.id === 'jp-neo1');
+  check('picture server busy (503): checking stops after one try, nothing marked missing, rest left for the next run', heads.length === 1 && busyNeo.picChecked === '2026-11-17' && logs.some(l => /picture server busy/.test(l)), { heads, picChecked: busyNeo.picChecked, logs });
+  picBusy = false; heads.length = 0; await J.run({ ...opts, now: new Date('2026-11-23T09:00:00Z') });
+  check('next run: the check finishes and is recorded', heads.length > 0 && JSON.parse(fs.readFileSync(path.join(dataDir, 'tcg-ja.json'), 'utf8')).sets.find(s => s.id === 'jp-neo1').picChecked === '2026-11-23');
+  heads.length = 0; await J.run({ ...opts, now: new Date('2026-11-23T10:00:00Z') });
+  check('…and isn\'t repeated the same day', heads.length === 0, heads);
+  calls.length = 0; await J.run({ ...opts, now: new Date('2026-11-30T08:00:00Z') }); // next Monday
   check('Mondays: sets TCGdex lists without cards are looked at again', calls.filter(u => /\/sets\/old\d+$/.test(u)).length === 60, calls.length);
   stamp = 'new'; csvDown = true; logs.length = 0; await J.run(opts);
   check('TCGCSV down: card lists kept, prices untouched, warning logged', JSON.parse(fs.readFileSync(path.join(dataDir, 'tcg-ja.json'), 'utf8')).sets.find(s => s.id === 'jp-sv2a').cards[1][1] === 'Charizard ex' && logs.some(l => /::warning::TCGCSV unavailable/.test(l)));

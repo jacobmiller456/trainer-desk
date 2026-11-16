@@ -64,8 +64,13 @@ export function productPrice(rows) {
 }
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function pool(items, n, fn) {
+  const out = new Array(items.length); let i = 0;
+  await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); } }));
+  return out;
+}
 export async function run({ dataDir = path.join(root, 'data'), pricesDir = path.join(root, 'prices'), fetchImpl = fetch, log = console.log,
-  now = new Date(), pauseMs = 120, retryMs = 3000 } = {}) {
+  now = new Date(), pauseMs = 120, picPauseMs = 60, retryMs = 3000 } = {}) {
   const getJSON = async (url, headers = {}) => {
     for (let a = 1; ; a++) {
       try { const r = await fetchImpl(url, { headers, signal: AbortSignal.timeout(30000) }); if (!r.ok) throw new Error(r.status); return await r.json(); }
@@ -85,19 +90,51 @@ export async function run({ dataDir = path.join(root, 'data'), pricesDir = path.
   const sets = [], empty = {}, recheck = now.getUTCDay() === 1;
   for (const s of list) {
     const old = prevBy.get(s.id), total = (s.cardCount && s.cardCount.total) || 0;
-    if (old && old.total === total && old.cards.length) { sets.push({ ...old, cards: old.cards.map(c => c.slice()) }); continue; }
+    if (old && old.total === total && old.cards.length && old.serie !== undefined) { sets.push({ ...old, cards: old.cards.map(c => c.slice()) }); continue; }
     if (!old && !recheck && (prev.empty || {})[s.id] === total) { empty[s.id] = total; continue; }
     try {
       const d = await getJSON(`${TCGDEX_JA}/sets/${encodeURIComponent(s.id)}`);
       const cards = (d.cards || []).filter(c => c && c.localId);
       if (!cards.length) { empty[s.id] = total; continue; }
-      const one = cards.find(c => c.image);
-      sets.push({ id: siteId(s.id), tcgdex: s.id, group: 0, name: d.name || s.name || s.id, nameJa: d.name || s.name || '', code: s.id,
+      const one = cards.find(c => c.image), was = new Map(((old && old.cards) || []).map(c => [c[0], c]));
+      const oldPic = new Set(old && old.img ? old.cards.map(c => c[0]).filter(n => !(old.nopic || []).includes(n)) : []); // pictures found earlier
+      sets.push({ id: siteId(s.id), tcgdex: s.id, serie: (d.serie && d.serie.id) || '', group: old ? old.group : 0, name: old && old.group ? old.name : d.name || s.name || s.id, nameJa: d.name || s.name || '', code: s.id,
         releaseDate: String(d.releaseDate || '').slice(0, 10), printedTotal: (d.cardCount && d.cardCount.official) || 0, total,
-        img: one ? one.image.slice(0, one.image.length - String(one.localId).length) : '', seen: 0, nopic: cards.filter(c => !c.image).map(c => c.localId),
-        cards: cards.map(c => [c.localId, c.name || '', '', '', '', '', c.name || '', 0]) });
+        img: one ? one.image.slice(0, one.image.length - String(one.localId).length) : (old && old.img) || '', seen: old ? old.seen || 0 : 0,
+        nopic: cards.filter(c => !c.image && !oldPic.has(c.localId)).map(c => c.localId),
+        // a re-read keeps the TCGplayer names/IDs already found (TCGCSV may be skipped today)
+        cards: cards.map(c => { const w = was.get(c.localId); return w ? [c.localId, w[1], w[2], w[3], w[4], w[5], c.name || w[6], w[7]] : [c.localId, c.name || '', '', '', '', '', c.name || '', 0]; }) });
     } catch (e) { log(`  skipped ${s.id}: ${e.message}`); if (old) sets.push(old); }
   }
+
+  // 1b. pictures: TCGdex often hosts a card's picture before its card list links it. For cards without one, the usual
+  // address (<assets>/ja/<series>/<set>/<number>/low.webp) is tried and kept only if an image comes back. A set is
+  // sampled first (3 cards) and skipped if none exist; `picChecked` records the day a set was fully checked (again on
+  // Mondays). Only a 404 counts as missing: if the picture server is busy (503/429) or unreachable, checking stops and
+  // the remaining sets wait for the next run. Two at a time with a short pause, to stay gentle.
+  let nPics = 0, nTried = 0, busy = false;
+  const day0 = now.toISOString().slice(0, 10);
+  for (const s of sets) {
+    if (busy || !s.nopic || !s.nopic.length || !s.serie || (s.picChecked && !(recheck && s.picChecked !== day0))) continue;
+    const folder = s.img || `https://assets.tcgdex.net/ja/${encodeURIComponent(s.serie)}/${encodeURIComponent(s.tcgdex)}/`;
+    const has = async n => {
+      if (busy) return null; nTried++; await sleep(picPauseMs);
+      try { const r = await fetchImpl(`${folder}${encodeURIComponent(n)}/low.webp`, { method: 'HEAD', signal: AbortSignal.timeout(15000) });
+        if (r.status === 404 || r.status === 403) return false;
+        if (r.ok && /^image\//.test((r.headers && r.headers.get && r.headers.get('content-type')) || '')) return true;
+        if (r.ok) return false;
+      } catch (e) {}
+      busy = true; return null; // busy or unreachable: unknown, try again next run
+    };
+    const nums = s.nopic, sample = [...new Set([nums[0], nums[nums.length >> 1], nums[nums.length - 1]])];
+    const hits = await pool(sample, 2, has);
+    if (busy) break;
+    let found = new Set(sample.filter((n, i) => hits[i]));
+    if (found.size) { const rest = nums.filter(n => !sample.includes(n)), more = await pool(rest, 2, has); rest.forEach((n, i) => { if (more[i]) found.add(n); }); }
+    if (found.size) { s.nopic = nums.filter(n => !found.has(n)); s.img = folder; nPics += found.size; }
+    if (!busy) s.picChecked = day0;
+  }
+  if (nTried) log(`card pictures: ${nPics} found on TCGdex (${nTried} checked)${busy ? '; picture server busy, the rest next run' : ''}`);
 
   // 2. TCGCSV: match sets to TCGplayer groups, add English names/rarity/type/HP and product IDs, read today's prices
   const prices = {}, pids = {};
