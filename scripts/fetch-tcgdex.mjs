@@ -6,6 +6,10 @@
 //     TCGdex (src:"tcgdex", TCGdex IDs), so new sets keep getting pages. Same compact facts-only card rows; no card text.
 //     They are also kept in data/tcgdex-sets.json so a TCGdex outage doesn't drop them, and cards are only re-fetched
 //     when a set's card count changes.
+//  3. Black Star Promo sets keep growing for years after the pokemon-tcg-data snapshot froze: promos TCGdex has that a
+//     snapshot promo set lacks are added to it (same facts-only rows, cached in data/tcgdex-topups.json), and an unmatched
+//     TCGdex promo set (e.g. Mega Evolution's "MEP Black Star Promos") is added whatever its release date. Without this,
+//     newer promos had no page, no card and no price.
 // TCGdex (api.tcgdex.net) is free with no key and no published rate limit, so requests go 4 at a time.
 // Usage: node scripts/fetch-tcgdex.mjs   (an outage keeps the previous files and exits 0 with a warning)
 import fs from 'node:fs';
@@ -16,7 +20,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const TCGDEX = 'https://api.tcgdex.net/v2/en';
 export const PTCG = 'https://api.pokemontcg.io/v2';
 // Hand fixes when automatic matching gets a set wrong or misses it: pokemontcg.io set ID -> TCGdex set ID
-export const SET_FIXES = {};
+// (promo sets run for years, so their release dates are far apart; SVP's name differs too)
+export const SET_FIXES = { svp: 'svp', bwp: 'bwp' };
+export const PROMO = /black star promos$/i;
+// TCGdex's short names -> the names our other sets use
+export const SET_NAMES = { mep: 'Mega Evolution Black Star Promos' };
 const DAY = 864e5;
 
 const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '');
@@ -74,7 +82,7 @@ export function cardRow(c) {
 const byNum = (a, b) => (parseInt(a[0], 10) || 1e9) - (parseInt(b[0], 10) || 1e9) || a[0].localeCompare(b[0]);
 export function setEntry(t, cards) {
   return {
-    id: t.id, name: t.name, series: (t.serie && t.serie.name) || '', printedTotal: (t.cardCount && t.cardCount.official) || 0,
+    id: t.id, name: SET_NAMES[t.id] || t.name, series: (t.serie && t.serie.name) || '', printedTotal: (t.cardCount && t.cardCount.official) || 0,
     total: (t.cardCount && t.cardCount.total) || cards.length, releaseDate: String(t.releaseDate || '').slice(0, 10),
     ptcgoCode: t.tcgOnline || (t.abbreviation && t.abbreviation.official) || '',
     standard: !!(t.legal && t.legal.standard), expanded: !!(t.legal && t.legal.expanded),
@@ -85,8 +93,19 @@ export function setEntry(t, cards) {
 // TCGdex sets to add: newer than everything in our snapshot, not matched to one of ours, not TCG Pocket (a different game)
 export const newSets = (theirs, pairs, newest) => {
   const taken = new Set(Object.values(pairs));
-  return theirs.filter(t => !taken.has(t.id) && t.releaseDate && String(t.releaseDate).slice(0, 10) > newest && !(t.serie && t.serie.id === 'tcgp'));
+  return theirs.filter(t => !taken.has(t.id) && t.releaseDate && (String(t.releaseDate).slice(0, 10) > newest || PROMO.test(t.name || '')) && !(t.serie && t.serie.id === 'tcgp'));
 };
+
+// Promos a snapshot promo set lacks: TCGdex card resumes [{id, localId}] not in ours (by number)
+export const missingPromos = (o, t) => { const have = new Set(o.cards.map(c => normNum(c[0]))); return (t.cards || []).filter(c => c.localId && !have.has(normNum(c.localId))); };
+// add cached top-up rows to the snapshot sets (cache: {setId: [row]}); returns how many were added
+export function applyTopups(ours, cache) {
+  let n = 0;
+  for (const o of ours) { const rows = cache[o.id]; if (!rows) continue; const have = new Map(o.cards.map(c => [normNum(c[0]), c]));
+    for (const r of rows) { const c = have.get(normNum(r[0]));
+      if (!c) { o.cards.push(r.slice()); have.set(normNum(r[0]), r); n++; } else if (!c[6] && r[6]) c[6] = r[6]; } } // picture found later
+  return n;
+}
 
 // New sets that pokemontcg.io lists too (by name, under its own IDs, e.g. TCGdex me06 = pokemontcg.io me6 Delta Reign).
 // The TCG tab then shows pokemontcg.io's copy, so the set gets `ptcgId` and `ptcgNums` (our card number -> its number):
@@ -117,6 +136,20 @@ export async function linkPokemontcg(extra, getJSON, log = () => {}, cached = []
   return extra;
 }
 
+// TCGdex often has a card's picture before its card list links it. The set's picture folder (from a card that has one,
+// else <assets>/en/<series>/<set>/) + number is tried for cards without a picture, and kept only if an image comes back.
+export const pictureFolder = t => { const one = (t.cards || []).find(c => c.image && c.localId);
+  return one ? one.image.slice(0, one.image.length - String(one.localId).length) : (t.serie && t.serie.id ? `https://assets.tcgdex.net/en/${t.serie.id}/${t.id}/` : ''); };
+export async function guessPictures(rows, folder, fetchImpl) {
+  let n = 0; if (!folder) return 0;
+  await pool(rows.filter(r => !r[6] && r[0]), 4, async r => {
+    const url = `${folder}${encodeURIComponent(r[0])}/low.webp`;
+    try { const res = await fetchImpl(url, { method: 'HEAD', signal: AbortSignal.timeout(15000) });
+      if (res.ok && /^image\//.test((res.headers && res.headers.get && res.headers.get('content-type')) || '')) { r[6] = url; n++; } } catch (e) {}
+  });
+  return n;
+}
+
 async function pool(items, n, fn) {
   const out = new Array(items.length); let i = 0;
   await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); } }));
@@ -132,7 +165,7 @@ export async function run({ dir = path.join(root, 'data'), fetchImpl = fetch, lo
   };
   const read = (f, d) => { try { return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); } catch (e) { return d; } };
   const ours = read('tcg.json', []).filter(s => s.src !== 'tcgdex');   // the pokemon-tcg-data snapshot (re-runs are idempotent)
-  const cached = read('tcgdex-sets.json', []);
+  const cached = read('tcgdex-sets.json', []), topCache = read('tcgdex-topups.json', {});
   const write = (f, v) => fs.writeFileSync(path.join(dir, f), JSON.stringify(v) + '\n');
   const merge = extra => { write('tcg.json', [...ours, ...extra.filter(e => !ours.some(o => o.id === e.id))]); };
   if (!ours.length) throw new Error('data/tcg.json is missing; run fetch-tcg-data.mjs first');
@@ -144,11 +177,23 @@ export async function run({ dir = path.join(root, 'data'), fetchImpl = fetch, lo
     theirs = (await pool(list, 4, s => getJSON(`${TCGDEX}/sets/${encodeURIComponent(s.id)}`).catch(e => { log(`skipped set ${s.id}: ${e.message}`); return null; }))).filter(Boolean);
   } catch (e) {
     log(`::warning::TCGdex unavailable (${e.message}); keeping the previous ID map and new sets`);
-    merge(cached); return null;
+    applyTopups(ours, topCache); merge(cached); return null;
   }
 
   const { pairs, unmatched } = matchSets(ours, theirs);
   const byId = new Map(theirs.map(t => [t.id, t]));
+  // newer promos for the snapshot's promo sets (cached rows reused; only new ones fetched)
+  // (the cache only grows: on a re-run the promos are already in tcg.json, and the weekly snapshot rewrite drops them again)
+  const topups = {}; let nPics = 0;
+  for (const o of ours) {
+    const t = PROMO.test(o.name) && pairs[o.id] && byId.get(pairs[o.id]); if (!t) continue;
+    const old = new Map((topCache[o.id] || []).map(r => [normNum(r[0]), r]));
+    const rows = (await pool(missingPromos(o, t), 4, c => old.get(normNum(c.localId)) || getJSON(`${TCGDEX}/cards/${encodeURIComponent(c.id)}`).then(cardRow).catch(() => null))).filter(Boolean);
+    const all = new Map([...(topCache[o.id] || []), ...rows].map(r => [normNum(r[0]), r]));
+    if (all.size) { topups[o.id] = [...all.values()]; nPics += await guessPictures(topups[o.id], pictureFolder(t), fetchImpl); }
+  }
+  write('tcgdex-topups.json', topups);
+  const nTop = applyTopups(ours, topups);
   const sets = {}, missingCards = {};
   for (const o of ours) {
     const t = pairs[o.id] && byId.get(pairs[o.id]); if (!t) continue;
@@ -173,9 +218,10 @@ export async function run({ dir = path.join(root, 'data'), fetchImpl = fetch, lo
     extra.push(setEntry(t, cards));
   }
   await linkPokemontcg(extra, getJSON, log, cached);
+  for (const e of extra) { const t = byId.get(e.id); if (t) nPics += await guessPictures(e.cards, pictureFolder(t), fetchImpl); }
   write('tcgdex-sets.json', extra);
   merge(extra);
-  log(`TCGdex: ${Object.keys(sets).length}/${ours.length} sets and ${nMatched}/${nCards} cards matched; ${unmatched.length} sets unmatched${unmatched.length ? ' (' + unmatched.join(' ') + ')' : ''}; ${extra.length} newer sets added${extra.length ? ' (' + extra.map(e => e.id).join(' ') + ')' : ''}`);
+  log(`TCGdex: ${Object.keys(sets).length}/${ours.length} sets and ${nMatched}/${nCards} cards matched; ${unmatched.length} sets unmatched${unmatched.length ? ' (' + unmatched.join(' ') + ')' : ''}; newer promos in promo sets: ${Object.entries(topups).map(([k, v]) => k + ' +' + v.length).join(', ') || 'none'}${nTop ? ` (${nTop} added to tcg.json)` : ''}; ${extra.length} newer sets added${nPics ? ` (${nPics} card pictures found on TCGdex)` : ''}${extra.length ? ' (' + extra.map(e => e.id).join(' ') + ')' : ''}`);
   for (const [s, miss] of Object.entries(missingCards)) log(`  ${s}: ${miss.length} card(s) unmatched: ${miss.slice(0, 12).join(' ')}${miss.length > 12 ? ' …' : ''}`);
   return { sets, unmatched, missingCards, extra };
 }

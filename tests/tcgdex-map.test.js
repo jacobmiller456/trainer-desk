@@ -53,6 +53,7 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   let cardCalls = 0, ptcgCalls = 0, down = false;
   const fake = async url => {
     if (down) throw new Error('ECONNREFUSED');
+    if (url.startsWith('https://assets.tcgdex.net/')) return { ok: false, status: 404 };
     if (url.startsWith('https://api.pokemontcg.io/')) { ptcgCalls++; const q = new URL(url).searchParams.get('q');
       const json = /^name:/.test(q) ? { data: [{ id: 'me6', name: 'Brand New' }] } : { data: [{ number: '1', images: { small: 'https://images.scrydex.com/pokemon/me6-1/small' } }] };
       return { ok: true, json: async () => json }; }
@@ -80,6 +81,47 @@ const check = (l, ok, x) => { console.log((ok ? 'PASS' : 'FAIL') + '  ' + l + (o
   check('TCGdex down: new sets restored from the cache, map kept, warning logged', r3 === null && tcg.some(s => s.id === 'me06') && fs.existsSync(path.join(dir, 'tcg-id-map.json')) && logs.some(l => /::warning::TCGdex unavailable/.test(l)));
   check('summary logged', logs.some(l => /121\/121 sets and 241\/241 cards matched/.test(l)), logs[0]);
   fs.rmSync(dir, { recursive: true });
+
+  // promo sets: pinned by hand, newer promos topped up, an older-dated new promo set added
+  check('SVP and BW promos pinned to TCGdex (names/dates too far apart to match)', T.SET_FIXES.svp === 'svp' && T.SET_FIXES.bwp === 'bwp');
+  const pdir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-tcgdex-'));
+  const psnap = snap.map(x => ({ ...x, cards: x.cards.map(c => c.slice()) }));
+  psnap.push({ id: 'svp', name: 'Scarlet & Violet Black Star Promos', series: 'Scarlet & Violet', releaseDate: '2023-01-01', ptcgoCode: 'PR-SV', printedTotal: 2, cards: [['1', 'Sprigatito', 'Promo', 'Pokémon', 'Grass', 906, 'https://images.pokemontcg.io/svp/1.png', 'A', '70'], ['2', 'Fuecoco', 'Promo', 'Pokémon', 'Fire', 909, '', 'B', '70']] });
+  fs.writeFileSync(path.join(pdir, 'tcg.json'), JSON.stringify(psnap));
+  const papi = {
+    sets: [...api.sets, { id: 'svp' }, { id: 'mep' }],
+    detail: id => id === 'svp' ? { id, name: 'SVP Black Star Promos', serie: { id: 'sv' }, releaseDate: '2023-03-31', cardCount: { official: 4, total: 4 }, cards: ['001', '002', '003', '004'].map(n => ({ id: 'svp-' + n, localId: n })) }
+      : id === 'mep' ? { id, name: 'MEP Black Star Promos', releaseDate: '2025-09-26', serie: { id: 'me', name: 'Mega Evolution' }, cardCount: { official: 1, total: 1 }, cards: [{ id: 'mep-001', localId: '001' }] }
+      : api.detail(id),
+  };
+  let pcalls = [], pheads = []; down = false;
+  const pfake = async url => {
+    if (down) throw new Error('ECONNREFUSED');
+    if (url.startsWith('https://api.pokemontcg.io/')) return { ok: true, json: async () => ({ data: [] }) };
+    if (url.startsWith('https://assets.tcgdex.net/')) { pheads.push(url); const img = url === 'https://assets.tcgdex.net/en/me/mep/001/low.webp' || url === 'https://assets.tcgdex.net/en/sv/svp/004/low.webp';
+      return { ok: img, status: img ? 200 : 404, headers: { get: () => (img ? 'image/webp' : 'text/html') } }; }
+    const q = new URL(url).pathname.replace('/v2/en/', '');
+    const json = q === 'sets' ? papi.sets : q.startsWith('sets/') ? papi.detail(decodeURIComponent(q.slice(5))) : (pcalls.push(q.slice(6)), { id: q.slice(6), localId: q.slice(6).split('-')[1], name: 'Promo ' + q.slice(-1), category: 'Pokemon', rarity: 'Promo', types: ['Water'], dexId: [7], image: q.endsWith('004') || q.startsWith('cards/mep') ? undefined : 'https://assets.tcgdex.net/en/sv/svp/' + q.slice(-3), illustrator: 'C', hp: 60 });
+    return { ok: true, json: async () => json };
+  };
+  const plogs = [], popts = { dir: pdir, fetchImpl: pfake, log: l => plogs.push(l), retryMs: 0 };
+  await T.run(popts);
+  let ptcg = JSON.parse(fs.readFileSync(path.join(pdir, 'tcg.json'), 'utf8')), pmap = JSON.parse(fs.readFileSync(path.join(pdir, 'tcg-id-map.json'), 'utf8'));
+  let svp = ptcg.find(x => x.id === 'svp');
+  check('newer promos TCGdex has are added to our promo set (facts + TCGdex picture), old cards untouched', svp.cards.length === 4 && svp.cards[2][0] === '003' && svp.cards[2][1] === 'Promo 3' && svp.cards[2][6] === 'https://assets.tcgdex.net/en/sv/svp/003/low.webp' && svp.cards[0][6] === 'https://images.pokemontcg.io/svp/1.png' && !svp.src, svp.cards);
+  check('…and are in the ID map, so they get prices', pmap.sets.svp && pmap.sets.svp.cards['003'] === 'svp-003' && pmap.sets.svp.cards['1'] === 'svp-001', pmap.sets.svp);
+  const mep = ptcg.find(x => x.id === 'mep');
+  check('a TCGdex promo set we lack is added even though it is older than our newest set', mep && mep.src === 'tcgdex' && mep.cards.length === 1, mep && mep.id);
+  check('cards without a picture link: TCGdex picture used only when it really exists (hotlinked)', svp.cards[3][6] === 'https://assets.tcgdex.net/en/sv/svp/004/low.webp' && mep.cards[0][6] === 'https://assets.tcgdex.net/en/me/mep/001/low.webp' && svp.cards[1][6] === '' && !pheads.some(u => /\/svp\/2\//.test(u)) /* snapshot cards aren't probed */, { svp: svp.cards.map(c => c[6]), mep: mep.cards[0][6] });
+  check('TCGdex short name replaced ("MEP" → Mega Evolution)', mep.name === 'Mega Evolution Black Star Promos', mep.name);
+  check('promo summary logged', plogs.some(l => /newer promos in promo sets: svp \+2/.test(l)), plogs);
+  const n1 = pcalls.length; await T.run(popts);
+  check('re-run: promos not fetched again, no duplicates', pcalls.length === n1 && JSON.parse(fs.readFileSync(path.join(pdir, 'tcg.json'), 'utf8')).find(x => x.id === 'svp').cards.length === 4, { before: n1, after: pcalls.length });
+  fs.writeFileSync(path.join(pdir, 'tcg.json'), JSON.stringify(psnap)); await T.run(popts); // weekly snapshot rewrite drops them
+  check('after the weekly snapshot rewrite: promos come back from the cache', pcalls.length === n1 && JSON.parse(fs.readFileSync(path.join(pdir, 'tcg.json'), 'utf8')).find(x => x.id === 'svp').cards.length === 4);
+  fs.writeFileSync(path.join(pdir, 'tcg.json'), JSON.stringify(psnap)); down = true; await T.run(popts);
+  check('TCGdex down: cached promos kept too', JSON.parse(fs.readFileSync(path.join(pdir, 'tcg.json'), 'utf8')).find(x => x.id === 'svp').cards.length === 4);
+  fs.rmSync(pdir, { recursive: true });
 
   console.log(failures ? `\n${failures} TCGDEX MAP CHECK(S) FAILED` : '\nALL TCGDEX MAP CHECKS PASSED');
   process.exit(failures ? 1 : 0);
