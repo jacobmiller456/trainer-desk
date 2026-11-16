@@ -476,6 +476,18 @@ for (const t of catalog) {
   for (const c of t.cards) search.cards.push([siteCard(t, c), c[1], siteCard(t, c).slice(sid.length + 1)]);
 }
 files.set(path.join('tcgdata', 'search.json'), JSON.stringify(search) + '\n');
+// Japanese cards (data/tcg-ja.json, from scripts/fetch-japan.mjs): same file format with jp- IDs, plus the Japanese name.
+//   tcgdata/jp-sets.json  [{id, name, nameJa, releaseDate, printedTotal, code}] newest first
+//   tcgdata/jp-<id>.json  {id, name, printedTotal, img:"", cards:[[num, name, rarity, supertype, types, hp, "", picture, "", nameJa]]}
+const tcgJa = (() => { try { return JSON.parse(fs.readFileSync(path.join(root, 'data/tcg-ja.json'), 'utf8')).sets || []; } catch (e) { return []; } })();
+if (tcgJa.length) {
+  files.set(path.join('tcgdata', 'jp-sets.json'), JSON.stringify(tcgJa.map(t => ({ id: t.id, name: t.name, nameJa: t.nameJa || '', releaseDate: String(t.releaseDate || '').replace(/-/g, '/'), printedTotal: t.printedTotal || 0, code: t.code || '' }))) + '\n');
+  for (const t of tcgJa) {
+    const nopic = new Set(t.nopic || []);
+    files.set(path.join('tcgdata', t.id + '.json'), JSON.stringify({ id: t.id, name: t.name, printedTotal: t.printedTotal || 0, img: '',
+      cards: t.cards.map(c => [c[0], c[1], c[2], c[3], c[4], c[5], '', t.img && !nopic.has(c[0]) ? t.img + encodeURIComponent(c[0]) + '/low.webp' : '', '', c[6] !== c[1] ? c[6] : '']) }) + '\n');
+  }
+}
 const stale = [];
 if (!check) for (const d of ['pokedex', 'tcg', 'go', 'tcgdata']) fs.mkdirSync(path.join(root, d), { recursive: true });
 for (const [rel, html] of files) {
