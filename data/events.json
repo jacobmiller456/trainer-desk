@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-16",
+ "fetchedAt": "2026-11-17",
  "events": [
   {
    "id": "season-24-twilight-trails",
@@ -409,10 +409,7 @@
    "type": "raid-battles",
    "start": "2026-11-16T06:00:00.000",
    "end": "2026-11-24T22:00:00.000",
-   "bosses": [
-    "Cresselia",
-    "Darkrai"
-   ],
+   "bosses": [],
    "spotlight": null
   },
   {
@@ -452,6 +449,15 @@
    "type": "event",
    "start": "2026-11-16T10:00:00.000",
    "end": "2026-11-23T20:00:00.000",
+   "bosses": [],
+   "spotlight": null
+  },
+  {
+   "id": "duolingo-timed-research-2026",
+   "name": "Pokémon GO and Duolingo Timed Research",
+   "type": "timed-research",
+   "start": "2026-11-17T10:00:00.000",
+   "end": "2026-12-31T23:59:00.000",
    "bosses": [],
    "spotlight": null
   },
