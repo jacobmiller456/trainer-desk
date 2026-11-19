@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-18",
+ "fetchedAt": "2026-11-19",
  "events": [
   {
    "id": "season-24-twilight-trails",
@@ -46,15 +46,6 @@
    "bosses": [
     "Landorus (Incarnate)"
    ],
-   "spotlight": null
-  },
-  {
-   "id": "fall-marathon-buddy-trek-2026",
-   "name": "Fall Marathon: Buddy Trek",
-   "type": "event",
-   "start": "2026-10-13T10:00:00.000",
-   "end": "2026-10-19T20:00:00.000",
-   "bosses": [],
    "spotlight": null
   },
   {
