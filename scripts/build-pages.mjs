@@ -430,14 +430,64 @@ function eventsIndex() {
     url, ld, img: ROUTES.go.img, current: 'go', credit: evCredit, body: `<main class="wrap">
   <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <span>GO events</span></nav>
   <h1 class="page-h1">Pokémon GO events</h1>
-  <p class="intro">Current and upcoming events for the next two months. Events marked "guide" have Trainer Desk notes; the <a href="/go">live tracker</a> has countdowns, raid bosses and counters. Updated ${fmtDate(evData.fetchedAt)}.</p>
+  <p class="intro">Current and upcoming events for the next two months. Events marked "guide" have Trainer Desk notes; the <a href="/go">live tracker</a> has countdowns, raid bosses and counters. A short summary: <a href="/week">this week</a>. Updated ${fmtDate(evData.fetchedAt)}.</p>
   <section class="box"><h2>Happening now</h2>${live.length ? `<ul class="setlist">${live.map(e => li(e, true)).join('')}</ul>` : '<p>Nothing running right now.</p>'}</section>
   <section class="box"><h2>Coming up</h2>${soon.length ? `<ul class="setlist">${soon.map(e => li(e, false)).join('')}</ul>` : '<p>No upcoming events announced yet.</p>'}</section>
 </main>` });
 }
 
+// /week: "This week in Pokémon GO & the Pokémon TCG": events starting in the next 7 days (linked to their guides) and the
+// week's biggest price moves (prices/movers.json), with a ready-to-paste post for Reddit/Discord. Rebuilt daily by the
+// event and price jobs; deterministic (event snapshot date, saved movers).
+const moversData = (() => { try { return JSON.parse(fs.readFileSync(path.join(root, 'prices/movers.json'), 'utf8')); } catch (e) { return null; } })();
+const SKIP_WEEK = /raid-hour|spotlight|go-battle-league/;
+function weekPage() {
+  const until = today + 7, url = SITE + '/week';
+  const RAIDS = /^(raid-battles|max-mondays)$/; // boss rotations: one line in the post, listed on the page
+  const evs = evData.events.filter(e => dayNum(e.start) >= today && dayNum(e.start) < until && !SKIP_WEEK.test(e.type || '')).sort((a, b) => a.start.localeCompare(b.start));
+  const live = evData.events.filter(e => dayNum(e.start) < today && dayNum(e.end) >= today && dayNum(e.end) < until && !SKIP_WEEK.test(e.type || '')).sort((a, b) => a.end.localeCompare(b.end));
+  const big = evs.filter(e => !RAIDS.test(e.type || '')), bosses = evs.filter(e => RAIDS.test(e.type || ''));
+  const bossName = e => e.name.replace(/\s*\((Normal|[A-Z][a-z]+ Forme?)[^)]*\)/, '').replace(/\s+in (5-star |Mega |Shadow )?Raid Battles$|\s+in (Mega|Shadow) Raids$|\s+during Max Monday$/, '').trim();
+  const day = t => when(t).replace(/, \d{4},/, ',');
+  const iso = n => new Date(n * 864e5).toISOString().slice(0, 10);
+  const short = n => { const [, m, d] = iso(n).split('-').map(Number); return [MONTHS[m - 1].slice(0, 3), d]; };
+  const [m1, d1] = short(today), [m2, d2] = short(until - 1), year = iso(until - 1).slice(0, 4);
+  const fromTo = m1 === m2 ? `${m1} ${d1}–${d2}, ${year}` : `${m1} ${d1} – ${m2} ${d2}, ${year}`;
+  const mv = moversData && !moversData.waiting ? moversData : null;
+  const up = mv ? mv.risers.slice(0, 5) : [], down = mv ? mv.fallers.slice(0, 5) : [];
+  const usd = n => '$' + n.toFixed(2), pct = r => `${r.pct > 0 ? '+' : '−'}${Math.abs(r.pct) >= 10 ? Math.round(Math.abs(r.pct)) : Math.abs(r.pct).toFixed(1)}%`;
+  const cardUrl = r => `/tcg?set=${encodeURIComponent(r.set)}&card=${encodeURIComponent(r.id)}`;
+  const post = [`**This week in Pokémon GO & the Pokémon TCG (${fromTo})**`, '',
+    ...(evs.length || live.length ? ['**Pokémon GO**', ...big.map(e => `- ${day(e.start)}: ${e.name} ${SITE}${evUrl(e)}`),
+      ...(bosses.length ? [`- New raid and Max Battle bosses: ${[...new Set(bosses.map(bossName))].join(', ')}`] : []),
+      ...live.filter(e => !RAIDS.test(e.type || '')).map(e => `- Ends ${day(e.end)}: ${e.name} ${SITE}${evUrl(e)}`), ''] : []),
+    ...(up.length ? [`**Biggest TCG price risers** (TCGplayer market, last ${mv.window} days)`, ...up.map(r => `- ${r.name} (${r.setName} #${r.num}): ${usd(r.from)} → ${usd(r.to)} (${pct(r)})`), ''] : []),
+    ...(down.length ? ['**Biggest fallers**', ...down.map(r => `- ${r.name} (${r.setName} #${r.num}): ${usd(r.from)} → ${usd(r.to)} (${pct(r)})`), ''] : []),
+    `Full schedule, event guides and card prices (free, unofficial fan site): ${SITE}/week`].join('\n');
+  const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Trainer Desk', item: SITE + '/' }, { '@type': 'ListItem', position: 2, name: 'This week', item: url }] };
+  const evLi = (e, end) => `<li><a href="${evUrl(e)}">${esc(e.name)}</a><small>${esc(typeName(e.type))} · ${end ? 'ends ' + esc(day(e.end)) : esc(day(e.start))}${evPaged.has(e.id) ? ' · guide' : ''}</small></li>`;
+  const mvLi = r => `<li><a href="${cardUrl(r)}">${esc(r.name)}</a><small>${esc(r.setName)} #${esc(r.num)} · ${usd(r.from)} → ${usd(r.to)} (${pct(r)})</small></li>`;
+  return doc({ title: `This Week in Pokémon GO & the Pokémon TCG (${fromTo}) | Trainer Desk`,
+    desc: `Pokémon GO events this week${evs.length ? ` (${evs.slice(0, 2).map(e => e.name).join(', ')})` : ''} and the biggest Pokémon TCG price moves, updated daily.`.slice(0, 160),
+    url, ld, img: ROUTES.go.img, current: 'go', credit: evCredit, body: `<main class="wrap">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <span>This week</span></nav>
+  <h1 class="page-h1">This week in Pokémon GO &amp; the TCG</h1>
+  <p class="intro">${esc(fromTo)}. Updated every day. See <a href="/go/events">all upcoming GO events</a> or the <a href="/tcg?view=movers">price movers</a> for more.</p>
+  <section class="box"><h2>Pokémon GO: starting this week</h2>${evs.length ? `<ul class="setlist">${evs.map(e => evLi(e)).join('')}</ul>` : '<p>No new events start this week.</p>'}</section>
+  ${live.length ? `<section class="box"><h2>Ending this week</h2><ul class="setlist">${live.map(e => evLi(e, true)).join('')}</ul></section>` : ''}
+  <section class="box"><h2>TCG prices: biggest risers</h2>${up.length ? `<ul class="setlist">${up.map(mvLi).join('')}</ul><p class="meta">TCGplayer market prices, change over the last ${mv.window} days (cards worth $${mv.minPrice}+).</p>` : '<p>Not enough price history this week yet.</p>'}</section>
+  ${down.length ? `<section class="box"><h2>TCG prices: biggest fallers</h2><ul class="setlist">${down.map(mvLi).join('')}</ul></section>` : ''}
+  <section class="box"><h2>Share this week</h2><p>A ready-made post for Reddit or Discord (links included):</p>
+    <textarea id="week-post" readonly rows="10" aria-label="Post text" style="width:100%;box-sizing:border-box;font-size:16px;font-family:inherit;padding:10px;border-radius:8px">${esc(post)}</textarea>
+    <div class="cta"><button type="button" class="btn" id="week-copy">COPY FOR REDDIT / DISCORD</button> <span id="week-msg" role="status"></span></div>
+    <script>document.getElementById("week-copy").addEventListener("click",async()=>{const t=document.getElementById("week-post"),m=document.getElementById("week-msg");try{await navigator.clipboard.writeText(t.value);m.textContent="Copied!";}catch(e){t.focus();t.select();m.textContent="Selected: press Ctrl+C / Cmd+C to copy.";}});</script>
+  </section>
+</main>` });
+}
+
 function sitemap() {
-  const urls = [...Object.values(ROUTES).map(r => [r.path, r.path === '/' ? '1.0' : '0.8', 'daily']), ...dex.map(p => ['/pokedex/' + p.slug, '0.6', 'monthly']), ['/tcg/sets', '0.7', 'weekly'], ...[...tcg].reverse().map(t => ['/tcg/' + setSlug.get(t.id), '0.6', 'weekly']), ['/go/events', '0.7', 'daily'], ...pagedEvents.map(e => ['/go/' + e.id, '0.6', 'daily'])];
+  const urls = [...Object.values(ROUTES).map(r => [r.path, r.path === '/' ? '1.0' : '0.8', 'daily']), ...dex.map(p => ['/pokedex/' + p.slug, '0.6', 'monthly']), ['/tcg/sets', '0.7', 'weekly'], ...[...tcg].reverse().map(t => ['/tcg/' + setSlug.get(t.id), '0.6', 'weekly']), ['/go/events', '0.7', 'daily'], ['/week', '0.7', 'daily'], ...pagedEvents.map(e => ['/go/' + e.id, '0.6', 'daily'])];
   return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     urls.map(([u, pr, f]) => `  <url><loc>${SITE}${u}</loc><changefreq>${f}</changefreq><priority>${pr}</priority></url>\n`).join('') + '</urlset>\n';
 }
@@ -448,6 +498,7 @@ tcg.forEach((t, i) => files.set(path.join('tcg', setSlug.get(t.id) + '.html'), s
 files.set(path.join('tcg', 'sets.html'), setsIndex());
 for (const e of pagedEvents) files.set(path.join('go', e.id + '.html'), eventPage(e));
 files.set(path.join('go', 'events.html'), eventsIndex());
+files.set('week.html', weekPage());
 // compact name list for the Who's That Pokémon? puzzle: [id, name, types, generation, page slug]
 files.set(path.join('assets', 'pokedex-names.json'), JSON.stringify(dex.map(p => [p.id, p.name, p.types, p.gen, p.slug])));
 // sets only TCGdex has (newer than the pokemon-tcg-data snapshot): the TCG tab adds these to pokemontcg.io's set list

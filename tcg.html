@@ -1007,7 +1007,7 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 
   <div class="sec-label">▸ COMING UP</div>
   <div class="ev-grid" id="upcoming-events"></div>
-  <p class="ev-all"><a href="/go/events">Full event schedule and guides →</a></p>
+  <p class="ev-all"><a href="/go/events">Full event schedule and guides →</a> · <a href="/week">This week in GO &amp; the TCG →</a></p>
 
   <dialog class="cdd" id="ev-detail" aria-labelledby="evd-name">
     <div class="cdd-bar"><span class="cdd-pos">EVENT</span><button type="button" class="cdd-btn cdd-close" id="evd-close" aria-label="Close">✕</button></div>
@@ -2141,13 +2141,64 @@ function renderCardDetail(){
   document.getElementById("cdd-own").addEventListener("click",e=>{ const on=toggleOwned(c); e.currentTarget.textContent=on?"✓ I OWN THIS":"+ I OWN THIS"; e.currentTarget.setAttribute("aria-pressed",String(on));
     const t=grid.querySelector(`.tc-own[data-own="${CSS.escape(c.id)}"]`); if(t){ t.classList.toggle("on",on); t.setAttribute("aria-pressed",String(on)); } });
   document.getElementById("cdd-binder").addEventListener("click",e=>{ if(!window.binderToggleCard) return; const on=window.binderToggleCard(c); e.currentTarget.textContent=on?"✓ IN BINDER":"+ ADD TO BINDER"; });
-  document.getElementById("cdd-share").addEventListener("click",async()=>{
-    const url=`${location.origin}/tcg?set=${encodeURIComponent(setSel.value)}&card=${encodeURIComponent(c.id)}`;
-    try{ if(navigator.share){ await navigator.share({title:c.name+" · Trainer Desk",url}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
-    try{ await navigator.clipboard.writeText(url); toast("Link copied"); }catch(e){ toast(url); }
+  document.getElementById("cdd-share").addEventListener("click",async e=>{
+    const btn=e.currentTarget, url=`${location.origin}/tcg?set=${encodeURIComponent(setSel.value)}&card=${encodeURIComponent(c.id)}`;
+    btn.disabled=true; btn.textContent="MAKING PICTURE…";
+    let blob=null; try{ blob=await shareCardImage(c,setName,pts||null); }catch(err){}
+    btn.disabled=false; btn.textContent="SHARE";
+    const text=`${c.name}${c.price&&c.price.cur==="USD"?" · "+fmtPrice(c.price):""} on Trainer Desk`;
+    const file=blob&&new File([blob],`trainer-desk-${c.id.replace(/[^a-z0-9-]/gi,"")}.png`,{type:"image/png"});
+    try{ // phones: the share sheet with the picture (Instagram, Messages, Discord…); else the link
+      if(file&&navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:c.name,text:text+" "+url}); return; }
+      if(!file&&navigator.share){ await navigator.share({title:c.name+" · Trainer Desk",url}); return; }
+    }catch(err){ if(err&&err.name==="AbortError") return; }
+    if(file){ const a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download=file.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000); }
+    let copied=false; try{ await navigator.clipboard.writeText(url); copied=true; }catch(err){}
+    toast(file?(copied?"Picture saved and link copied — ready to post":"Picture saved"):(copied?"Link copied":url));
   });
   if(cardSrc==="tcgdex"&&!c.sample&&c.priceState===undefined) queuePrice(c);
 }
+/* ---- Share picture (card detail → SHARE): a 1080×1350 PNG drawn on the visitor's device: card art (hotlinked, both
+   picture servers allow it with CORS), name, set, price, price chart and the site address. Nothing is uploaded or stored. ---- */
+function shareCardImage(c,setName,pts){
+  return (async()=>{
+    const W=1080,H=1350, cv=document.createElement("canvas"); cv.width=W; cv.height=H; const g=cv.getContext("2d");
+    try{ await Promise.race([document.fonts.load('34px "Press Start 2P"'),new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+    const SANS='system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",sans-serif';
+    const bg=g.createLinearGradient(0,0,0,H); bg.addColorStop(0,"#2D6A4F"); bg.addColorStop(1,"#0E2117"); g.fillStyle=bg; g.fillRect(0,0,W,H);
+    g.strokeStyle="#E9C46A"; g.lineWidth=12; g.strokeRect(18,18,W-36,H-36);
+    g.fillStyle="#E9C46A"; g.font='34px "Press Start 2P",monospace'; g.textBaseline="alphabetic"; g.fillText("TRAINER DESK",64,104);
+    // the card picture: large, then small, then TCGdex copy; a plain card shape if none loads
+    const load=src=>new Promise(res=>{ if(!src) return res(null); const im=new Image(); im.crossOrigin="anonymous"; const t=setTimeout(()=>res(null),8000);
+      im.onload=()=>{ clearTimeout(t); res(im); }; im.onerror=()=>{ clearTimeout(t); res(null); }; im.src=src; });
+    const srcs=[largeImg(c),c.images&&c.images.small,c.images&&c.images.alt].filter(Boolean);
+    let im=null; for(const s of [...new Set(srcs)]){ im=await load(s); if(im) break; }
+    const ch=720, cw=Math.round(ch*0.716), cx=(W-cw)/2, cy=140;
+    g.save(); g.shadowColor="rgba(0,0,0,.45)"; g.shadowBlur=40; g.shadowOffsetY=12; g.fillStyle="#FFF8E7";
+    g.beginPath(); g.roundRect?g.roundRect(cx,cy,cw,ch,28):g.rect(cx,cy,cw,ch); g.fill(); g.restore();
+    if(im){ g.save(); g.beginPath(); g.roundRect?g.roundRect(cx,cy,cw,ch,28):g.rect(cx,cy,cw,ch); g.clip(); g.drawImage(im,cx,cy,cw,ch); g.restore(); }
+    else{ g.fillStyle="#2D6A4F"; g.font=`bold 44px ${SANS}`; g.textAlign="center"; g.fillText(c.name.slice(0,18),W/2,cy+ch/2); g.textAlign="left"; }
+    const fit=(t,max,size,weight)=>{ let z=size; do{ g.font=`${weight} ${z}px ${SANS}`; if(g.measureText(t).width<=max) return t; z-=2; }while(z>26);
+      while(t.length>1&&g.measureText(t+"…").width>max) t=t.slice(0,-1); return t+"…"; };
+    const L=64, R=W-64, MW=R-L; let y=cy+ch+92;
+    g.fillStyle="#FFFFFF"; g.fillText(fit(c.name,MW,60,"bold"),L,y);
+    y+=52; g.fillStyle="#B7E4C7"; g.fillText(fit([setName,c.number?"#"+c.number:"",c.rarity||""].filter(Boolean).join(" · "),MW,34,"normal"),L,y);
+    y+=96;
+    if(c.price){
+      g.fillStyle="#E9C46A"; g.font=`bold 88px ${SANS}`; const ptxt=fmtPrice(c.price); g.fillText(ptxt,L,y); const pw=g.measureText(ptxt).width;
+      g.font=`28px ${SANS}`; g.fillStyle="#D8F3DC"; g.fillText(`${c.price.src} market price`,L+pw+24,y-46);
+      if(pts&&pts.length>=2){ const a=pts[0][1], b=pts[pts.length-1][1], pct=(b-a)/a*100;
+        if(isFinite(pct)){ g.fillStyle=pct>=0?"#95D5B2":"#FFB4A2"; g.font=`bold 30px ${SANS}`; g.fillText(`${pct>=0?"▲":"▼"} ${Math.abs(pct)>=10?Math.round(Math.abs(pct)):Math.abs(pct).toFixed(1)}% since ${fmtDay(pts[0][0])}`,L+pw+24,y-6); } }
+    } else { g.fillStyle="#D8F3DC"; g.font=`36px ${SANS}`; g.fillText("No price listed yet",L,y-20); }
+    // little price chart along the bottom
+    if(pts&&pts.length>=2){ const top=y+28, hgt=70, vals=pts.map(p=>p[1]), lo=Math.min(...vals), hi=Math.max(...vals), span=hi-lo||1;
+      g.strokeStyle="#E9C46A"; g.lineWidth=5; g.lineJoin="round"; g.beginPath();
+      vals.forEach((v,i)=>{ const X=L+i*(MW/(vals.length-1)), Y=top+hgt-(v-lo)/span*hgt; i?g.lineTo(X,Y):g.moveTo(X,Y); }); g.stroke(); }
+    g.fillStyle="#B7E4C7"; g.font=`28px ${SANS}`; g.fillText("trainerdesk.net · free card prices · unofficial fan site",L,H-58);
+    return await new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error("no image")),"image/png"));
+  })();
+}
+window.__share={image:shareCardImage};
 function openCardDetail(id){
   if(!cddEl||!allCards.some(c=>c.id===id)) return;
   detailId=id; renderCardDetail(); cddBody.scrollTop=0;
