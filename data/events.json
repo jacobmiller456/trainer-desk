@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-19",
+ "fetchedAt": "2026-11-23",
  "events": [
   {
    "id": "season-24-twilight-trails",
@@ -16,15 +16,6 @@
    "type": "research",
    "start": "2026-09-25T10:00:00.000",
    "end": "2027-01-15T20:00:00.000",
-   "bosses": [],
-   "spotlight": null
-  },
-  {
-   "id": "pokemon-tcg-30th-celebration",
-   "name": "Pokémon TCG: 30th Celebration",
-   "type": "event",
-   "start": "2026-09-27T10:00:00.000",
-   "end": "2026-10-20T22:00:00.000",
    "bosses": [],
    "spotlight": null
   },
@@ -88,29 +79,6 @@
     "Palkia"
    ],
    "spotlight": null
-  },
-  {
-   "id": "raidhour20261021",
-   "name": "Palkia Raid Hour",
-   "type": "raid-hour",
-   "start": "2026-10-21T18:00:00.000",
-   "end": "2026-10-21T19:00:00.000",
-   "bosses": [],
-   "spotlight": null
-  },
-  {
-   "id": "pokemonspotlighthour2026-10-22",
-   "name": "Morelull Spotlight Hour",
-   "type": "pokemon-spotlight-hour",
-   "start": "2026-10-22T18:00:00.000",
-   "end": "2026-10-22T19:00:00.000",
-   "bosses": [],
-   "spotlight": {
-    "mons": [
-     "Morelull"
-    ],
-    "bonus": "2× Catch Stardust"
-   }
   },
   {
    "id": "pokemon-go-city-safari-boston-2026-rescheduled",
@@ -626,7 +594,7 @@
   },
   {
    "id": "december-communityday2026",
-   "name": "December Community Day",
+   "name": "December Community Day 2026",
    "type": "community-day",
    "start": "2026-12-12T14:00:00.000",
    "end": "2026-12-13T17:00:00.000",

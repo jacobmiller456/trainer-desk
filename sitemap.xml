@@ -1213,7 +1213,6 @@
   <url><loc>https://www.trainerdesk.net/week</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.trainerdesk.net/go/season-24-twilight-trails</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/pokemon-x-adidas-2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
-  <url><loc>https://www.trainerdesk.net/go/pokemon-tcg-30th-celebration</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/go-pass-october-2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/minior-showers-orionids-2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/pokemon-go-city-safari-boston-2026-rescheduled</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
@@ -1229,9 +1228,11 @@
   <url><loc>https://www.trainerdesk.net/go/pokemon-go-wild-area-2026-global</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/minior-showers-leonids-2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/dynamax-trails-2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.trainerdesk.net/go/duolingo-timed-research-2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/eternamax-eternatus-max-battles-2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/november-communityday2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/twilight-wishes-2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/clefable-super-mega-raid-day-2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.trainerdesk.net/go/minior-showers-geminids-2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.trainerdesk.net/go/december-communityday2026</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
 </urlset>
