@@ -590,7 +590,16 @@ footer{ border-top:4px solid var(--gold-dark); background:var(--forest-dark); pa
 .go-card .go-part + .go-part{ border-top:3px dashed var(--parchment-2); padding-top:14px; margin-top:4px; }
 .today-set-logo{ display:block; align-self:flex-start; }
 .today-set-logo img{ display:block; max-width:220px; max-height:84px; width:auto; height:auto; }
-.today-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+.today-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; align-items:start; } /* cards keep their own height: no stretched blank space */
+@media (min-width:600px){ .today-grid #today-go{ grid-row:span 2; } } /* the tall GO card spans two rows: the cards after it fill the space beside it */
+.cd-mons.compact{ display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:6px; }
+.cd-mons.compact .cd-mon{ padding:2px 6px 2px 2px; gap:6px; min-width:0; }
+.cd-mons.compact .cd-mon img, .cd-mons.compact .cd-mon .mono{ width:36px; height:36px; }
+.cd-mons.compact .cd-mon .mono{ font-size:12px; }
+.cd-mons.compact .cd-mon b{ font-size:14px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cd-mons.compact .cd-mon > div{ min-width:0; }
+.cd-mons.compact .cd-mon small{ font-size:12px; }
+.cd-mons.compact .cd-more{ justify-content:center; min-height:44px; padding:2px 6px; }
 .today-grid .ev{ display:flex; flex-direction:column; gap:10px; }
 .today-grid .ev h3{ margin:0; }
 .today-potd{ display:flex; gap:14px; align-items:center; }
@@ -3745,6 +3754,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     tickCountdowns();
   }
 
+  const TODAY_CD_MAX=6; // the Today card shows the first few (December's catch-up has 15); the GO tab lists them all
   function renderTodayCD(){
     const el=$("today-cd");
     const head='<div class="today-label">▸ COMMUNITY DAY</div>';
@@ -3757,7 +3767,7 @@ setInterval(async()=>{ await loadGoEvents(); renderEvents(); }, 15*60000); // re
     const t=d=>d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
     el.innerHTML=`${head}
       <h3>${esc(f.title)}</h3>
-      ${mons.length?`<div class="cd-mons">${mons.map(n=>`<div class="cd-mon">${cdArt(n)}<div><b>${esc(n)}</b>${shiny.has(n)?"<small>✦ shiny available</small>":""}</div></div>`).join("")}</div>`:'<div class="today-meta">Featured Pokémon not announced yet.</div>'}
+      ${mons.length?`<div class="cd-mons compact">${mons.slice(0,TODAY_CD_MAX).map(n=>`<div class="cd-mon">${cdArt(n)}<div><b>${esc(n)}</b>${shiny.has(n)?'<small title="Shiny available">✦ shiny</small>':""}</div></div>`).join("")}${mons.length>TODAY_CD_MAX?`<div class="cd-mon cd-more"><b>+${mons.length-TODAY_CD_MAX} more</b></div>`:""}</div>`:'<div class="today-meta">Featured Pokémon not announced yet.</div>'}
       <div class="when"><span>${esc(f._s.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}))} · ${esc(t(f._s))}–${esc(t(f._e))}</span><span class="cd" data-t="${(live?f._e:f._s).toISOString()}" data-pre="${live?"ends in":"starts in"}"></span></div>
       <button type="button" class="today-btn" id="today-cd-btn">CD DETAILS</button>`;
     $("today-cd-btn").addEventListener("click",()=>{ goTab("go"); const box=document.getElementById("cd-box"); if(box&&box.scrollIntoView) box.scrollIntoView({block:"start"}); });

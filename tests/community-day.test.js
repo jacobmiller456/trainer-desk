@@ -35,7 +35,7 @@ async function run(mode) {
   if (mode === 'live') {
     await page.waitForFunction(() => /Zorua Community Day/.test(document.getElementById('today-cd').textContent), null, { timeout: 10000 });
     const tc = await page.textContent('#today-cd');
-    check('Today: next Community Day card with featured Pokémon and countdown', /Zorua/.test(tc) && /starts in \d/.test(tc) && /shiny available/.test(tc), tc.slice(0, 200));
+    check('Today: next Community Day card with featured Pokémon (compact tiles, shiny marked) and countdown', /Zorua/.test(tc) && /starts in \d/.test(tc) && /✦ shiny/.test(tc), tc.slice(0, 200));
     await page.click('#today-cd-btn');
     check('Today: CD DETAILS opens the GO tab', await page.isVisible('#cd-box'));
   } else {
